@@ -44,7 +44,7 @@ def extract_frames(video_path, output_dir, frame_rate=30, max_frames=None, resiz
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     
-    print(f"📹 Informacje o wideo:")
+    print(f" Informacje o wideo:")
     print(f"   - Rozdzielczość: {width}x{height}")
     print(f"   - FPS: {fps}")
     print(f"   - Liczba klatek: {total_frames}")
@@ -99,7 +99,7 @@ def extract_frames(video_path, output_dir, frame_rate=30, max_frames=None, resiz
         cap.release()
         pbar.close()
     
-    print(f"\n✅ Zakończono!")
+    print(f"\n Zakończono!")
     print(f"   - Wyekstrahowano {saved_count} klatek")
     print(f"   - Zapisano w: {output_dir}")
     
@@ -125,10 +125,10 @@ def process_directory(input_dir, output_dir, frame_rate=30, max_frames_per_video
                    if f.suffix in video_extensions]
     
     if not video_files:
-        print(f"❌ Nie znaleziono plików wideo w katalogu: {input_dir}")
+        print(f" Nie znaleziono plików wideo w katalogu: {input_dir}")
         return
     
-    print(f"📂 Znaleziono {len(video_files)} plików wideo\n")
+    print(f" Znaleziono {len(video_files)} plików wideo\n")
     
     total_frames = 0
     
@@ -148,11 +148,11 @@ def process_directory(input_dir, output_dir, frame_rate=30, max_frames_per_video
             total_frames += frames_extracted
             
         except Exception as e:
-            print(f"❌ Błąd podczas przetwarzania {video_file.name}: {e}")
+            print(f" Błąd podczas przetwarzania {video_file.name}: {e}")
         
         print("\n" + "="*60 + "\n")
     
-    print(f"🎉 Wszystkie wideo przetworzone!")
+    print(f" Wszystkie wideo przetworzone!")
     print(f"   - Całkowita liczba klatek: {total_frames}")
 
 
@@ -203,7 +203,7 @@ def main():
             width, height = map(int, args.resize.split('x'))
             resize = (width, height)
         except:
-            print(f"⚠️  Nieprawidłowy format resize: {args.resize}. Oczekiwano WIDTHxHEIGHT")
+            print(f"  Nieprawidłowy format resize: {args.resize}. Oczekiwano WIDTHxHEIGHT")
             return
     
     input_path = Path(args.input)
@@ -228,7 +228,7 @@ def main():
             resize=resize
         )
     else:
-        print(f"❌ Nie znaleziono pliku ani katalogu: {args.input}")
+        print(f" Nie znaleziono pliku ani katalogu: {args.input}")
 
 
 if __name__ == '__main__':

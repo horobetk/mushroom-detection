@@ -46,16 +46,26 @@ Thumbs.db
 desktop.ini
 
 # Data files (often too large for git)
-data/raw/*.mp4
-data/raw/*.avi
-data/raw/*.mov
-data/raw/*.mkv
-data/frames/**/*.jpg
-data/frames/**/*.png
+# Raw videos - NEVER commit (use Google Drive)
+data/raw/**
+!data/raw/.gitkeep
+
+# Frames - keep only samples
+data/frames/augmented/**
+data/frames/rejected/**
+!data/frames/augmented/.gitkeep
+!data/frames/rejected/.gitkeep
+
+# Allow first 50 original frames for demo
+data/frames/original/*
+!data/frames/original/.gitkeep
+!data/frames/original/*_frame_00000[0-4]*.jpg
 
 # Annotations (can be large)
-data/annotations/train/**
-data/annotations/val/**
+data/annotations/**
+!data/annotations/.gitkeep
+data/processed/**
+!data/processed/.gitkeep
 
 # Model files (too large for git)
 *.pt

@@ -6,7 +6,7 @@ System rozpoznawania grzybów na urządzeniach mobilnych z wykorzystaniem głęb
 
 ---
 
-## 📋 Informacje o projekcie
+##  Informacje o projekcie
 
 **Autor:** Kiril Horobets  
 **Promotor:** dr inż. Witold Czajewski  
@@ -15,7 +15,7 @@ System rozpoznawania grzybów na urządzeniach mobilnych z wykorzystaniem głęb
 
 ---
 
-## 🎯 Cel pracy
+##  Cel pracy
 
 Opracowanie aplikacji mobilnej Android wspomagającej identyfikację grzybów niejadalnych i trujących wśród zebranych grzybów rozłożonych na stole. 
 
@@ -93,7 +93,7 @@ annotation(YOLO_format) → train/val/test split
 
 ---
 
-## 🗂️ Struktura projektu
+##  Struktura projektu
 
 ```
 mushroom-recognition/
@@ -131,7 +131,7 @@ mushroom-recognition/
 
 ---
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### Prerequisites
 ```bash

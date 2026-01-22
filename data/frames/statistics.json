@@ -1,0 +1,13 @@
+{
+  "videos_processed": 7,
+  "frames_extracted": 715,
+  "frames_augmented": 5005,
+  "frames_rejected": 50,
+  "total_frames": 5720,
+  "processing_time": 360,
+  "resolution": "1920x1920",
+  "blur_threshold": 30,
+  "interval": 5,
+  "quality": "high",
+  "note": "High-resolution dataset optimized for small mushroom detection. All mushrooms clearly visible and distinguishable."
+}

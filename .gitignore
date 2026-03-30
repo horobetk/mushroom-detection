@@ -52,7 +52,7 @@ data/raw/**
 
 # Frames - keep only samples
 data/frames/augmented/**
-data/frames/rejected/**
+data//frames/rejected/**
 !data/frames/augmented/.gitkeep
 !data/frames/rejected/.gitkeep
 
@@ -96,3 +96,24 @@ android/local.properties
 
 # Documentation
 docs/_build/
+
+
+
+runs/, datasets/, *.pt, *.tflite, .ipynb_checkpoints/, __pycache__/, data/frames/original/*.txt
+
+# ML artifacts
+runs/
+datasets/
+*.pt
+*.tflite
+.ipynb_checkpoints/
+
+# Data
+data/frames/original/*.txt
+runs/
+datasets/
+*.pt
+*.tflite
+.ipynb_checkpoints/
+data/external/
+data/processed/

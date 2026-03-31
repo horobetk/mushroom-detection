@@ -1,0 +1,5 @@
+train: C:/Users/kiril/Desktop/mushroom-detection/datasets/mushroom_final/images/train
+val: C:/Users/kiril/Desktop/mushroom-detection/datasets/mushroom_final/images/val
+
+nc: 2
+names: ['edible', 'poisonous']

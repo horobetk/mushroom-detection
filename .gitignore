@@ -1,119 +1,52 @@
 # Mushroom Recognition Project - .gitignore
 
-# Python
+# Python & Environment
 __pycache__/
 *.py[cod]
 *$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# Virtual Environments
 venv/
-env/
-ENV/
-.venv
+.venv/
+.env
 
-# Jupyter Notebook
-.ipynb_checkpoints/
-*.ipynb
-
-# PyCharm
-.idea/
-
-# VS Code
-.vscode/
-
-# Mac
-.DS_Store
-
-# Windows
-Thumbs.db
-desktop.ini
-
-# Data files (often too large for git)
-# Raw videos - NEVER commit (use Google Drive)
-data/raw/**
-!data/raw/.gitkeep
-
-# Frames - keep only samples
-data/frames/augmented/**
-data//frames/rejected/**
-!data/frames/augmented/.gitkeep
-!data/frames/rejected/.gitkeep
-
-# Allow first 50 original frames for demo
-data/frames/original/*
-!data/frames/original/.gitkeep
-!data/frames/original/*_frame_00000[0-4]*.jpg
-
-# Annotations (can be large)
-data/annotations/**
-!data/annotations/.gitkeep
-data/processed/**
-!data/processed/.gitkeep
-
-# Model files (too large for git)
+# ML Artifacts (Local only)
+runs/
+datasets/
 *.pt
 *.pth
 *.onnx
 *.tflite
 *.pb
-runs/
 weights/
 
-# Logs
-*.log
-logs/
-wandb/
+# Project Snapshots (For AI assistant)
+project_snapshot.txt
+scripts/project_snapshot.py
 
-# Temporary files
-*.tmp
-*.bak
-*.swp
-*~
+# Data (Videos and large frame sets)
+data/raw/**
+data/external/
+data/processed/
+data/frames/augmented/
+data/frames/rejected/
+data/frames/original/*.txt
+data/frames/original/*.jpg
 
-# Android
+# Exceptions for Data (Keep placeholders)
+!data/raw/.gitkeep
+!data/frames/original/.gitkeep
+!data/frames/augmented/.gitkeep
+!data/frames/rejected/.gitkeep
+
+# IDE & OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Android Build
 android/app/build/
 android/.gradle/
 android/local.properties
 *.apk
 *.aab
-
-# Documentation
-docs/_build/
-
-
-
-runs/, datasets/, *.pt, *.tflite, .ipynb_checkpoints/, __pycache__/, data/frames/original/*.txt
-
-# ML artifacts
-runs/
-datasets/
-*.pt
-*.tflite
-.ipynb_checkpoints/
-
-# Data
-data/frames/original/*.txt
-runs/
-datasets/
-*.pt
-*.tflite
-.ipynb_checkpoints/
-data/external/
-data/processed/

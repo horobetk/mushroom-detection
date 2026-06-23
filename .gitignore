@@ -8,6 +8,14 @@ venv/
 .venv/
 .env
 
+# Secrets / API credentials
+kaggle.json
+*.kaggle.json
+
+# Temporary logs
+*_log.txt
+install_log.txt
+
 # ML Artifacts (Local only)
 runs/
 datasets/

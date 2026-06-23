@@ -36,7 +36,7 @@ Opracowanie aplikacji mobilnej Android wspomagającej identyfikację grzybów ni
 │   Training Pipeline (Python)        │
 ├─────────────────────────────────────┤
 │  • PyTorch                          │
-│  • YOLOv8 Nano (Ultralytics)        │
+│  • YOLO11 Nano (Ultralytics)        │
 │  • OpenCV (preprocessing)           │
 └─────────────────────────────────────┘
               ↓
@@ -55,16 +55,17 @@ Opracowanie aplikacji mobilnej Android wspomagającej identyfikację grzybów ni
 └─────────────────────────────────────┘
 ```
 
-### Wybór modelu: YOLOv8 Nano
+### Wybór modelu: YOLO11 Nano
 
-**Dlaczego YOLOv8 Nano?**
+**Dlaczego YOLO11 Nano?**
 -  Szybkość: ~50 FPS na urządzeniach mobilnych
 -  Rozmiar: ~6MB (możliwość offline deployment)
--  Accuracy: wystarczająca dla multi-object detection
+-  Accuracy: lepsza niż YOLOv8n przy mniejszej liczbie parametrów (~2.6M)
 -  Łatwość treningu i konwersji do TFLite
 
 **Alternatywy rozważane:**
-- YOLOv9, YOLOv11 (za duże dla mobile)
+- YOLOv8n (poprzednia generacja, zastąpiona przez YOLO11n)
+- YOLO11s/m (za duże dla mobile)
 - MobileNet SSD (niższa accuracy)
 - EfficientDet (wolniejszy inference)
 
@@ -106,7 +107,7 @@ mushroom-recognition/
 │
 ├── training/                  # Model training
 │   ├── train.py               # Training script
-│   ├── config.yaml            # YOLOv8 config
+│   ├── config.yaml            # YOLO11 config
 │   ├── evaluate.py            # Evaluation metrics
 │   └── convert_to_tflite.py  # Model conversion
 │
@@ -150,12 +151,12 @@ python scripts/extract_frames.py \
     --frame_rate 30
 ```
 
-### Train YOLOv8 model
+### Train YOLO11 model
 ```bash
-python training/train.py \
-    --data config/dataset.yaml \
-    --model yolov8n.pt \
-    --epochs 100 \
+python scripts/train_mvp.py \
+    --data mushrooms_mvp.yaml \
+    --model weights/yolo11n.pt \
+    --epochs 30 \
     --imgsz 640
 ```
 
@@ -188,7 +189,7 @@ Kluczowe publikacje wykorzystane w projekcie:
 
 1. **YOLO Series:**
    - Redmon et al. - YOLOv3 (2018)
-   - Jocher - YOLOv5, YOLOv8 (Ultralytics)
+   - Jocher - YOLOv5, YOLOv8, YOLO11 (Ultralytics)
 
 2. **Mobile ML:**
    - Howard et al. - MobileNets (2017)
@@ -210,7 +211,7 @@ Kluczowe publikacje wykorzystane w projekcie:
 **Training:**
 - ![Python](https://img.shields.io/badge/Python-3.8+-blue)
 - ![PyTorch](https://img.shields.io/badge/PyTorch-2.0-red)
-- ![YOLOv8](https://img.shields.io/badge/YOLOv8-Ultralytics-green)
+- ![YOLO11](https://img.shields.io/badge/YOLO11-Ultralytics-green)
 - ![OpenCV](https://img.shields.io/badge/OpenCV-4.x-blue)
 
 **Mobile:**

@@ -56,7 +56,7 @@ echo - Input: data\raw
 echo - Output: data\frames
 echo - Interval: co 30-ta klatka
 echo - Augmentacja: WLACZONA
-echo - Resize: 640x640 (YOLOv8 ready)
+echo - Resize: 640x640 (YOLO11 ready)
 echo.
 
 python scripts\advanced_dataset_creator.py ^

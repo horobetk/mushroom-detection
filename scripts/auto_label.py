@@ -3,7 +3,7 @@ from ultralytics import YOLO
 from pathlib import Path
 
 # Load the largest model for generating draft bounding boxes
-model = YOLO('yolov8x.pt') 
+model = YOLO('yolo11x.pt') 
 
 input_path = Path("data/frames/original")
 images = list(input_path.glob("*.jpg"))

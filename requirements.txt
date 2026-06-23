@@ -5,7 +5,7 @@
 # Deep Learning Frameworks
 torch>=2.0.0
 torchvision>=0.15.0
-ultralytics>=8.0.0  # YOLOv8
+ultralytics>=8.3.0  # YOLO11 (architektura YOLO11n); testowane na 8.4.x
 tensorflow>=2.13.0
 onnx>=1.14.0
 
@@ -29,6 +29,9 @@ plotly>=5.15.0
 tqdm>=4.65.0
 pyyaml>=6.0
 requests>=2.31.0
+
+# Dataset acquisition (MVP)
+kaggle>=1.6.0  # Pobieranie publicznych datasetow grzybow przez Kaggle API
 
 # Jupyter (for experiments)
 jupyter>=1.0.0

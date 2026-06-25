@@ -111,7 +111,7 @@ def send_file(path: Path, base_url: str):
         with urllib.request.urlopen(req, timeout=10) as resp:
             resp.read()
         print(f"[->] wyslano: {rel} ({len(data)} B)")
-    except urllib.error.URLError as exc:
+    except (urllib.error.URLError, OSError, TimeoutError) as exc:
         print(f"[BLAD] nie wyslano {rel}: {exc}")
 
 
@@ -120,7 +120,7 @@ def check_server(base_url: str) -> bool:
     try:
         with urllib.request.urlopen(base_url.rstrip("/") + "/ping", timeout=5) as resp:
             return resp.read().strip() == b"pong"
-    except urllib.error.URLError:
+    except (urllib.error.URLError, OSError, TimeoutError):
         return False
 
 
@@ -209,8 +209,8 @@ def main():
     )
     parser.add_argument("--host", "-H", required=True,
                         help="Adres IP zdalnego komputera (REMOTE_IP)")
-    parser.add_argument("--port", "-p", type=int, default=9999,
-                        help="Port serwera remote_receiver.py (domyslnie 9999)")
+    parser.add_argument("--port", "-p", type=int, default=8080,
+                        help="Port serwera remote_receiver.py (domyslnie 8080)")
     parser.add_argument("--interval", type=float, default=1.0,
                         help="Interwal pollingu w sekundach (domyslnie 1.0)")
     parser.add_argument("--debounce", type=float, default=0.5,

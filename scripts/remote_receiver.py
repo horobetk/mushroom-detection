@@ -24,6 +24,7 @@ Politechnika Warszawska, 2026
 
 import argparse
 import os
+import socket
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -66,20 +67,44 @@ def safe_target(rel_path: str) -> Optional[Path]:
 class SyncHandler(BaseHTTPRequestHandler):
     """Obsluga zadan HTTP synchronizacji."""
 
+    # HTTP/1.0 - prostsze polaczenia, mniej problemow przez firewalle VPN
+    protocol_version = "HTTP/1.0"
+
+    def handle_one_request(self):
+        """Obsluga pojedynczego zadania z tlumieniem zerwanych polaczen (VPN/firewall)."""
+        try:
+            super().handle_one_request()
+        except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError, TimeoutError):
+            pass
+
     def _reply(self, code: int, message: str):
         body = message.encode("utf-8")
         self.send_response(code)
         self.send_header("Content-Type", "text/plain; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
+        self.send_header("Connection", "close")
         self.end_headers()
         self.wfile.write(body)
 
     def do_GET(self):
         # Health-check uzywany przez local_watcher do sprawdzenia polaczenia
-        if self.path == "/ping":
+        path = self.path.split("?", 1)[0]
+        if path == "/ping":
             self._reply(200, "pong")
         else:
             self._reply(404, "Nieznany endpoint")
+
+    def do_HEAD(self):
+        path = self.path.split("?", 1)[0]
+        if path == "/ping":
+            self.send_response(200)
+            self.send_header("Content-Type", "text/plain; charset=utf-8")
+            self.send_header("Content-Length", "4")
+            self.send_header("Connection", "close")
+            self.end_headers()
+        else:
+            self.send_response(404)
+            self.end_headers()
 
     def do_POST(self):
         if self.path != "/upload":
@@ -110,12 +135,25 @@ class SyncHandler(BaseHTTPRequestHandler):
             return
 
         rel_display = target.relative_to(PROJECT_ROOT).as_posix()
-        print(f"[OK] zapisano: {rel_display} ({len(data)} B)")
+        print(f"[OK] zapisano: {rel_display} ({len(data)} B) <- {self.client_address[0]}")
         self._reply(200, "OK")
 
     def log_message(self, *args):
         # Wyciszamy domyslny, halasliwy log http.server (mamy wlasne printy)
         pass
+
+
+def _local_ips() -> list[str]:
+    """Zwraca liste lokalnych adresow IPv4 (pomocne przy laczeniu przez VPN)."""
+    ips = []
+    try:
+        for info in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET):
+            ip = info[4][0]
+            if ip not in ips and not ip.startswith("127."):
+                ips.append(ip)
+    except OSError:
+        pass
+    return ips
 
 
 def main():
@@ -124,8 +162,8 @@ def main():
     )
     parser.add_argument("--host", default="0.0.0.0",
                         help="Adres nasluchu (domyslnie 0.0.0.0 = wszystkie interfejsy)")
-    parser.add_argument("--port", "-p", type=int, default=9999,
-                        help="Port nasluchu (domyslnie 9999)")
+    parser.add_argument("--port", "-p", type=int, default=8080,
+                        help="Port nasluchu (domyslnie 8080; porty 8080/8443 czesto przechodza przez VPN)")
     args = parser.parse_args()
 
     server = ThreadingHTTPServer((args.host, args.port), SyncHandler)
@@ -134,9 +172,12 @@ def main():
     print(" SERWER SYNCHRONIZACJI - START")
     print("=" * 60)
     print(f"  Katalog projektu: {PROJECT_ROOT}")
-    print(f"  Nasluch:          http://{args.host}:{args.port}")
+    print(f"  Nasluch:          http://0.0.0.0:{args.port}")
+    for ip in _local_ips():
+        print(f"  Adres VPN/LAN:    http://{ip}:{args.port}/ping")
     print(f"  Endpointy:        POST /upload | GET /ping")
     print("  Zatrzymanie:      Ctrl+C")
+    print("  Test lokalny:     curl http://127.0.0.1:{0}/ping".format(args.port))
     print("=" * 60)
 
     try:

@@ -3,12 +3,12 @@ REM ============================================================
 REM   PELNY PIPELINE TRENINGU MVP - ZDALNY KOMPUTER (Windows)
 REM   Politechnika Warszawska 2026 - Kiril Horobets
 REM ------------------------------------------------------------
-REM   Aktywuje srodowisko .venv (Python 3.12) i uruchamia po kolei:
+REM   Aktywuje LOKALNE srodowisko .venv (Python 3.12 zainstalowany
+REM   per-user w AppData, BEZ uprawnien administratora) i uruchamia po kolei:
 REM     1) download_model.py        - pobranie YOLO11n
 REM     2) download_mvp_dataset.py  - pobranie i przygotowanie datasetu
 REM     3) train_mvp.py             - trening (50 epok, GPU)
 REM     4) export_tflite.py         - eksport do TFLite (int8 -> fallback fp16)
-REM   Wymaga wczesniejszego uruchomienia: scripts\setup_remote_win.ps1
 REM ============================================================
 
 setlocal
@@ -20,10 +20,12 @@ echo ============================================================
 echo   PIPELINE TRENINGU MVP - START
 echo ============================================================
 
-REM --- Aktywacja srodowiska wirtualnego Python 3.12 ---
+REM --- Aktywacja lokalnego srodowiska wirtualnego Python 3.12 ---
 if not exist ".venv\Scripts\activate.bat" (
     echo [BLAD] Nie znaleziono .venv\Scripts\activate.bat
-    echo        Uruchom najpierw: powershell -ExecutionPolicy Bypass -File scripts\setup_remote_win.ps1
+    echo        Utworz srodowisko bez praw admina, np.:
+    echo            py -3.12 -m venv .venv
+    echo            .venv\Scripts\python -m pip install -r requirements.txt
     exit /b 1
 )
 call ".venv\Scripts\activate.bat"

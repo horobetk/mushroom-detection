@@ -71,6 +71,7 @@ mushroom-detection/
 ├── android/                 # Aplikacja Kotlin (Compose + CameraX + Room + TFLite)
 ├── scripts/
 │   ├── train.py             # Trening / fine-tune YOLO11
+│   ├── gather_data.py       # Akwizycja iNaturalist (Research Grade)
 │   ├── export_tflite.py     # Eksport PT → SavedModel → TFLite (FP16/FP32/INT8)
 │   ├── auto_label.py        # Auto-anotacja GroundingDINO
 │   ├── split_dataset.py     # Podział train/val/test
@@ -93,6 +94,8 @@ są w `.gitignore` — nie trafiają do repozytorium.
 
 ```
 iNaturalist (research grade)
+        ↓
+gather_data.py  (105 taksonów → cel ≥1000 zdjęć / klasa)
         ↓
 auto_label.py  (GroundingDINO → YOLO labels)
         ↓

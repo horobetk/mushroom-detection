@@ -543,7 +543,7 @@ Sprzęt użyty do treningu i testów mobilnych zestawia tab.~\ref{tab:sprzet}, s
         \hline
         \textbf{Etap potoku} & \textbf{Technologia} & \textbf{Rola w systemie} \\
         \hline \hline
-        Akwizycja danych & Python $3.11$, \texttt{requests}, \texttt{ThreadPoolExecutor} & pobieranie obserwacji iNaturalist \\
+        Akwizycja danych & Python $3.11$, \texttt{requests.Session} & pobieranie obserwacji iNaturalist \\
         \hline
         Auto-anotacja & GroundingDINO, \texttt{autodistill} & lokalizacja zero-shot owocników \\
         \hline
@@ -669,9 +669,9 @@ ${\sim}64\,000$ owocników, 147 gatunków, zero gotowych etykiet lokalizacyjnych
         strz/.style={-latex, semithick}
     ]
         \node[src] (api) at (0,0) {iNaturalist REST API\\\texttt{quality\_grade}\\\texttt{=research}};
-        \node[acq] (dl) at (3.9,0) {Pobieranie\\$16$ wątków};
-        \node[acq] (val) at (7.8,0) {Walidacja PIL\\$<5$\,KB, 404/500};
-        \node[acq] (purge) at (11.7,0) {Czyszczenie klas\\$<500$ obrazów};
+        \node[acq] (dl) at (3.9,0) {Skrypt \texttt{gather\_data}\\$105$ taksonów};
+        \node[acq] (val) at (7.8,0) {Cel $\geq 1000$ zdjęć\\skip / retry HTTP};
+        \node[acq] (purge) at (11.7,0) {Rozszerzenie\\do $147$ gatunków};
 
         \node[ann] (dino) at (11.7,-2.1) {GroundingDINO\\zero-shot};
         \node[ann] (reg) at (7.8,-2.1) {Rejestr klas\\\texttt{class\_registry}\\ID $0$--$146$};
@@ -689,12 +689,12 @@ ${\sim}64\,000$ owocników, 147 gatunków, zero gotowych etykiet lokalizacyjnych
         \draw[strz] (nms) -- (split);
         \draw[strz] (split) -- (yaml);
     \end{tikzpicture}
-    \caption{Potok przygotowania zbioru uczącego: akwizycja, walidacja jakościowa, auto-anotacja oraz czyszczenie i podział danych. Źródło: opracowanie własne.}
+    \caption{Potok przygotowania zbioru uczącego: akwizycja z iNaturalist, dociągnięcie klas do progu $1000$ zdjęć, rozszerzenie do $147$ gatunków, auto-anotacja oraz podział danych. Źródło: opracowanie własne.}
     \label{fig:potok_danych}
 \end{figure}
 
 \subsection{Akwizycja danych z serwisu iNaturalist}
-Zbiór uczący pochodzi z iNaturalist \cite{inaturalist} — platformy citizen science z publicznym interfejsem REST API (\url{https://api.inaturalist.org/v1/observations}). Kluczowy filtr: \texttt{quality\_grade=research}. Obserwacja na tym poziomie przeszła weryfikację przez co najmniej dwóch niezależnych identyfikatorów ze społeczności. To nie amatorskie snapshoty — to konsensus przyrodników. Skrypt odpytuje API stronicowanymi żądaniami dla każdego taksonu, podmienia w adresie miniaturę \texttt{square} na wariant \texttt{large} i zapisuje plik lokalnie. Format anotacji: konwencja YOLO i COCO — ramka BBOX plus identyfikator klasy. Przykładowe ramki COCO przedstawia rys.~\ref{fig:coco_sample_web} \cite{lin2014coco}.
+Zbiór uczący pochodzi z iNaturalist \cite{inaturalist} — platformy citizen science z publicznym interfejsem REST API (\url{https://api.inaturalist.org/v1/observations}). Kluczowy filtr: \texttt{quality\_grade=research}. Obserwacja na tym poziomie przeszła weryfikację przez co najmniej dwóch niezależnych identyfikatorów ze społeczności. Skrypt \texttt{gather\_data.py} odpytuje API stronicowanymi żądaniami dla każdego taksonu z listy $105$ gatunków, podmienia w adresie miniaturę \texttt{square} na wariant \texttt{large} i zapisuje plik lokalnie pod nazwą \texttt{\{obs\_id\}\_\{photo\_id\}.jpg}. Format anotacji lokalizacyjnych powstaje dopiero w kolejnym etapie (GroundingDINO); na tym kroku zbierane są same obrazy. Przykładowe ramki COCO przedstawia rys.~\ref{fig:coco_sample_web} \cite{lin2014coco}.
 
 \begin{figure}[htbp]
     \centering
@@ -703,108 +703,91 @@ Zbiór uczący pochodzi z iNaturalist \cite{inaturalist} — platformy citizen s
     \label{fig:coco_sample_web}
 \end{figure}
 
-Sekwencyjne pobieranie stu gatunków po tysiąc obserwacji jest zbyt wolne. \texttt{ThreadPoolExecutor} z 16 wątkami rozwiązuje ten problem: obciążenie zdominowane przez I/O sieciowe, GIL nie stanowi wąskiego gardła. Wyjątek na poziomie pojedynczego wątku nie zatrzymuje reszty — pobieranie dla uszkodzonego taksonu można wznowić bez restartu procesu.
+Pobieranie jest sekwencyjne w ramach gatunku: jedna sesja HTTP (\texttt{requests.Session}) obsługuje wszystkie taksony, a między zapisami plików obowiązuje pauza $0{,}3$\,s, żeby nie przeciążać API. Cel operacyjny to $\geq 1000$ niepustych plików na klasę (do $20$ stron $\times$ $50$ obserwacji). Jeśli katalog gatunku już spełnia próg, skrypt pomija takson (\texttt{Skip}) i przechodzi dalej — dzięki temu przerwany proces można wznawiać bez dublowania pracy.
 
-Każdy pobrany plik przechodzi przez walidację PIL. Kontrola nagłówka bez pełnej dekompresji wykrywa uszkodzone artefakty szybko; reguła równoległa odrzuca kody 404/500 i pliki poniżej $5$\,KB. Uszkodzony plik znika z dysku — nigdy nie trafia do anotacji.
+Błędy sieciowe i kody $429$/$500$/$503$ nie kończą całego przebiegu. Dla każdej strony API przewidziano do trzech ponowień z pauzą $5$\,s. Uszkodzony pojedynczy link do zdjęcia jest pomijany w bloku \texttt{except} — pętla idzie dalej. Po przejściu całej listy skrypt uruchamia kolejny cykl audytu, aż wszystkie $105$ klas osiągną próg; dopiero później zbiór rozszerzono o dodatkowe taksony do finalnych $147$ klas.
 
-Skrypt liczy poprawne obrazy po zakończeniu pobierania danego taksonu. Poniżej 500 — cały katalog gatunku usuwa \texttt{shutil.rmtree}. Gatunek z 80 zdjęciami zaburzałby rozkład treningowy. Do anotacji trafiają wyłącznie klasy o dostatecznej reprezentacji.
+Rdzeń mechanizmu akwizycji — sesja HTTP, stronicowanie, wznowienie oraz cel $1000$ zdjęć — przedstawiono na listingu \ref{lst:scraper}.
 
-Rdzeń opisanego mechanizmu akwizycji, obejmujący zrównoleglone pobieranie, walidację nagłówków oraz warunkowe czyszczenie katalogu gatunkowego, przedstawiono na listingu \ref{lst:scraper}.
+\begin{lstlisting}[language=Python,caption={Akwizycja obrazów z iNaturalist (\texttt{gather\_data.py}): sesja HTTP, wznowienie pobierania i cel $1000$ zdjęć na gatunek},label={lst:scraper}]
+BASE_DATA_DIR = "E:/Kiril_Horobets/mushroom_data"
+TARGET_PER_CLASS = 1000
+PAGES, PER_PAGE, MAX_RETRIES = 20, 50, 3
 
-\begin{lstlisting}[language=Python,caption={Wielowątkowa akwizycja obrazów z serwisu iNaturalist wraz z walidacją PIL i dynamicznym czyszczeniem klas},label={lst:scraper}]
-MIN_IMAGES_PER_CLASS = 500
-MIN_FILE_BYTES = 5 * 1024
-API_URL = "https://api.inaturalist.org/v1/observations"
+def download_species(session, species):
+    folder = f"{BASE_DATA_DIR}/{species.replace(' ', '_')}"
+    os.makedirs(folder, exist_ok=True)
+    existing = count_valid_files(folder)  # pliki > 0 B
+    if existing >= TARGET_PER_CLASS:
+        print(f"Skip: {species} ({existing} photos)")
+        return True
 
-def fetch_observation_urls(species, pages=20, per_page=50):
-    urls = []
-    for page in range(1, pages + 1):
-        params = {
-            "taxon_name": species,
-            "has[]": "photos",
-            "quality_grade": "research",
-            "per_page": per_page,
-            "page": page,
-        }
-        response = requests.get(API_URL, params=params, timeout=30)
-        if response.status_code != 200:
-            break
-        results = response.json().get("results", [])
+    for page in range(1, PAGES + 1):
+        url = (
+            "https://api.inaturalist.org/v1/observations"
+            f"?taxon_name={species.replace(' ', '+')}"
+            f"&has[]=photos&quality_grade=research"
+            f"&per_page={PER_PAGE}&page={page}"
+        )
+        results = []
+        for retry in range(MAX_RETRIES):
+            response = session.get(url, headers={"User-Agent": "Mozilla/5.0"},
+                                   timeout=15)
+            if response.status_code == 200:
+                results = response.json().get("results", [])
+                break
+            if response.status_code in (429, 500, 503):
+                time.sleep(5)
         if not results:
             break
-        for observation in results:
-            for photo in observation.get("photos", []):
-                urls.append(photo["url"].replace("square", "large"))
-    return urls
 
-def download_and_validate(url, dest_path):
-    try:
-        response = requests.get(url, timeout=30)
-        if response.status_code != 200 or len(response.content) < MIN_FILE_BYTES:
-            return False
-        dest_path.write_bytes(response.content)
-        with Image.open(dest_path) as img:
-            img.verify()
-        return True
-    except Exception:
-        dest_path.unlink(missing_ok=True)
-        return False
-
-def harvest_species(species, out_root):
-    species_dir = out_root / species.replace(" ", "_")
-    species_dir.mkdir(parents=True, exist_ok=True)
-    urls = fetch_observation_urls(species)
-
-    valid = 0
-    with ThreadPoolExecutor(max_workers=16) as pool:
-        futures = {
-            pool.submit(download_and_validate, url, species_dir / f"{i:06d}.jpg"): url
-            for i, url in enumerate(urls)
-        }
-        for future in as_completed(futures):
-            if future.result():
-                valid += 1
-
-    if valid < MIN_IMAGES_PER_CLASS:
-        print(f"[PURGE] {species}: {valid} valid images, below threshold")
-        shutil.rmtree(species_dir, ignore_errors=True)
-        return 0
-
-    print(f"[OK] {species}: {valid} images retained")
-    return valid
+        for obs in results:
+            for photo in obs.get("photos", []):
+                img_url = photo["url"].replace("square", "large")
+                path = os.path.join(folder, f"{obs['id']}_{photo['id']}.jpg")
+                if os.path.exists(path):
+                    continue
+                try:
+                    data = session.get(img_url, timeout=10).content
+                    with open(path, "wb") as f:
+                        f.write(data)
+                    time.sleep(0.3)
+                except Exception:
+                    continue
+    return count_valid_files(folder) >= TARGET_PER_CLASS
 \end{lstlisting}
 
-\texttt{fetch\_observation\_urls} (linie 5--26) stronicuje API REST. \texttt{quality\_grade=research} ogranicza wyniki do obserwacji potwierdzonych przez społeczność; \texttt{has[]=photos} odrzuca rekordy bez zdjęcia. Pętla przerywa się wcześnie przy kodzie innym niż $200$ (linia 17) lub przy pustej liście wyników (linia 20) — bez marnowania żądań po wyczerpaniu obserwacji taksonu. Linia 24 podmienia miniaturę \texttt{square} na pełnowymiarowy \texttt{large}.
+Funkcja \texttt{download\_species} najpierw liczy niepuste pliki w katalogu gatunku. Przy $\geq 1000$ zwraca \texttt{True} bez kontaktu z API — to warunek wznowienia po przerwie. W przeciwnym razie stronicuje obserwacje (\texttt{quality\_grade=research}, \texttt{has[]=photos}). Adres miniatury \texttt{square} zamieniany jest na \texttt{large}. Istniejący plik o tej samej nazwie nie jest pobierany ponownie.
 
-\texttt{download\_and\_validate} (linie 28--39) to filtr jakościowy pojedynczego pliku. Linia 31 odrzuca kody 404/500 i pliki krótsze niż $5$\,KB — typowe placeholdery serwera. \texttt{img.verify()} (linia 34) sprawdza nagłówek bez pełnej dekompresji — ważne przy skali setek tysięcy plików. Blok \texttt{except} usuwa uszkodzony plik z dysku (linia 37): artefakt nie przenika do kolejnych etapów potoku.
+Pętla \texttt{MAX\_RETRIES} chroni przed chwilowymi błędami serwera ($429$, $500$, $503$). Zapis obrazu i pauza $0{,}3$\,s ograniczają ryzyko limitu zapytań. Główna pętla \texttt{main()} owija to w cykle audytu: dopóki którakolwiek z $105$ klas nie osiągnie progu, skrypt odczekuje $60$\,s i skanuje listę od nowa. Sesja \texttt{requests.Session} utrzymuje połączenia TCP między taksonami.
 
-\texttt{harvest\_species} (linie 41--62) zarządza zrównolegleniem. Pula 16 wątków (linia 47) dopasowana do obciążenia zdominowanego przez I/O sieciowe — GIL nie blokuje. Linia 53 liczy wyłącznie pobrania, które przeszły walidację. Linia 55 to strażnik równowagi zbioru: poniżej 500 poprawnych obrazów \texttt{shutil.rmtree} usuwa cały katalog gatunku, zanim nierówna klasa zaburzy rozkład próbek w treningu.
-
-Zbiorcze zestawienie parametrów konfiguracyjnych oraz kryteriów odrzucenia zastosowanych w warstwie akwizycji przedstawiono w tab.~\ref{tab:scraper}.
+Zbiorcze zestawienie parametrów skryptu akwizycji przedstawiono w tab.~\ref{tab:scraper}.
 
 \begin{table}[htbp]
     \centering
-    \caption{Parametry skryptu akwizycji oraz kryteria filtracji jakościowej. Źródło: opracowanie własne.}
+    \caption{Parametry skryptu \texttt{gather\_data.py}. Źródło: opracowanie własne.}
     \label{tab:scraper}
     \begin{tabular}{|p{5.3cm}|p{3.1cm}|p{4.2cm}|}
         \hline
         \textbf{Parametr} & \textbf{Wartość} & \textbf{Uzasadnienie} \\
         \hline \hline
-        Liczba wątków roboczych & $16$ & obciążenie zdominowane przez I/O sieciowe \\
+        Interfejs HTTP & \texttt{requests.Session} & ponowne użycie połączeń TCP \\
+        \hline
+        Liczba taksonów (lista bazowa) & $105$ & gatunki + look-alikes \\
         \hline
         Stopień weryfikacji obserwacji & \texttt{research} & wyłącznie rekordy zweryfikowane \\
         \hline
         Rekordów na stronę / liczba stron & $50$ / $20$ & do $1000$ obserwacji na takson \\
         \hline
-        Minimalny rozmiar pliku & $5$\,KB & odrzucenie pustych odpowiedzi \\
+        Cel liczebności klasy & $\geq 1000$ plików & próg \texttt{Skip} / sukces cyklu \\
         \hline
-        Odrzucane kody HTTP & $404$, $500$ & artefakty niedostępnych zasobów \\
+        Ponowienia HTTP & $3\times$ ($5$\,s) & kody $429$, $500$, $503$ \\
         \hline
-        Walidacja integralności & \texttt{PIL.Image}\newline\texttt{.verify()} & wykrycie uszkodzonych nagłówków \\
+        Pauza między zdjęciami & $0{,}3$\,s & ograniczenie obciążenia API \\
         \hline
-        Minimalna liczebność klasy & $500$ obrazów & przeciwdziałanie nierównowadze klas \\
+        Katalog wyjściowy & \texttt{E:/Kiril\_Horobets/}\newline\texttt{mushroom\_data} & lokalny dysk stacji uczelnianej \\
         \hline
-        Liczba klas po czyszczeniu & $147$ & gatunki spełniające kryterium progu \\
+        Liczba klas po rozszerzeniu & $147$ & finalny rejestr produkcyjny \\
         \hline
     \end{tabular}
 \end{table}

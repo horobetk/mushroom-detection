@@ -44,7 +44,7 @@
 % In case of thesis in English swap the order - English version goes first.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \streszczeniepracy{
-Przedmiotem pracy jest autonomiczny system detekcji i klasyfikacji $147$ gatunków grzybów, działający w czasie rzeczywistym i offline na platformie Android. Celem było wsparcie zbieracza przy bezpiecznej identyfikacji owocników --- zwłaszcza przy odróżnianiu gatunków trujących od jadalnych sobowtórów (gatunków bliźniaczych).
+Przedmiotem pracy jest autonomiczny system detekcji i klasyfikacji $147$ gatunków grzybów, działający w czasie rzeczywistym i offline na platformie Android. Celem było wsparcie zbieracza przy bezpiecznej identyfikacji owocników, zwłaszcza przy odróżnianiu gatunków trujących od jadalnych sobowtórów (gatunków bliźniaczych).
 
 Zaprojektowano i wdrożono pełny potok danych. Ręczną anotację zastąpiono półautomatycznym etykietowaniem przez GroundingDINO, generującym ramki w formacie YOLO. Model bazowy YOLO11 Medium (\texttt{YOLO11m}, Ultralytics) wytrenowano metodą uczenia transferowego, a następnie skompilowano dwuetapowo do TensorFlow Lite (TFLite) w precyzji FP16. Dzięki temu inferencja działa lokalnie na telefonie, bez utraty subtelnych cech makromorfologicznych owocników.
 
@@ -54,7 +54,7 @@ Priorytetem pozostaje bezpieczeństwo mykologiczne: wysoka czułość względem 
 \slowakluczowe{wykrywanie obiektów, YOLO11m, TensorFlow Lite, FP16, Android, głębokie uczenie} 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \thesisabstract{
-The subject of this thesis is an autonomous system for detecting and classifying 147 mushroom species in real time, offline, on Android. The goal was to help foragers identify fruiting bodies safely --- in particular to separate toxic species from edible look-alikes.
+The subject of this thesis is an autonomous system for detecting and classifying 147 mushroom species in real time, offline, on Android. The goal was to help foragers identify fruiting bodies safely, in particular to separate toxic species from edible look-alikes.
 
 A full data pipeline was designed and built. Manual box labelling was replaced by a GroundingDINO-based auto-labeller that emits YOLO-format bounding boxes. YOLO11 Medium (\texttt{YOLO11m}, Ultralytics) was trained with transfer learning and then converted in two stages to TensorFlow Lite (TFLite) FP16, so inference runs on the phone while fine macromorphological cues are preserved.
 

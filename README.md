@@ -1,6 +1,6 @@
-# Mushroom Detection — mobilna identyfikacja grzybów
+# Mushroom Detection: mobilna identyfikacja grzybów
 
-**Praca inżynierska — Politechnika Warszawska, Wydział Elektryczny**
+**Praca inżynierska, Politechnika Warszawska, Wydział Elektryczny**
 
 Autonomiczny system detekcji i klasyfikacji **147 gatunków** grzybów na Androidzie:
 offline, w czasie rzeczywistym, z priorytetem bezpieczeństwa mykologicznego.
@@ -58,7 +58,7 @@ Wariant Nano (YOLO11n) służy wyłącznie jako baseline ablacyjny (~48% mAP₅�
 |-----------|------|------------|
 | Ostrzeżenie toksyczne | `conf ≥ 0,18` | natychmiastowy status UNSAFE |
 | Etykieta „Jadalny” | `conf ≥ 0,60` + głosowanie klatek | zielony status SAFE |
-| Strefa niepewności | pomiędzy | NEUTRAL — bez zielonej etykiety |
+| Strefa niepewności | pomiędzy | NEUTRAL (bez zielonej etykiety) |
 
 Implementacja: `MushroomRegistry.displayStatus` + `DetectionTracker` (vote 4/5).
 
@@ -86,7 +86,7 @@ mushroom-detection/
 ```
 
 Duże artefakty (wagi `.pt`, modele `.tflite`, surowe dane, build Android/LaTeX)
-są w `.gitignore` — nie trafiają do repozytorium.
+są w `.gitignore` i nie trafiają do repozytorium.
 
 ---
 

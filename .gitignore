@@ -1,60 +1,140 @@
-# Mushroom Recognition Project - .gitignore
+# =============================================================================
+# Mushroom Detection — .gitignore
+# Keep the repo lean: source + docs results; exclude weights, data, builds.
+# =============================================================================
 
-# Python & Environment
+# --- Python / virtualenvs ---
 __pycache__/
 *.py[cod]
 *$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
 venv/
 .venv/
 .env
+.python-version
 
-# Secrets / API credentials
+# --- Secrets / credentials (never commit) ---
 kaggle.json
 *.kaggle.json
+**/local.properties
+*.pem
+*.key
 
-# Temporary logs
+# --- Editor / local tooling ---
+.idea/
+.vscode/
+*.swp
+*.swo
+.cursor/
+.cursorrules
+.context/raw-chats/
+*.code-workspace
+
+# --- OS junk ---
+.DS_Store
+Thumbs.db
+desktop.ini
+ehthumbs.db
+$RECYCLE.BIN/
+
+# --- Scratch / local dumps ---
+garbage/
 *_log.txt
 install_log.txt
+project_snapshot.txt
+scripts/project_snapshot.py
+project_structure.txt
 
-# ML Artifacts (Local only)
-runs/
-datasets/
+# --- ML weights & exported models (large; keep local) ---
 *.pt
 *.pth
 *.onnx
 *.tflite
 *.pb
-weights/
+*.h5
+*.ckpt
+*.engine
+weights/*
+!weights/.gitkeep
+runs/
+datasets/
+*.npy
 
-# Project Snapshots (For AI assistant)
-project_snapshot.txt
-scripts/project_snapshot.py
-
-# Data (Videos and large frame sets)
+# --- Dataset content (keep folder placeholders only) ---
 data/raw/**
 data/external/
 data/processed/
+data/annotations/**
 data/frames/augmented/
 data/frames/rejected/
-data/frames/original/*.txt
-data/frames/original/*.jpg
-
-# Exceptions for Data (Keep placeholders)
+data/frames/original/**
 !data/raw/.gitkeep
 !data/frames/original/.gitkeep
 !data/frames/augmented/.gitkeep
 !data/frames/rejected/.gitkeep
+!data/annotations/.gitkeep
 
-# IDE & OS
-.idea/
-.vscode/
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# Android Build
-android/app/build/
+# --- Android build artefacts ---
 android/.gradle/
+android/build/
+android/app/build/
+android/**/build/
 android/local.properties
+android/captures/
+android/*.iml
+android/app/*.iml
 *.apk
 *.aab
+*.ap_
+*.dex
+
+# --- LaTeX build artefacts (keep .tex / .bib / .cls / figures) ---
+dyploma/*.aux
+dyploma/*.bbl
+dyploma/*.bcf
+dyploma/*.blg
+dyploma/*.fdb_latexmk
+dyploma/*.fls
+dyploma/*.log
+dyploma/*.lof
+dyploma/*.lot
+dyploma/*.out
+dyploma/*.toc
+dyploma/*.acn
+dyploma/*.glo
+dyploma/*.gls
+dyploma/*.ist
+dyploma/*.slo
+dyploma/*.run.xml
+dyploma/*.synctex.gz
+dyploma/*.nav
+dyploma/*.snm
+dyploma/*.vrb
+dyploma/EE-dyplom.pdf
+
+# Generic LaTeX junk if built elsewhere
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.synctex.gz
+*.toc
+*.lof
+*.lot
+*.out
+
+# --- Jupyter / notebooks checkpoints ---
+.ipynb_checkpoints/
+*.ipynb
+
+# --- Coverage / test caches ---
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/

@@ -1,0 +1,101 @@
+% !TEX program = xelatex
+% !TeX encoding = utf8
+% !TeX spellcheck = pl-PL
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Wybierz rodzaj pracy dyplomowej oraz wydział
+% Pick thesis type and faculty
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\documentclass[thesis=inz,faculty=ee]{EE-dyplom} 
+
+% thesis=[inz|mgr|bsc|msc]
+%  * inz - praca inżynierska
+%  * mgr - praca magisterska
+%  * bsc - bachelor thesis
+%  * msc - master thesis
+
+% Skróty nazw wydziałów zgodne z domenami internetowymi
+% Abbreviations of Faculties according to Internet subdomains
+% faculty=[
+%	arch,
+%	gik,
+%	ee,
+%	wip
+%	]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Konfiguracja - do personalizacji
+% Configuration - to be personalized
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\instytut{Instytut Sterowania i Elektroniki Przemysłowej}
+\kierunek{Informatyka Stosowana}
+\specjalnosc{Inżynieria Oprogramowania}
+\title{Mobilna aplikacja do rozpoznawania gatunków grzybów}
+\engtitle{Mobile application for mushroom species identification}
+\album{324437}
+\author{Kiril Horobets}
+\promotor{dr inż. Witold Czajewski}
+\date{\the\year{}} %wpisze się automatycznie
+\miejscowosc{Warszawa}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Streszczenie pracy i abstract.
+% In case of thesis in English swap the order - English version goes first.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\streszczeniepracy{
+Przedmiotem pracy jest autonomiczny system detekcji i klasyfikacji $147$ gatunków grzybów, działający w czasie rzeczywistym i offline na platformie Android. Celem było wsparcie zbieracza przy bezpiecznej identyfikacji owocników --- zwłaszcza przy odróżnianiu gatunków trujących od jadalnych sobowtórów (gatunków bliźniaczych).
+
+Zaprojektowano i wdrożono pełny potok danych. Ręczną anotację zastąpiono półautomatycznym etykietowaniem przez GroundingDINO, generującym ramki w formacie YOLO. Model bazowy YOLO11 Medium (\texttt{YOLO11m}, Ultralytics) wytrenowano metodą uczenia transferowego, a następnie skompilowano dwuetapowo do TensorFlow Lite (TFLite) w precyzji FP16. Dzięki temu inferencja działa lokalnie na telefonie, bez utraty subtelnych cech makromorfologicznych owocników.
+
+Priorytetem pozostaje bezpieczeństwo mykologiczne: wysoka czułość względem klas trujących. Badania, w tym porównanie ablacyjne z wariantem Nano, pokazują, że YOLO11m w FP16 osiąga wysoką skuteczność rozpoznawania bez chmury i nadaje się do pracy w terenie bez sieci.
+} % koniec streszczenia
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\slowakluczowe{wykrywanie obiektów, YOLO11m, TensorFlow Lite, FP16, Android, głębokie uczenie} 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\thesisabstract{
+The subject of this thesis is an autonomous system for detecting and classifying 147 mushroom species in real time, offline, on Android. The goal was to help foragers identify fruiting bodies safely --- in particular to separate toxic species from edible look-alikes.
+
+A full data pipeline was designed and built. Manual box labelling was replaced by a GroundingDINO-based auto-labeller that emits YOLO-format bounding boxes. YOLO11 Medium (\texttt{YOLO11m}, Ultralytics) was trained with transfer learning and then converted in two stages to TensorFlow Lite (TFLite) FP16, so inference runs on the phone while fine macromorphological cues are preserved.
+
+Mycological safety is the priority: high recall on toxic classes. Experiments, including an ablation against the Nano variant, show that YOLO11m in FP16 reaches strong recognition accuracy without cloud backends and remains usable in the field without network access.
+} % end of abstract
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\thesiskeywords{object detection, YOLO11m, TensorFlow Lite, FP16, Android, deep learning}  
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Biblioteki TikZ wykorzystywane w diagramach rozdziałów 2--5
+\usetikzlibrary{shapes.geometric}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Tu zaczyna się dokument
+% Here is the beginning of the document
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+    % Strony nagłówkowe
+    % Headers
+    \frontpages
+
+    % cała praca w jednym pliku (łatwiej się sprawdza i widać strukturę rozdziałów w File outline)
+    % whole thesis in one file (makes checking easier and File outline is working)
+    \input{tresc_pracy}
+    
+
+    % Bibliografia - musi być
+    % Bibliography - must exist
+    \bibliografia
+
+    % Strony końcowe - można zakomentować, jeśli zbędne
+    % Additional pages - comment out if not needed
+    
+    % Wykaz symboli i skrótów - patrz opis w tekście przykładowym
+    \acronymslist
+    % Spis rysunków
+    \listoffigures
+    % Spis tabel
+    \listoftables
+    % Załączniki (plik appendices.tex)
+    \załączniki
+\end{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+

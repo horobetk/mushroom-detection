@@ -1,49 +1,38 @@
-# Python Dependencies for Mushroom Recognition Project
-# Politechnika Warszawska - Praca inżynierska
-# Autor: Kiril Horobets, 2026
+# Mushroom Detection — Python dependencies
+# Politechnika Warszawska, praca inżynierska (Kiril Horobets, 2026)
+#
+# Install:
+#   pip install -r requirements.txt
+# For GPU training, install a CUDA build of torch/torchvision from
+# https://pytorch.org/get-started/locally/ BEFORE this file (or override pins).
 
-# Deep Learning Frameworks
+# --- Training / inference ---
 torch>=2.0.0
 torchvision>=0.15.0
-ultralytics>=8.3.0  # YOLO11 (architektura YOLO11n); testowane na 8.4.x
+ultralytics>=8.3.0
+
+# --- TFLite export (scripts/export_tflite.py) ---
 tensorflow>=2.13.0
-onnx>=1.14.0
 
-# Computer Vision
+# --- Auto-annotation (scripts/auto_label.py) ---
+autodistill>=0.1.28
+autodistill-grounding-dino>=0.1.3
+
+# --- Computer vision / I/O ---
 opencv-python>=4.8.0
-opencv-contrib-python>=4.8.0
 Pillow>=10.0.0
-
-# Data Processing
 numpy>=1.24.0
 pandas>=2.0.0
-scikit-learn>=1.3.0
-albumentations>=1.3.1  # Data augmentation
 
-# Visualization
+# --- Plots / thesis evaluation scripts ---
 matplotlib>=3.7.0
 seaborn>=0.12.0
-plotly>=5.15.0
 
-# Utilities
+# --- Utilities ---
 tqdm>=4.65.0
 pyyaml>=6.0
 requests>=2.31.0
 
-# Dataset acquisition (MVP)
-kaggle>=1.6.0  # Pobieranie publicznych datasetow grzybow przez Kaggle API
-
-# Jupyter (for experiments)
-jupyter>=1.0.0
-ipywidgets>=8.0.0
-
-# Model conversion
-onnx2tf>=1.15.0
-tf2onnx>=1.15.0
-
-# Annotation tools
-labelImg>=1.8.0
-
-# Testing
-pytest>=7.4.0
-pytest-cov>=4.1.0
+# --- Optional: public dataset download via Kaggle API ---
+# Requires local kaggle.json (never commit; see .gitignore)
+kaggle>=1.6.0

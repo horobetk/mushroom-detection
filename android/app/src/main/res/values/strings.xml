@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Skaner Grzybów</string>
+
+    <!-- Camera permission -->
+    <string name="permission_title">Wymagany dostęp do aparatu</string>
+    <string name="permission_rationale">Aplikacja potrzebuje aparatu, aby rozpoznawać grzyby w czasie rzeczywistym.</string>
+    <string name="permission_grant">Udziel dostępu</string>
+
+    <!-- Scanning overlay -->
+    <string name="scanning_hint">Skieruj aparat na grzyba i dotknij ramki, aby zapisać</string>
+    <string name="status_locked">Zablokowano — tryb oszczędzania baterii</string>
+    <string name="loading_model">Ładowanie modelu…</string>
+
+    <!-- Capture / save -->
+    <string name="action_save">Zapisz</string>
+    <string name="save_success">Zapisano znalezisko w historii</string>
+    <string name="save_failed">Nie udało się zapisać znaleziska</string>
+    <string name="save_no_target">Brak wykrytego grzyba do zapisania</string>
+
+    <!-- Toxicity statuses (shown in overlay labels) -->
+    <string name="status_edible">Jadalny</string>
+    <string name="status_caution">Warunkowo jadalny</string>
+    <string name="status_inedible">Niejadalny</string>
+    <string name="status_poisonous">Trujący</string>
+    <string name="status_deadly">Śmiertelnie trujący</string>
+
+    <!-- History -->
+    <string name="history_title">Historia znalezisk</string>
+    <string name="history_empty">Brak zapisanych znalezisk</string>
+    <string name="history_open">Historia znalezisk</string>
+    <string name="history_warning">Ostrzeżenie: Aplikacja ma charakter pomocniczy. Nigdy nie spożywaj grzybów bez pewności eksperta</string>
+    <string name="action_delete">Usuń</string>
+    <string name="action_back">Wstecz</string>
+    <string name="confidence_format">Pewność: %1$d%%</string>
+
+    <!-- Errors -->
+    <string name="error_generic">Nie udało się zainicjować detektora.</string>
+    <string name="error_retry">Ponów</string>
+</resources>

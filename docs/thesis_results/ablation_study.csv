@@ -1,0 +1,4 @@
+Model Architecture,Params (M),File Size (MB),mAP50 (Test),mAP50-95 (Test),Inference Speed (GPU)
+YOLO11m (PyTorch),20.1,38.8,88.6%,84.1%,5.1 ms
+YOLO11m (TFLite FP16),20.1,38.58,88.5%,84.0%,~15-25 ms (NPU/mobile)
+YOLO11n (Baseline),2.66,5.6,48.0%,42.1%,1.1 ms

@@ -1,0 +1,2135 @@
+% Definicja składni języka Kotlin dla pakietu listings (brak wsparcia wbudowanego)
+\lstdefinelanguage{Kotlin}{
+  keywords={package, import, class, object, interface, data, fun, val, var,
+    private, public, internal, const, companion, return, if, else, when, for,
+    while, do, break, continue, in, is, as, null, true, false, override,
+    suspend, this, super, try, catch, finally, throw, by, out, sealed, enum},
+  keywordstyle=\bfseries\color{EEUltramarine},
+  ndkeywords={Int, Float, Long, Boolean, String, List, Map, Bitmap, Flow,
+    Mutex, ArrayDeque, Dispatchers, Unit},
+  ndkeywordstyle=\color{EEBlueDark},
+  comment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  commentstyle=\color{EEBlueDark},
+  stringstyle=\color{EETangerine},
+  morestring=[b]",
+  sensitive=true
+}
+% Poprawna obsługa polskich znaków diakrytycznych wewnątrz listingów
+\lstset{
+  extendedchars=true,
+  literate=%
+    {ą}{{\k{a}}}1 {ć}{{\'c}}1 {ę}{{\k{e}}}1 {ł}{{\l{}}}1 {ń}{{\'n}}1
+    {ó}{{\'o}}1 {ś}{{\'s}}1 {ź}{{\'z}}1 {ż}{{\.z}}1
+    {Ą}{{\k{A}}}1 {Ć}{{\'C}}1 {Ę}{{\k{E}}}1 {Ł}{{\L{}}}1 {Ń}{{\'N}}1
+    {Ó}{{\'O}}1 {Ś}{{\'S}}1 {Ź}{{\'Z}}1 {Ż}{{\.Z}}1
+}
+
+\chapter{Wstęp}\label{chap:wstep}
+Przedmiotem pracy jest automatyczna identyfikacja gatunków grzybów na urządzeniach mobilnych pracujących autonomicznie, bez połączenia z serwerem. Grzybobranie --- w Polsce i szerzej w Europie Środkowej --- pozostaje powszechną praktyką rekreacyjną i kulinarną. Jednocześnie niesie realne ryzyko zdrowotne, gdy owocniki zostaną źle rozpoznane. Większość ciężkich zatruć nie wynika ze świadomego spożycia gatunków trujących, lecz z powierzchownej oceny cech morfologicznych przez osoby bez przygotowania mykologicznego. Ta rozbieżność między łatwą dostępnością grzybów w lasach a ograniczoną wiedzą przeciętnego zbieracza uzasadnia podjęcie tego tematu.
+
+Za przeważającą część śmiertelnych zatruć grzybami na świecie, szacowaną na ponad 90\%, odpowiadają gatunki zawierające amatoksyny, przede wszystkim muchomor sromotnikowy (\textit{Amanita phalloides}) \cite{garcia2015amanita, mengs2012legalon}. Toksyny te cechują się wysoką hepatotoksycznością, a dawka śmiertelna $\alpha$-amanityny dla człowieka wynosi około 0,1~mg/kg masy ciała, co oznacza, że pojedynczy owocnik może stanowić zagrożenie dla życia osoby dorosłej \cite{garcia2015amanita}. Dodatkowym czynnikiem pogarszającym rokowanie jest wielogodzinny okres utajenia, w którym objawy kliniczne nie występują, przez co pomoc medyczna bywa udzielana ze znacznym opóźnieniem. Według danych europejskich i północnoamerykańskich ośrodków toksykologicznych liczbę zgonów spowodowanych zatruciami grzybami szacuje się na kilkadziesiąt do około dwustu przypadków rocznie \cite{mengs2012legalon}, przy czym rzeczywista skala zjawiska pozostaje trudna do precyzyjnego ustalenia z powodu niepełnej sprawozdawczości. W warunkach polskich zatrucia grzybami wykazują wyraźną sezonowość i nasilają się w okresie jesiennym, a ich bezpośrednią przyczyną jest najczęściej pomylenie gatunku jadalnego z jego trującym odpowiednikiem.
+
+Z tych powodów sens ma narzędzie wspierające wstępną identyfikację grzybów bezpośrednio w terenie, na typowym smartfonie. System ma wspierać użytkownika przy ocenie owocników ułożonych na płaskiej powierzchni --- zwłaszcza w kwestii bezpieczeństwa mykologicznego i wyraźnego sygnalizowania gatunków potencjalnie trujących.
+
+\section{Motywacja podjęcia tematu}
+Motywacja do opracowania systemu wynika z trzech przesłanek: skali problemu zatruć, trudności rozróżniania gatunków bliźniaczych oraz ograniczeń dotychczasowych rozwiązań mobilnych. Kolejne podrozdziały omawiają je po kolei i uzasadniają wybór zastosowanych technologii.
+
+\subsection{Problem gatunków bliźniaczych}
+Kluczową trudnością w automatyzacji rozpoznawania grzybów jest zjawisko gatunków bliźniaczych (ang. \textit{look-alikes}), czyli par lub grup gatunków o zbliżonych cechach makroskopowych, spośród których część jest jadalna, a część silnie toksyczna. Wizualne podobieństwo owocników sprawia, że rozróżnienie oparte wyłącznie na kształcie kapelusza, barwie czy pokroju bywa zawodne nawet dla doświadczonych zbieraczy, a subtelne cechy diagnostyczne, takie jak budowa blaszek, obecność pierścienia czy pochwy u podstawy trzonu, są często pomijane.
+
+Do najbardziej reprezentatywnych przykładów należy pieprznik jadalny (\textit{Cantharellus cibarius}), popularnie zwany kurką, mylony z lisówką pomarańczową (\textit{Hygrophoropsis aurantiaca}) oraz z toksycznym gatunkiem \textit{Omphalotus olearius}, którego spożycie wywołuje ostre dolegliwości żołądkowo-jelitowe. Błąd ten bywa śmiertelny. Młode owocniki pieczarki polnej (\textit{Agaricus campestris}) do złudzenia przypominają wczesne stadia muchomora sromotnikowego (\textit{Amanita phalloides}) oraz jadowitego (\textit{Amanita virosa}). We wczesnym stadium rozwoju oba muchomory przypominają jadalne gatunki o białych kapeluszach. Zdolność do niezawodnego rozróżniania takich par jest zatem nadrzędnym kryterium projektowym systemu, w którym błąd klasyfikacji może mieć konsekwencje zagrażające życiu.
+
+Skala problemu wzrasta dodatkowo wraz z liczbą rozpoznawanych taksonów. Zadanie klasyfikacji drobnoziarnistej (ang. \textit{fine-grained classification}) na zbiorze obejmującym $147$ gatunków grzybów wymaga od modelu różnicowania klas na podstawie subtelnych, lokalnych cech morfologicznych — układu blaszek, faktury powierzchni kapelusza czy odcienia miazgi po przełamaniu — przy jednoczesnym zachowaniu odporności na wewnątrzklasową zmienność wynikającą z wieku owocnika, wilgotności podłoża oraz oświetlenia scenerii leśnej. W przeciwieństwie do zadań klasyfikacji gruboziarnistej, w których klasy różnią się istotnie w przestrzeni cech wysokopoziomowych, granice decyzyjne pomiędzy gatunkami bliźniaczymi bywają wąskie i nieliniowe, a błąd predykcji koncentruje się właśnie w ich sąsiedztwie. Zwiększenie liczby klas z rzędu kilkudziesięciu do $147$ pogłębia to zjawisko, ponieważ przestrzeń cech musi jednocześnie separować znacznie więcej par potencjalnie mylonych taksonów, co wymaga architektury o odpowiednio dużej pojemności reprezentacyjnej — zagadnienie to rozwinięto w rozdziale \ref{chap:przeglad_rozwiazan}.
+
+\subsection{Uzasadnienie wyboru detekcji wieloobiektowej}
+Naturalnym podejściem do rozpoznawania gatunku grzyba na podstawie obrazu wydaje się klasyfikacja całego obrazu (ang. \textit{image classification}), przypisująca pojedynczą etykietę klasy do całej sceny. Podejście to zakłada jednak obecność dokładnie jednego dominującego obiektu w kadrze i traci użyteczność w typowym scenariuszu domowym, w którym zebrane owocniki są rozkładane obok siebie na stole lub w koszu. W takich warunkach kilka egzemplarzy, potencjalnie należących do różnych gatunków, występuje jednocześnie w jednym kadrze, a ich fragmenty wzajemnie się przysłaniają i nakładają na siebie, co uniemożliwia poprawne przypisanie jednej etykiety do całego obrazu.
+
+Rozwiązaniem tego problemu jest detekcja wieloobiektowa (ang. \textit{multi-object detection}), która jednocześnie lokalizuje każdy owocnik za pomocą ramki otaczającej oraz przypisuje mu odrębną klasę gatunkową. Rozwiązanie takie pozwala na indywidualną ocenę każdego egzemplarza w scenie i --- co ważne w kontekście bezpieczeństwa --- na selektywne oznaczenie obiektów sklasyfikowanych jako trujące. Ponieważ narzędzie ma działać na strumieniu obrazu z kamery w czasie rzeczywistym, wybrano jednoprzebiegowy detektor z rodziny YOLO (ang. \textit{You Only Look Once}), której pierwotna koncepcja realizuje detekcję jako pojedyncze przejście sieci neuronowej i zapewnia wysoką przepustowość przetwarzania \cite{redmon2016yolo}. Jako model bazowy przyjęto architekturę YOLO11 Medium (\texttt{YOLO11m}), stanowiącą kompromis pomiędzy dokładnością a kosztem obliczeniowym, adekwatny do ograniczeń urządzeń mobilnych przy zadaniu rozróżniania wielu gatunków \cite{ultralytics2024yolo11}.
+
+\subsection{Konieczność działania w trybie offline}
+Całkowita niezależność od sieci to wymaganie twarde, nie preferencja. Grzybobranie odbywa się z reguły w głębi lasu, gdzie zasięg GSM i LTE bywa ograniczony albo zerowy. W takich warunkach rozwiązania oparte na architekturze klient–serwer, przesyłające obraz do zdalnego interfejsu chmurowego (ang. \textit{cloud-based API}), stają się bezużyteczne dokładnie w tym miejscu i momencie, gdy są najbardziej potrzebne.
+
+Dlatego przyjęto, że cały proces inferencji musi być realizowany lokalnie, na urządzeniu użytkownika (ang. \textit{on-device inference}). Wymóg ten narzuca dodatkowe ograniczenia dotyczące rozmiaru modelu oraz zapotrzebowania na pamięć i moc obliczeniową. Podporządkowano im dobór architektury sieci oraz proces jej optymalizacji. Aby umożliwić efektywne uruchomienie modelu na sprzęcie mobilnym, przeprowadzono jego konwersję do formatu TensorFlow Lite z zastosowaniem kwantyzacji wag \cite{tflite}; szczegóły podano w rozdz.~\ref{chap:implementacja}.
+
+\section{Cel i zakres pracy}
+Celem pracy jest zaprojektowanie, implementacja i ewaluacja autonomicznego systemu detekcji oraz klasyfikacji gatunków grzybów na platformie Android --- w czasie rzeczywistym i offline. Realizacja obejmuje model uczenia maszynowego oraz aplikację mobilną gotową do użycia w terenie.
+
+Osiągnięcie celu głównego wymagało zrealizowania następujących zadań szczegółowych:
+\begin{enumerate}[label=\textbf{Z\arabic*.}]
+    \item \textbf{Opracowanie i wytrenowanie modelu detekcji} wieloobiektowej YOLO11m obejmującego $147$ gatunków grzybów, zwłaszcza par gatunków bliźniaczych, przy wykorzystaniu uczenia transferowego na bazie wag wstępnie wytrenowanych na zbiorze COCO \cite{lin2014coco};
+    \item \textbf{Zaprojektowanie półautomatycznego potoku anotacji} zbioru danych z wykorzystaniem modelu wizyjno-językowego GroundingDINO \cite{liu2023grounding}, ograniczającego pracochłonność ręcznego etykietowania ramek otaczających;
+    \item \textbf{Przeprowadzenie optymalizacji i konwersji modelu} do postaci umożliwiającej lokalną inferencję na urządzeniu mobilnym, obejmującej dwuetapową ścieżkę PyTorch~$\rightarrow$~TensorFlow SavedModel~$\rightarrow$~TensorFlow Lite oraz dobór precyzji numerycznej FP16;
+    \item \textbf{Zintegrowanie modelu z natywną aplikacją} systemu Android, napisaną w języku Kotlin z wykorzystaniem biblioteki CameraX oraz deklaratywnego interfejsu Jetpack Compose, wraz z implementacją asymetrycznej, programowej logiki bezpieczeństwa;
+    \item \textbf{Przeprowadzenie ilościowej oceny skuteczności} rozwiązania na izolowanym zbiorze testowym, z naciskiem na wykrywalność gatunków trujących oraz macierz ryzyka bezpieczeństwa mykologicznego.
+\end{enumerate}
+
+Zakres pracy obejmuje stworzenie kompletnego potoku przetwarzania danych (ang. \textit{machine learning pipeline}), automatyzację procesu anotacji zbioru danych z wykorzystaniem modelu GroundingDINO \cite{liu2023grounding}, trening głębokiej sieci neuronowej YOLO11 Medium (\texttt{YOLO11m}), jej konwersję do formatów ONNX oraz TensorFlow Lite, a także integrację zoptymalizowanego modelu z aplikacją mobilną wykorzystującą interfejs CameraX. Poza zakresem pracy pozostają zagadnienia mykologiczne wykraczające poza identyfikację wizualną, takie jak analiza chemiczna czy mikroskopowa cech diagnostycznych owocników.
+
+\section{Hipotezy badawcze}
+Realizację celu głównego oparto na dwóch hipotezach badawczych, weryfikowanych ilościowo w rozdziale \ref{chap:badania}:
+\begin{description}[topsep=2pt,itemsep=2pt]
+    \item[$H_1$] Jednoprzebiegowa detekcja wieloobiektowa YOLO11m w precyzji FP16 umożliwia autonomiczną identyfikację $147$ gatunków grzybów w czasie rzeczywistym na urządzeniu mobilnym, bez dostępu do sieci.
+    \item[$H_2$] Programowa, asymetryczna logika progów decyzyjnych ($0{,}18$ dla klas trujących, $0{,}60$ dla klas jadalnych), zastosowana w połączeniu z buforem konsensusu klatek, istotnie redukuje wskaźnik krytycznego ryzyka (CFPR) do poziomu poniżej $1{,}5\%$.
+\end{description}
+Hipoteza $H_1$ dotyczy warstwy algorytmiczno-sprzętowej: weryfikuje się ją pomiarem $mAP$, precyzji, czułości na zbiorze testowym oraz profilowaniem opóźnień (rozdz. \ref{chap:badania}). Hipoteza $H_2$ odnosi się do warstwy decyzyjnej aplikacji i jest sprawdzana przez macierz ryzyka oraz współczynnik CFPR (rozdz. \ref{chap:badania}, sek. \ref{sec:safety_matrix}). Rozdzielenie hipotez odzwierciedla dwustopniową architekturę pracy: skuteczność sieci jest warunkiem koniecznym, lecz niewystarczającym --- warstwa progów decyzyjnych (rozdz. \ref{chap:projekt_systemu}) zapewnia warunek wystarczający dla bezpieczeństwa użytkownika.
+
+\section{Układ pracy}
+Praca składa się z sześciu rozdziałów, zgodnych z kolejnością prac nad projektem. Rozdział bieżący przedstawia motywację, cel i zakres. W rozdziale drugim omówiono stan wiedzy: aplikacje mobilne do identyfikacji grzybów, metody detekcji i klasyfikacji obiektów oraz optymalizację modeli pod urządzenia o ograniczonych zasobach. Trzeci rozdział dotyczy projektu systemu --- wymagań funkcjonalnych i niefunkcjonalnych oraz doboru architektury.
+
+Czwarty opisuje implementację: przygotowanie danych, anotację, uczenie, konwersję modelu i aplikację mobilną. Piąty zawiera badania skuteczności i wydajności, w tym analizę gatunków bliźniaczych. Rozdział szósty podsumowuje wyniki i wskazuje kierunki dalszych prac.
+
+
+\chapter{Przegląd istniejących rozwiązań}\label{chap:przeglad_rozwiazan}
+Autonomiczny system identyfikacji owocników na urządzeniu wbudowanym wymaga uprzedniego przeglądu trzech obszarów: dostępnych aplikacji, metod detekcji i klasyfikacji w obrazie oraz technik dostosowania modeli do ograniczonego sprzętu. Takie tło pozwala ocenić istniejące podejścia, wskazać ich ograniczenia i uzasadnić decyzje projektowe omówione dalej.
+
+\section{Analiza istniejących aplikacji mobilnych}
+Dwie aplikacje wyznaczają górną granicę możliwości komercyjnych rozwiązań. iNaturalist \cite{inaturalist} gromadzi miliony obserwacji przyrodniczych i klasyfikuje je modelami trenowanymi na tej samej skali; Picture Mushroom \cite{picturemushroom} zawęża zakres do grzybów i osiąga imponującą trafność dla zdjęć studyjnych. Obie buduje się jednak na tym samym założeniu: smartfon to tylko aparat. Obraz wędruje na serwer, tam model inferuje i wraca wynik.
+
+Ten wzorzec klient–serwer sprawdza się w parku z LTE. W lesie LTE zwykle nie ma. Polskie kompleksy leśne — Puszcza Białowieska, Bory Tucholskie, lasy Sudetów — to typowe tereny grzybobrania i typowe martwe strefy GSM. W głębi drzewostanu sygnał jest słaby albo go nie ma wcale. Gdy grzybiarz wyciąga telefon nad znaleziskiem, chmura mu nie odpowie.
+
+Trzy konsekwencje tego wzorca są bezpośrednio szkodliwe dla scenariusza terenowego:
+\begin{itemize}
+    \item aplikacja traci funkcjonalność dokładnie tam, gdzie jest najbardziej potrzebna — w lesie bez zasięgu GSM/LTE,
+    \item dwukierunkowa transmisja zdjęcia wysokiej rozdzielczości wyklucza analizę strumienia wideo w czasie rzeczywistym,
+    \item żadna z aplikacji nie obsługuje jednoczesnej detekcji wielu owocników w kadrze — jedno zdjęcie, jeden wynik.
+\end{itemize}
+
+Porównanie właściwości aplikacji komercyjnych i systemu opracowanego w tej pracy zestawiono w tab.~\ref{tab:aplikacje_porownanie}. Porównanie prowadzono według pięciu kryteriów istotnych dla scenariusza terenowego: modelu wykonania inferencji, dostępności bez łączności sieciowej, zdolności do analizy strumienia wideo, obsługi wielu obiektów w jednym kadrze oraz obecności dedykowanej warstwy sygnalizacji ryzyka toksykologicznego.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Porównanie funkcjonalne popularnych aplikacji identyfikacyjnych z systemem opracowanym w pracy. Źródło: opracowanie własne na podstawie \cite{inaturalist, picturemushroom}.}
+    \label{tab:aplikacje_porownanie}
+    \begin{tabular}{|p{4.1cm}|c|c|c|}
+        \hline
+        \textbf{Kryterium} & \textbf{iNaturalist} & \textbf{Picture Mushroom} & \textbf{System własny} \\
+        \hline \hline
+        Model wykonania inferencji & klient--serwer & klient--serwer & na urządzeniu \\
+        \hline
+        Praca bez dostępu do sieci & nie & nie & tak \\
+        \hline
+        Analiza strumienia wideo & nie & nie & tak ($4$\,FPS) \\
+        \hline
+        Wiele obiektów w kadrze & nie & nie & tak \\
+        \hline
+        Warstwa ostrzegania toksykologicznego & brak & informacyjna & asymetryczna \\
+        \hline
+    \end{tabular}
+\end{table}
+
+Chmura zawodzi dokładnie w środowisku, dla którego narzędzie jest projektowane. Dlatego w tej pracy przyjęto odwrotny paradygmat: przetwarzanie krawędziowe (ang. \textit{edge AI}), gdzie cały model działa lokalnie na urządzeniu. To oznacza konieczność zmieszczenia wystarczająco dobrego detektora w budżecie pamięci i mocy obliczeniowej smartfona — techniki tego dostosowania opisano w kolejnych podrozdziałach.
+
+\section{Przegląd metod detekcji i klasyfikacji obiektów}
+Głębokie sieci neuronowe zastąpiły ręcznie projektowane deskryptory obrazu — ich zdolność do hierarchicznej ekstrakcji cech pozwala odróżnić blaszki muchomora od blaszek pieczarki bez jawnego kodowania zasad mykologii. Poniżej opisano różnicę między klasyfikacją a detekcją, porównano rodziny detektorów i uzasadniono dobór architektury zastosowanej w pracy.
+
+\subsection{Splotowe sieci neuronowe i transformatory}
+Splotowe sieci neuronowe (CNN) działają na operacji splotu obrazu z wyuczalnymi filtrami \cite{lecun1998gradient}. Pierwsze warstwy wychwytują krawędzie i tekstury, głębsze składają je w coraz bardziej abstrakcyjne cechy — aż do poziomu rozróżnialnego gatunkowo układu blaszek czy faktury kapelusza. Współdzielenie wag nadaje niezmienniczość translacyjną, a pooling redukuje wymiarowość. Klasyczną ilustrację tej hierarchii pokazuje rys.~\ref{fig:lenet5_web} z architekturą LeNet-5 \cite{lecun1998gradient}. Połączenia rezydualne (ResNet) usunęły barierę zanikającego gradientu i umożliwiły efektywne uczenie sieci o dziesiątkach warstw \cite{he2016resnet}.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.85\textwidth]{lenet5_official}
+    \caption{Architektura klasycznej splotowej sieci neuronowej LeNet-5. Źródło: \cite{lecun1998gradient}.}
+    \label{fig:lenet5_web}
+\end{figure}
+
+Transformatory wizyjne (ViT) \cite{dosovitskiy2021vit} zaadaptowały mechanizm samouwagi (ang. \textit{self-attention}) z NLP \cite{vaswani2017attention} do analizy obrazu. Samouwaga modeluje globalne zależności między odległymi fragmentami obrazu, czego sieć splotowa z ograniczonym polem receptywnym nie zrobi tanio. W detekcji obiektów mechanizmy uwagi działają w rodzinie DETR, na której opiera się model GroundingDINO \cite{liu2023grounding} — kluczowy dla auto-anotacji w tej pracy.
+
+\subsection{Detekcja otwartego słownika: GroundingDINO}
+YOLO zna tylko klasy, które dostał w treningu. Do budowy zbioru to fatalna cecha: trzeba najpierw narysować dziesiątki tysięcy ramek, zanim w ogóle ruszy uczenie gatunków. Ręczne BBOX-y dla ok.\ $64\,000$ instancji w tym projekcie byłyby nierealne w skali pracy inżynierskiej.
+
+GroundingDINO omija ten impas \cite{liu2023grounding}. To detektor otwartego słownika: zamiast indeksu klasy dostaje tekst. Enkoder Swin patrzy na obraz, BERT czyta frazę, a \textit{cross-modality attention} liczy zgodność regionu z tekstem (rys.~\ref{fig:grounding_dino_web}). W potoku anotacji zapytanie brzmiało po prostu \texttt{"mushroom"}. Model wskazywał owocnik bez wiedzy, czy to borowik, czy muchomor --- gatunek brał się z folderu iNaturalist, nie z głowicy. Zero-shotowa lokalizacja oddzieliła „gdzie jest grzyb” od „jaki to gatunek”. Bez tego zbioru $147$ klas nie byłoby.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.95\textwidth]{grounding_dino_arch_official}
+    \caption{Architektura detektora otwartego słownika Grounding DINO. Źródło: \cite{liu2023grounding, ideacvr2024grounding}.}
+    \label{fig:grounding_dino_web}
+\end{figure}
+
+\subsection{Klasyfikacja obrazu a detekcja wieloobiektowa}
+Klasyfikator widzi cały kadr — i wydaje jeden werdykt. Formalnie odwzorowanie takie przypisuje obrazowi jedną etykietę spośród $K$ klas:
+\begin{equation}
+f_{\mathrm{cls}}:\; \mathbb{R}^{H\times W\times C} \rightarrow \{1, 2, \dots, K\},
+\end{equation}
+gdzie:
+\begin{description}[topsep=2pt,itemsep=-3pt]
+  \item[$H, W, C$] wysokość, szerokość oraz liczba kanałów obrazu wejściowego;
+  \item[$K$] liczba rozpoznawanych klas.
+\end{description}
+Softmax zamienia wynikowy wektor logitów w rozkład prawdopodobieństwa, a odpowiedzią jest klasa o najwyższym wyniku. Jeden kadr, jedna odpowiedź. Nie ma mowy o położeniu. Nie ma mowy o kilku gatunkach jednocześnie — a dokładnie taki jest las: kosz, w którym leżą kurka, podgrzybek i niejadalna gołąbka naraz.
+
+Detekcja wieloobiektowa rozrywa to ograniczenie. Wynikiem nie jest etykieta, lecz zbiór krotek:
+\begin{equation}
+f_{\mathrm{det}}:\; \mathbb{R}^{H\times W\times C} \rightarrow \big\{(\mathbf{b}_i, c_i, s_i)\big\}_{i=1}^{N},
+\end{equation}
+gdzie:
+\begin{description}[topsep=2pt,itemsep=-3pt]
+  \item[$\mathbf{b}_i$] ramka otaczająca (BBOX) $i$-tego obiektu, opisana wektorem współrzędnych $(x_i, y_i, w_i, h_i)$;
+  \item[$c_i$] etykieta klasy przypisana obiektowi;
+  \item[$s_i$] wartość pewności detekcji (ang. \textit{confidence score});
+  \item[$N$] liczba wykrytych obiektów.
+\end{description}
+Miarą jakości dopasowania ramki predykowanej $B_p$ do ramki referencyjnej $B_{gt}$ jest współczynnik przecięcia nad sumą (IoU), zdefiniowany jako:
+\begin{equation}
+\mathrm{IoU}(B_p, B_{gt}) = \frac{\lvert B_p \cap B_{gt} \rvert}{\lvert B_p \cup B_{gt} \rvert}.
+\end{equation}
+Jeden owocnik, jedna ramka i etykieta — rys.~\ref{fig:class_vs_det_web} pokazuje obie koncepcje obok siebie. Klasyfikator wydaje jeden werdykt na cały kadr; detektor opisuje każdy obiekt z osobna. W kępie opieńki (\textit{Armillaria mellea}), gdzie kilkanaście trzonów styka się w ściółce, tylko detekcja pozwala odróżnić jadalny owocnik od sąsiedniego, który nim nie jest.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{classification_vs_detection_official}
+    \caption{Porównanie klasyfikacji całego obrazu a detekcji wieloobiektowej. Źródło: \cite{labelyourdata2023, ultralyticsdetect}.}
+    \label{fig:class_vs_det_web}
+\end{figure}
+
+Trening od zera na $147$ gatunkach zniszczyłby budżet czasu i VRAM. Dlatego wagi startują z COCO, a dostrajanie rusza głowicę i wyższe warstwy przy zamrożonym dole szkieletu \cite{alhadhrami2018transfer, lin2014coco}. Rys.~\ref{fig:transfer_learning_web} pokazuje tę logikę: niskopoziomowe filtry krawędzi zostają, głowica uczy się mykologii. W pracy: \texttt{yolo11m.pt} + \texttt{freeze=10} (rozdz.~\ref{chap:implementacja}).
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.85\textwidth]{transfer_learning_official}
+    \caption{Schemat uczenia transferowego z zamrożonym szkieletem. Źródło: \cite{alhadhrami2018transfer, mdpi2022rs}.}
+    \label{fig:transfer_learning_web}
+\end{figure}
+
+\subsection{Detektory dwuetapowe i jednoetapowe}
+Dwa przejścia sieci lub jedno — tyle się sprowadza podział rodzin detekcyjnych. Faster R-CNN \cite{ren2015fasterrcnn} generuje najpierw propozycje regionów, potem dopiero klasyfikuje i prostuje ramki. Precyzja wysoka; koszt wysoki. Na serwerze z GPU to akceptowalny kompromis. Na Snapdragonie 8 Gen 2 w lesie — nie. Setki megabajtów, dwa przebiegi na klatkę, thermal throttling po kilku minutach.
+
+Detektory jednoetapowe — SSD \cite{liu2016ssd} i cała rodzina YOLO \cite{redmon2016yolo} — regresują ramki i klasy bezpośrednio na siatce obrazu w jednym przebiegu. Jeden tensor wyjściowy. Przewidywalne opóźnienie. Model mieszczący się w kilkudziesięciu megabajtach flash.
+
+Tab.~\ref{tab:detektory} zestawia obie rodziny. Dla aplikacji AR na Snapdragonie wybór jest oczywisty.
+
+\begin{table}[h!]
+    \centering
+    \caption{Porównanie detektorów dwuetapowych i jednoetapowych. Źródło: opracowanie własne na podstawie \cite{ren2015fasterrcnn, redmon2016yolo, liu2016ssd}}
+    \label{tab:detektory}
+    \begin{tabular}{|l|c|c|}
+        \hline
+        \textbf{Kryterium} & \textbf{Dwuetapowe} & \textbf{Jednoetapowe} \\
+        \hline \hline
+        Reprezentatywny model & Faster R-CNN & YOLO, SSD \\
+        \hline
+        Liczba przebiegów sieci & dwa & jeden \\
+        \hline
+        Dokładność detekcji & bardzo wysoka & wysoka \\
+        \hline
+        Szybkość inferencji & niska & bardzo wysoka \\
+        \hline
+        Przydatność na urządzeniach mobilnych & ograniczona & wysoka \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\subsection{Ewolucja architektury YOLO}
+Redmon i wsp. w 2016 roku postawili jedną tezę: detekcja to regresja na siatce — jeden przebieg wystarczy \cite{redmon2016yolo}. Teza słuszna. Przez osiem lat kolejne generacje zmniejszały lukę wobec detektorów dwuetapowych bez rezygnacji z tej zasady: YOLOv3 dołożył predykcję wieloskalową \cite{redmon2018yolov3}, YOLOv8 usunął kotwice i ujednolicił API Ultralytics \cite{ultralytics2023yolov8}, YOLO11 przeprojektował szkielet i szyję \cite{ultralytics2024yolo11}.
+
+Historia wersji jest tu mniej istotna niż jeden konkretny wniosek inżynierski: YOLO11m z $\approx20{,}1$~mln parametrów mieści się w budżecie TFLite FP16 ($38{,}58$~MB) i jest wystarczająco głęboki, by odróżniać 147 gatunków bliźniaczych — łącznie z parami takimi jak \textit{Amanita phalloides}/\textit{Amanita citrina} czy \textit{Galerina marginata}/\textit{Kuehneromyces mutabilis}. Nano jest za płytki — ablacja to dokumentuje (rozdz.~\ref{chap:badania}). Large przekracza budżet RAM i opóźnienia na Snapdragonie.
+
+Współczesne architektury YOLO dzielą się funkcjonalnie na trzy zasadnicze części:
+\begin{itemize}
+    \item szkielet (ang. \textit{backbone}), będący siecią splotową odpowiedzialną za ekstrakcję hierarchicznych map cech z obrazu wejściowego,
+    \item szyję (ang. \textit{neck}), agregującą cechy z różnych poziomów rozdzielczości, najczęściej z wykorzystaniem struktury piramidy cech typu PANet,
+    \item głowicę (ang. \textit{head}), generującą końcowe predykcje ramek oraz klas, w nowszych wersjach w wariancie bezkotwicowym (ang. \textit{anchor-free}).
+\end{itemize}
+
+Oficjalny schemat Ultralytics (rys.~\ref{fig:yolo11_web}) pokazuje ten podział wprost: wejście $640\times640\times3$ przechodzi przez szkielet z blokami \texttt{Conv}/\texttt{C3k2}, następnie przez szyję z \texttt{SPPF}, \texttt{C2PSA}, \texttt{Upsample} i \texttt{Concat}, a trzy gałęzie \texttt{Detect} na skalach $80\times80$, $40\times40$ i $20\times20$ zasilają zadania Object Detection \cite{ultralytics2024yolo11}.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.95\textwidth]{yolo11_arch_official}
+    \caption{Struktura detektora YOLO11 z podziałem na Backbone, Neck i Decoupled Head. Źródło: \cite{ultralytics2024yolo11, yolo11archfig}.}
+    \label{fig:yolo11_web}
+\end{figure}
+
+Trzyskalowa głowica nie jest ozdobą diagramu --- to odpowiedź na geometrię owocników. Mapa $80\times80$ łapie drobne kapelusze i młode owocniki na ściółce; $40\times40$ obejmuje typowy rozmiar w kadrze telefonu; $20\times20$ obejmuje duże skupiska, np.\ kępy opieńki miodowej (\textit{Armillaria mellea}), gdzie wiele trzonów styka się i nakłada. Bez fuzji skal model albo sklejałby sąsiednie owocniki w jedną ramkę, albo gubił drobne okazy między liśćmi.
+
+Szkielet oparto na blokach \texttt{C3k2} (ang. \textit{Cross Stage Partial with 2 kernels}) --- wariancie CSP z dwoma ścieżkami cech i lekkimi splotami \cite{ultralytics2024yolo11}. Jedna ścieżka liczy, druga omija część transformacji; wynik jest konkatenowany. Mniej redundantnego gradientu, mniej parametrów, a tekstury blaszek i łusek nadal przechodzą wyżej. Moduł \texttt{SPPF} na dnie szkieletu zbiera kontekst przestrzenny sekwencyjnym max-poolingiem zamiast kilku równoległych jąder SPP --- taniej obliczeniowo przy podobnym zasięgu recepcji. Blok \texttt{C2PSA} w szyi dokłada uwagę przestrzenną przed rozesłaniem cech do trzech detektorów.
+
+Głowica YOLO11 jest bezkotwicowa i rozłączna: regresja ramki i klasyfikacja gatunku idą osobnymi podsieciami na tej samej mapie cech. Wspólna głowica w starszych YOLO pchała gradient lokalizacji przeciwko gradientowi klasy --- tu konflikt jest mniejszy \cite{ultralytics2024yolo11}. Brak kotwic oznacza też brak ręcznego doboru \textit{anchor boxes} pod wąskie trzony i płaskie kapelusze; sieć regresuje ramkę względem środka komórki siatki.
+
+Trzy człony budują łączną stratę: geometria ramki, precyzja brzegów i klasyfikacja gatunkowa. Geometrię obsługuje Complete IoU (CIoU) — klasyczne IoU to za mało, bo nie karze za przesunięty środek ani złe proporcje \cite{ultralytics2024yolo11}:
+\begin{equation}
+\mathcal{L}_{\mathrm{CIoU}} = 1 - \mathrm{IoU} + \frac{\rho^2(b, b^{gt})}{c^2} + \alpha v,
+\end{equation}
+gdzie:
+\begin{description}[topsep=2pt,itemsep=-3pt]
+  \item[$\rho^2(b, b^{gt})$] kwadrat odległości euklidesowej pomiędzy środkami ramki predykowanej $b$ i referencyjnej $b^{gt}$;
+  \item[$c$] przekątna najmniejszego prostokąta otaczającego obie ramki;
+  \item[$v$] człon penalizujący niezgodność współczynnika proporcji (ang. \textit{aspect ratio}):
+\end{description}
+\begin{equation}
+v = \frac{4}{\pi^2} \left( \arctan\frac{w^{gt}}{h^{gt}} - \arctan\frac{w}{h} \right)^2,
+\end{equation}
+gdzie $\alpha$ jest współczynnikiem wagowym równoważącym wpływ członu $v$ względem członu przecięcia, wyznaczanym adaptacyjnie jako:
+\begin{equation}
+\alpha = \frac{v}{(1-\mathrm{IoU}) + v}.
+\end{equation}
+Trzy sygnały w jednej liczbie. Człon $v$ z arcustangensami rozróżnia smukły trzon maślaka od płaskiego kapelusza koźlarza — dokładnie ta geometria decyduje o parach bliźniaczych. Gdy ramki się nie nakładają, gradient klasycznego IoU zanika; CIoU podtrzymuje sygnał przez $\rho^2/c^2$ i skraca pierwsze, powolne epoki treningu \cite{ultralytics2024yolo11}. Geometrię $\rho$ i $c$ ilustruje rys.~\ref{fig:ciou_geometria}.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[scale=1.0]
+        % najmniejszy prostokat otaczajacy obie ramki
+        \draw[dashed, gray] (0,0) rectangle (6.2,3.8);
+        \draw[dashed, gray, thick] (0,0) -- (6.2,3.8);
+        \node[gray, font=\small] at (4.55,1.35) {$c$};
+
+        % ramka referencyjna
+        \draw[EEUltramarine, very thick] (0,0) rectangle (3.6,2.6);
+        \fill[EEUltramarine] (1.8,1.3) circle (2pt);
+        \node[EEUltramarine, font=\small, anchor=south west] at (0.1,0.1) {$b^{gt}$};
+
+        % ramka predykowana
+        \draw[EETangerine, very thick] (2.6,1.2) rectangle (6.2,3.8);
+        \fill[EETangerine] (4.4,2.5) circle (2pt);
+        \node[EETangerine, font=\small, anchor=north east] at (6.1,3.7) {$b$};
+
+        % odleglosc srodkow
+        \draw[-latex, semithick] (1.8,1.3) -- (4.4,2.5);
+        \node[font=\small, anchor=south east] at (3.35,1.78) {$\rho$};
+
+        % wymiary
+        \draw[|-|, gray] (0,-0.35) -- node[below, font=\scriptsize, gray] {$w^{gt}$} (3.6,-0.35);
+        \draw[|-|, gray] (-0.35,0) -- node[left, font=\scriptsize, gray] {$h^{gt}$} (-0.35,2.6);
+        \draw[|-|, gray] (2.6,4.15) -- node[above, font=\scriptsize, gray] {$w$} (6.2,4.15);
+        \draw[|-|, gray] (6.55,1.2) -- node[right, font=\scriptsize, gray] {$h$} (6.55,3.8);
+    \end{tikzpicture}
+    \caption{Interpretacja geometryczna składników miary CIoU: odległość środków ramek $\rho$, przekątna $c$ najmniejszego prostokąta otaczającego obie ramki oraz wymiary wykorzystywane w członie proporcji $v$. Źródło: opracowanie własne.}
+    \label{fig:ciou_geometria}
+\end{figure}
+
+Precyzję krawędzi ramki podnosi DFL (\textit{Distribution Focal Loss}): zamiast regresować jedną liczbę, sieć modeluje każdą współrzędną jako rozkład dyskretny na sąsiednich węzłach \cite{ultralytics2024yolo11}:
+\begin{equation}
+\mathcal{L}_{\mathrm{DFL}}(\mathcal{S}_i, \mathcal{S}_{i+1}) = -\big(y_{i+1}-y\big)\log(\mathcal{S}_i) - \big(y - y_i\big)\log(\mathcal{S}_{i+1}),
+\end{equation}
+$y$ to rzeczywista współrzędna krawędzi, $y_i$/$y_{i+1}$ — sąsiednie węzły dyskretyzacji, $\mathcal{S}_i$/$\mathcal{S}_{i+1}$ — prognozowane prawdopodobieństwa przynależności. Interpolacja liniowa odtwarza wartość ciągłą z zachowaniem różniczkowalności. CIoU i DFL tworzą człon lokalizacyjny; Binary Cross-Entropy obsługuje klasyfikację gatunkową. Trzy składniki, jedna funkcja celu.
+
+Inferencja: YOLO11m produkuje tysiące nakładających się kandydatów. NMS iteracyjnie wybiera ramkę o najwyższej pewności, odrzuca wszystkie pokrywające się z nią powyżej progu IoU i powtarza. Jeden owocnik — jedna ramka wynikowa.
+
+\section{Metody optymalizacji modeli dla urządzeń mobilnych}
+Model wytrenowany na RTX~4070 musi działać na Snapdragonie bez serwera, bez chłodzenia i bez degradacji po godzinie w terenie. To nie jest proste skalowanie. Poniżej opisano ograniczenia sprzętowe telefonu, logikę kwantyzacji oraz drogę formatu modelu od PyTorch do pliku \texttt{.tflite} w pamięci flash.
+
+\subsection{Ograniczenia sprzętowe urządzeń mobilnych}
+Snapdragon nie jest RTX-em. Urządzenie mobilne dysponuje kilkoma gigabajtami RAM, ograniczoną przepustowością magistrali pamięci i nie posiada aktywnego chłodzenia — SoC po kilku minutach intensywnych obliczeń wchodzi w thermal throttling. Model musi zatem być mały i rzadko aktywowany. Stąd decyzja o FP16 i ograniczeniu inferencji do 4~FPS.
+
+\subsection{Kwantyzacja potreningowa}
+Podstawową techniką dostosowania wytrenowanego modelu do platformy mobilnej jest kwantyzacja potreningowa (ang. \textit{post-training quantization}, PTQ), polegająca na zastąpieniu 32-bitowej reprezentacji zmiennoprzecinkowej wag i aktywacji reprezentacją o mniejszej liczbie bitów \cite{jacob2018quantization}. Odwzorowanie wartości rzeczywistej na wartość skwantowaną opisuje przekształcenie afiniczne:
+\begin{equation}
+r = S\,(q - Z),
+\end{equation}
+gdzie:
+\begin{description}[topsep=2pt,itemsep=-3pt]
+  \item[$r$] pierwotna wartość zmiennoprzecinkowa;
+  \item[$q$] odpowiadająca jej wartość całkowitoliczbowa;
+  \item[$S$] dodatni współczynnik skali (ang. \textit{scale});
+  \item[$Z$] przesunięcie punktu zerowego (ang. \textit{zero-point}).
+\end{description}
+Współczynnik skali dla reprezentacji $n$-bitowej wyznacza się na podstawie zakresu wartości pierwotnych zgodnie z zależnością:
+\begin{equation}
+S = \frac{r_{\max} - r_{\min}}{2^{n} - 1}.
+\end{equation}
+
+Kwantyzacja całkowitoliczbowa, opisana powyższym przekształceniem afinicznym, różni się fundamentalnie od redukcji precyzji w obrębie samej reprezentacji zmiennoprzecinkowej. Liczba zmiennoprzecinkowa w formacie IEEE~754 jest reprezentowana jako:
+\begin{equation}
+x = (-1)^{s} \cdot 2^{\,e-\mathrm{bias}} \cdot \left(1 + \frac{m}{2^{p}}\right),
+\end{equation}
+gdzie $s$ oznacza bit znaku, $e$ pole wykładnika, $m$ pole mantysy o precyzji $p$~bitów, a $\mathrm{bias}$ jest przesunięciem wykładnika. FP32: $p=23$ ($\approx1{,}19\times10^{-7}$ względnie). FP16: $p=10$ ($\approx9{,}77\times10^{-4}$). W obu przypadkach błąd rośnie z wielkością liczby. INT8 ma stały krok $S$ na cały zakres warstwy --- małe aktywacje giną w kwancie.
+
+To nie akademicka ciekawostka. Gradienty jasności na blaszkach (\textit{lamellae}) i łuskach kapelusza to właśnie te „małe” sygnały. One oddzielają jadalną czubajkę od trującej czubajeczki i młodego muchomora od pieczarki. INT8 je spłaszcza. W testach eksportu widać było też \textit{bounding box corruption}: ramki na drobnych owocnikach „pływały”, bo współrzędne ciągłe nie znoszą grubego kwantu.
+
+FP16 dla YOLO11m daje artefakt $\approx38{,}58$\,MB --- połowa FP32, bez rzezi cech. INT8 schodziłby w okolice $20$\,MB i szybciej na NPU, ale przy parach bliźniaczych ten zysk jest za drogi. Stąd decyzja produkcyjna: tylko FP16.
+
+Różnicę w podziale przestrzeni bitowej pomiędzy trzema rozważanymi reprezentacjami zilustrowano na rys.~\ref{fig:bity_formatow}. Redukcja FP32~$\rightarrow$~FP16 zachowuje strukturę zmiennoprzecinkową i skraca zarówno pole wykładnika, jak i mantysy, natomiast przejście do INT8 całkowicie eliminuje pole wykładnika, zastępując skalowanie wykładnicze pojedynczym, stałym dla całej warstwy współczynnikiem $S$.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[
+        pole/.style={draw, minimum height=7mm, align=center, font=\scriptsize, inner sep=1pt},
+        znak/.style={pole, fill=black!10},
+        wykl/.style={pole, fill=EEBlue!25},
+        mant/.style={pole, fill=EETangerine!30},
+        calk/.style={pole, fill=EEUltramarine!20}
+    ]
+        \def\jb{0.34}
+        % FP32
+        \node[font=\small, anchor=east] at (-0.25,0) {FP32};
+        \node[znak, minimum width=\jb cm]      (a1) at (\jb/2, 0) {$s$};
+        \node[wykl, minimum width=8*\jb cm]    (a2) at (\jb+8*\jb/2, 0) {wykładnik: $8$ b};
+        \node[mant, minimum width=23*\jb cm]   (a3) at (9*\jb+23*\jb/2, 0) {mantysa: $23$ b};
+        \node[font=\scriptsize, anchor=west] at (32*\jb+0.2, 0) {$32$ b};
+
+        % FP16
+        \node[font=\small, anchor=east] at (-0.25,-1.1) {FP16};
+        \node[znak, minimum width=\jb cm]      at (\jb/2, -1.1) {$s$};
+        \node[wykl, minimum width=5*\jb cm]    at (\jb+5*\jb/2, -1.1) {wykł.: $5$ b};
+        \node[mant, minimum width=10*\jb cm]   at (6*\jb+10*\jb/2, -1.1) {mantysa: $10$ b};
+        \node[font=\scriptsize, anchor=west] at (16*\jb+0.2, -1.1) {$16$ b};
+
+        % INT8
+        \node[font=\small, anchor=east] at (-0.25,-2.2) {INT8};
+        \node[calk, minimum width=8*\jb cm]    at (8*\jb/2, -2.2) {liczba całkowita: $8$ b};
+        \node[font=\scriptsize, anchor=west] at (8*\jb+0.2, -2.2) {$8$ b $+$ wspólne $S$, $Z$};
+    \end{tikzpicture}
+    \caption{Podział przestrzeni bitowej w formatach FP32, FP16 oraz INT8. Źródło: opracowanie własne na podstawie \cite{jacob2018quantization}.}
+    \label{fig:bity_formatow}
+\end{figure}
+
+Ilościowe zestawienie właściwości numerycznych trzech rozważanych reprezentacji wag przedstawiono w tab.~\ref{tab:kwantyzacja}. Zestawienie obejmuje szerokość pola mantysy, wynikającą z niej względną precyzję reprezentacji, charakter propagacji błędu kwantyzacji oraz szacunkowy rozmiar artefaktu modelu YOLO11m w danym formacie. Wpływ kwantyzacji na jakość decyzji klasyfikacyjnych ocenia się w kategoriach macierzy pomyłek, której elementy ($TP$, $FP$, $FN$, $TN$) zdefiniowano na rys.~\ref{fig:conf_matrix_web}; miary te wykorzystano później przy ewaluacji bezpieczeństwa mykologicznego w rozdziale \ref{chap:badania}.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.75\textwidth]{confusion_matrix_official}
+    \caption{Definicje macierzy pomyłek (TP, FP, FN, TN). Źródło: \cite{mitfairness2020, evidently2023}.}
+    \label{fig:conf_matrix_web}
+\end{figure}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Porównanie formatów reprezentacji numerycznej wag rozważanych na etapie konwersji modelu. Źródło: opracowanie własne na podstawie \cite{jacob2018quantization, tflite}.}
+    \label{tab:kwantyzacja}
+    \begin{tabular}{|p{3.9cm}|c|c|c|}
+        \hline
+        \textbf{Właściwość} & \textbf{FP32} & \textbf{FP16} & \textbf{INT8} \\
+        \hline \hline
+        Szerokość słowa & $32$\,b & $16$\,b & $8$\,b \\
+        \hline
+        Pole mantysy $p$ & $23$\,b & $10$\,b & --- \\
+        \hline
+        Precyzja względna & $1{,}19\cdot10^{-7}$ & $9{,}77\cdot10^{-4}$ & krok stały $S$ \\
+        \hline
+        Skalowanie błędu & proporcjonalne & proporcjonalne & absolutne \\
+        \hline
+        Rozmiar TFLite (YOLO11m) & $\approx 77$\,MB & $38{,}58$\,MB & $\approx 20$\,MB \\
+        \hline
+        Wymaga kalibracji & nie & nie & tak \\
+        \hline
+        Zastosowanie w pracy & referencja & \textbf{produkcja} & odrzucony \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\subsection{Formaty pośrednie i docelowe modelu}
+PyTorch nie trafia na telefon wprost. Graf obliczeniowy przechodzi przez dwa etapy konwersji. ONNX działa jak uniwersalny pośrednik — oddziela środowisko treningowe od docelowego i pozwala przełączać się między frameworkami \cite{onnx}. Z ONNX — albo bezpośrednio z SavedModel — konwerter \texttt{tf.lite.TFLiteConverter} kompiluje binarny artefakt TFLite, który Interpreter ładuje w czasie wykonania na urządzeniu \cite{tflite}. Tu stosuje się kwantyzację FP16. Schemat ścieżki SavedModel~$\rightarrow$~TFLite FP16 pokazuje rys.~\ref{fig:tflite_flow_web}; wynikowy artefakt \texttt{.tflite} trafia bezpośrednio do aktywów aplikacji Android (rozdz.~\ref{chap:implementacja}).
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{tflite_conversion_flow_official}
+    \caption{Schemat konwersji SavedModel do TFLite FP16. Źródło: \cite{tflite}.}
+    \label{fig:tflite_flow_web}
+\end{figure}
+
+
+\chapter{Projekt systemu rozpoznawania}\label{chap:projekt_systemu}
+\section{Wymagania funkcjonalne i niefunkcjonalne}
+Punkt wyjścia projektu to jeden scenariusz: grzybiarz w Puszczy Białowieskiej, brak LTE, pełny kosz i telefon w dłoni. Wymagania wynikają z tego scenariusza wprost. Funkcjonalne opisują, co aplikacja robi dla użytkownika; niefunkcjonalne — ile zasobów może na to zużyć.
+
+\subsection{Wymagania funkcjonalne}
+Interakcja użytkownika z systemem zamyka się w kilku przypadkach użycia. Aplikacja musi:
+\begin{itemize}
+    \item uruchamiać podgląd obrazu z kamery w czasie rzeczywistym jako główny widok roboczy,
+    \item automatycznie wykrywać wiele owocników jednocześnie w kadrze bez ręcznego wskazywania obiektów przez użytkownika,
+    \item nakładać ramki otaczające (BBOX) z etykietami gatunkowymi w wersji polskiej i łacińskiej,
+    \item generować wyraźne, krytyczne ostrzeżenia wizualne przy wykryciu gatunku trującego — wyróżnione kontrastową barwą względem detekcji jadalnych,
+    \item aktualizować wyniki detekcji na bieżąco wraz ze zmianą obserwowanej sceny.
+\end{itemize}
+Reguła nadrzędna: \textit{safety-first}. Ostrzeżenie o zagrożeniu wyprzedza komfort użytkowania. Lepiej oznaczyć jadalną czubajkę kania jako podejrzaną niż przeoczyć muchomora zielonego. Zakres interakcji przedstawia rys.~\ref{fig:przypadki_uzycia}.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[
+        pu/.style={draw, ellipse, align=center, font=\scriptsize, minimum width=3.2cm,
+                   minimum height=1.0cm, inner sep=1pt, fill=EEBlue!10},
+        rel/.style={-latex, semithick},
+        ext/.style={dashed, -latex, semithick, gray}
+    ]
+        % aktor
+        \draw[semithick] (0,0) circle (0.22);
+        \draw[semithick] (0,-0.22) -- (0,-0.9);
+        \draw[semithick] (-0.4,-0.45) -- (0.4,-0.45);
+        \draw[semithick] (0,-0.9) -- (-0.3,-1.5);
+        \draw[semithick] (0,-0.9) -- (0.3,-1.5);
+        \node[font=\scriptsize, align=center] at (0,-1.9) {Grzybiarz\\(użytkownik)};
+
+        % granica systemu
+        \draw[gray, rounded corners=3pt] (2.0,-4.3) rectangle (10.6,2.1);
+        \node[gray, font=\scriptsize, anchor=north west] at (2.15,2.0) {Aplikacja mobilna};
+
+        \node[pu] (skan) at (5.0,0.9)  {Skanowanie owocników\\w podglądzie kamery};
+        \node[pu] (ostrz) at (5.0,-0.4) {Odbiór ostrzeżenia\\o gatunku trującym};
+        \node[pu] (zapis) at (5.0,-1.7) {Zapis znaleziska\\do historii};
+        \node[pu] (hist) at (5.0,-3.0)  {Przegląd historii\\znalezisk};
+
+        \draw[rel] (0.45,-0.3) -- (skan);
+        \draw[rel] (0.45,-0.6) -- (ostrz);
+        \draw[rel] (0.45,-1.1) -- (zapis);
+        \draw[rel] (0.45,-1.5) -- (hist);
+
+        \node[pu, fill=EETangerine!18] (offl) at (8.6,0.9) {Praca offline};
+        \node[pu, fill=EETangerine!18] (kadr) at (8.6,-1.7) {Kadrowanie\\i zapis miniatury};
+        \draw[ext] (offl) -- node[right, font=\scriptsize, gray, xshift=1pt] {} (skan);
+        \draw[ext] (kadr) -- (zapis);
+        \node[gray, font=\scriptsize, anchor=west] at (6.7,1.55) {};
+    \end{tikzpicture}
+    \caption{Diagram przypadków użycia aplikacji mobilnej; relacje przerywane oznaczają zależności rozszerzające. Źródło: opracowanie własne.}
+    \label{fig:przypadki_uzycia}
+\end{figure}
+
+\subsection{Wymagania niefunkcjonalne}
+Telefon w lesie, bez zasięgu, bateria w połowie. Cztery ograniczenia twarde:
+\begin{itemize}
+    \item \textbf{Offline bezwzględne} — zero odwołań sieciowych; aplikacja działa w martwej strefie GSM/LTE bez degradacji funkcji,
+    \item \textbf{Rozmiar artefaktu poniżej $40$\,MB} — model mieści się w pamięci flash i nie grozi wyrzutem procesu przez Android Low-Memory Killer,
+    \item \textbf{API 24+ (Android 7.0)} — obejmuje zdecydowaną większość urządzeń w obiegu,
+    \item \textbf{Niski pobór energii} — throttling inferencji do $4$\,FPS ogranicza ciepło i chroni baterię podczas kilkugodzinnej pracy w terenie.
+\end{itemize}
+
+Cztery ograniczenia, trzy budżety inżynierskie.
+
+\textbf{Budżet opóźnienia}: poniżej $300$\,ms na cykl detekcji. Wyprowadzono go jako sumę interwału throttlingu ($250$\,ms, czyli $4$\,FPS) i rezerwy $50$\,ms na operacje pomocnicze CameraX: konwersję formatu RGBA i letterboxing do kwadratu $640\times640$. Rzeczywiste opóźnienie end-to-end wyniosło $\approx 20$\,ms — weryfikacja w rozdz.~\ref{chap:badania}.
+
+\textbf{Budżet binarny modelu}: poniżej $40$\,MB. Artefakt TFLite FP16 YOLO11m zajmuje $38{,}58$\,MB. Margines $1{,}42$\,MB chroni przed limitami Android App Bundle i zmniejsza obciążenie transferu przy instalacji w terenie.
+
+\textbf{Budżet RAM}: poniżej $250$\,MB procesu. Składowe: wagi rezydentne ${\approx}39$\,MB + bufor wejściowy $640{\times}640{\times}3{\times}4$\,B~${\approx}4{,}69$\,MB + bufor wyjściowy $151{\times}8400{\times}4$\,B~${\approx}4{,}84$\,MB + bitmapa podglądu CameraX/Compose + narzut ART. Łącznie margines względem domyślnego limitu sterty API~24+ eliminuje ryzyko wyrzutu procesu przez Low-Memory Killer podczas kilkugodzinnej sesji terenowej.
+
+Zbiorcze zestawienie wyprowadzonych budżetów inżynierskich wraz z ich składowymi oraz sposobem weryfikacji przedstawiono w tab.~\ref{tab:budzety}.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Budżety inżynierskie systemu wyprowadzone z wymagań niefunkcjonalnych. Źródło: opracowanie własne.}
+    \label{tab:budzety}
+    \begin{tabular}{|p{2.9cm}|c|p{4.4cm}|p{3.1cm}|}
+        \hline
+        \textbf{Budżet} & \textbf{Limit} & \textbf{Składowe} & \textbf{Weryfikacja} \\
+        \hline \hline
+        Opóźnienie cyklu detekcji & $<300$\,ms & throttling $250$\,ms ($4$\,FPS) $+$ rezerwa $50$\,ms na CameraX & profilowanie potoku (rozdz.~\ref{chap:badania}) \\
+        \hline
+        Rozmiar binarny modelu & $<40$\,MB & artefakt TFLite FP16 $38$--$39$\,MB $+$ margines pakietu & pomiar rozmiaru pliku \\
+        \hline
+        Pamięć operacyjna RAM & $<250$\,MB & wagi $\approx39$\,MB, bufor wejściowy $4{,}69$\,MB, bufor wyjściowy $4{,}84$\,MB, podgląd i ART & profilowanie pamięci procesu \\
+        \hline
+    \end{tabular}
+\end{table}
+
+Trzy budżety, jedno źródło: YOLO11m w formacie TFLite FP16. Dlaczego akurat ten model — uzasadnia kolejny podrozdział.
+
+Sprzęt użyty do treningu i testów mobilnych zestawia tab.~\ref{tab:sprzet}, stos programowy — tab.~\ref{tab:stos_programowy}. Obliczenia treningowe szły wyłącznie na stacji z CUDA; weryfikację inferencji krawędziowej przeprowadzono na fizycznym urządzeniu mobilnym.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Specyfikacja środowiska sprzętowego wykorzystanego w pracy. Źródło: opracowanie własne.}
+    \label{tab:sprzet}
+    \begin{tabular}{|p{3.4cm}|p{4.6cm}|p{4.6cm}|}
+        \hline
+        \textbf{Komponent} & \textbf{Stacja robocza (trening)} & \textbf{Platforma mobilna (test)} \\
+        \hline \hline
+        Jednostka centralna & AMD Ryzen~5~3600, $6$/$12$, $3{,}60$\,GHz & Qualcomm Snapdragon~8 Gen~2 \\
+        \hline
+        Pamięć operacyjna & $32$\,GB DDR4 $3200$\,MHz & $12$\,GB LPDDR5X \\
+        \hline
+        Akcelerator & NVIDIA GeForce RTX~4070, $12$\,GB VRAM & Adreno~740 (delegat GPU) \\
+        \hline
+        Pamięć masowa & $1$\,TB NVMe PCIe Gen4 & pamięć wewnętrzna UFS \\
+        \hline
+        System operacyjny & Windows~11 & Android~14 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Stos programowy zastosowany na poszczególnych etapach realizacji projektu. Źródło: opracowanie własne.}
+    \label{tab:stos_programowy}
+    \begin{tabular}{|p{3.3cm}|p{5.0cm}|p{4.3cm}|}
+        \hline
+        \textbf{Etap potoku} & \textbf{Technologia} & \textbf{Rola w systemie} \\
+        \hline \hline
+        Akwizycja danych & Python $3.11$, \texttt{requests}, \texttt{ThreadPoolExecutor} & pobieranie obserwacji iNaturalist \\
+        \hline
+        Auto-anotacja & GroundingDINO, \texttt{autodistill} & lokalizacja zero-shot owocników \\
+        \hline
+        Trening & PyTorch $2.x$, CUDA~$12.x$, Ultralytics & uczenie transferowe YOLO11m \\
+        \hline
+        Konwersja & TensorFlow, \texttt{tf.lite.TFLiteConverter} & eksport SavedModel $\rightarrow$ TFLite FP16 \\
+        \hline
+        Inferencja mobilna & TensorFlow Lite Interpreter, GpuDelegate & lokalna detekcja na urządzeniu \\
+        \hline
+        Interfejs użytkownika & Kotlin, Jetpack Compose, CameraX & podgląd, nakładka AR, gesty \\
+        \hline
+        Persystencja & Room (SQLite), Kotlin Coroutines & historia znalezisk \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\section{Architektura systemu i dobór sieci neuronowej}
+Budżety z poprzedniego podrozdziału wymuszają konkretne decyzje architektoniczne: jeden przebieg sieci, artefakt poniżej 40 MB, praca offline. Poniżej opisano wynikającą z tych decyzji strukturę systemu i model, który je spełnia.
+
+\subsection{Trójwarstwowa architektura systemu}
+Trzy moduły, trzy odpowiedzialności. CameraX dostarcza klatki i skaluje je do $640\times640$. Interpreter TFLite uruchamia model FP16 i zwraca surowy tensor. Kotlin odrzuca słabe kandydatury, rysuje ramki AR i wyzwala ostrzeżenie toksykologiczne.
+
+Granica offline/runtime przebiega na artefakcie \texttt{.tflite}. Karta graficzna pracuje tylko raz: trening i konwersja na stacji roboczej. Telefon wykonuje wyłącznie inferencję i logikę decyzyjną — żadnego połączenia sieciowego, żadnego serwera. Rys.~\ref{fig:warstwy} pokazuje ten podział.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[
+        w/.style={draw, rounded corners=3pt, align=center, font=\small,
+                  text width=12.4cm, inner sep=5pt},
+        modul/.style={draw, rounded corners=2pt, align=center, font=\scriptsize,
+                      text width=3.6cm, minimum height=8mm, inner sep=2pt},
+        strz/.style={-latex, thick}
+    ]
+        % warstwa 1
+        \node[w, fill=black!5] (w1) at (0,0) {\textbf{Warstwa przygotowania danych i uczenia} \\[2pt] {\footnotesize stacja robocza: AMD Ryzen 5 3600, NVIDIA RTX 4070, Python}};
+        \node[modul, fill=EEBlue!12] (m11) at (-4.2,-1.15) {Akwizycja\\i walidacja obrazów};
+        \node[modul, fill=EEBlue!12] (m12) at (0,-1.15) {Auto-anotacja\\GroundingDINO};
+        \node[modul, fill=EEBlue!12] (m13) at (4.2,-1.15) {Trening YOLO11m\\(PyTorch, AMP)};
+
+        % warstwa 2
+        \node[w, fill=black!5] (w2) at (0,-2.9) {\textbf{Warstwa konwersji modelu} \\[2pt] {\footnotesize PyTorch $\rightarrow$ TensorFlow SavedModel $\rightarrow$ TensorFlow Lite FP16}};
+        \node[modul, fill=EETangerine!22] (m21) at (0,-4.05) {Artefakt \texttt{.tflite} FP16, $38{,}58$\,MB};
+
+        % warstwa 3
+        \node[w, fill=black!5] (w3) at (0,-5.8) {\textbf{Warstwa wykonawcza (urządzenie mobilne)} \\[2pt] {\footnotesize Android, Kotlin, Jetpack Compose, CameraX, TFLite Interpreter}};
+        \node[modul, fill=EEUltramarine!14] (m31) at (-4.2,-6.95) {Akwizycja klatek\\CameraX};
+        \node[modul, fill=EEUltramarine!14] (m32) at (0,-6.95) {Inferencja\\i dekodowanie tensora};
+        \node[modul, fill=EEUltramarine!14] (m33) at (4.2,-6.95) {Prezentacja, ostrzeżenia\\i baza Room};
+
+        \draw[strz] (m12) -- (m13);
+        \draw[strz] (m11) -- (m12);
+        \draw[strz] (m13) -- ++(0,-0.75) -- (4.2,-2.15) -- (0,-2.15) -- (w2);
+        \draw[strz] (m21) -- ++(0,-0.75) -- (0,-5.05) -- (w3);
+        \draw[strz] (m31) -- (m32);
+        \draw[strz] (m32) -- (m33);
+    \end{tikzpicture}
+    \caption{Podział systemu na warstwę przygotowania danych i uczenia, warstwę konwersji modelu oraz warstwę wykonawczą urządzenia mobilnego. Źródło: opracowanie własne.}
+    \label{fig:warstwy}
+\end{figure}
+Przepływ danych przez system to jednokierunkowy ośmioetapowy potok. Klasa \texttt{ImageAnalysis} CameraX dostarcza klatki ze strategią \texttt{STRATEGY\_KEEP\_ONLY\_LATEST} — starsze klatki są odrzucane, zanim zdążą się kolejkować. \texttt{Mutex.tryLock()} ogranicza tempo do $4$\,FPS w trybie standardowym ($250$\,ms) lub do $1{,}5$\,s \textit{heartbeat} po ustabilizowaniu sceny. Interpreter TFLite uruchamia model FP16 i zwraca tensor $[1,\,151,\,8400]$: 4 współrzędne ramki i 147 prawdopodobieństw klas dla każdej z 8400 kotwic przestrzennych. Fast-fail obcina listę do 50 najwyżej ocenionych kandydatów; NMS ($\mathrm{IoU}>0{,}45$) usuwa nadmiary.
+
+Osiem etapów przetwarzania pojedynczej klatki ilustruje rys.~\ref{fig:potok_architektura}.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[
+        blok/.style={draw, rounded corners=2pt, align=center, text width=9.2cm,
+                     inner sep=3pt, font=\small, minimum height=7.5mm},
+        akw/.style={blok, fill=EEBlue!12},
+        inf/.style={blok, fill=EEUltramarine!12},
+        bez/.style={blok, fill=EETangerine!18},
+        strz/.style={-latex, thick}
+    ]
+        \node[akw] (n1) at (0,0) {1. CameraX \texttt{ImageAnalysis} --- \texttt{STRATEGY\_KEEP\_ONLY\_LATEST}};
+        \node[akw] (n2) at (0,-1.25) {2. Ograniczanie częstotliwości \texttt{Mutex.tryLock()} --- $250$\,ms ($4$\,FPS) lub $1{,}5$\,s};
+        \node[inf] (n3) at (0,-2.50) {3. Interpreter TensorFlow Lite --- model YOLO11m FP16};
+        \node[inf] (n4) at (0,-3.75) {4. Surowy tensor wyjściowy $[1,\,151,\,8400]$};
+        \node[inf] (n5) at (0,-5.00) {5. Szybka eliminacja (\textit{fast-fail}), top-$50$ kandydatów};
+        \node[inf] (n6) at (0,-6.25) {6. Tłumienie niemaksymalne (NMS), $\mathrm{IoU}>0{,}45$};
+        \node[bez] (n7) at (0,-7.50) {7. Bufor konsensusu klatek --- $4$ z $5$ ostatnich klatek};
+        \node[bez] (n8) at (0,-8.75) {8. Asymetryczny filtr bezpieczeństwa --- $0{,}18$ oraz $0{,}60$};
+        \node[blok, fill=black!6] (n9) at (0,-10.00) {Nakładka AR (Jetpack Compose) oraz baza Room (\texttt{MushroomFind})};
+
+        \draw[strz] (n1) -- (n2);
+        \draw[strz] (n2) -- (n3);
+        \draw[strz] (n3) -- (n4);
+        \draw[strz] (n4) -- (n5);
+        \draw[strz] (n5) -- (n6);
+        \draw[strz] (n6) -- (n7);
+        \draw[strz] (n7) -- (n8);
+        \draw[strz] (n8) -- (n9);
+    \end{tikzpicture}
+    \caption{Ośmioetapowy potok przetwarzania pojedynczej klatki obrazu w zaprojektowanym systemie. Źródło: opracowanie własne.}
+    \label{fig:potok_architektura}
+\end{figure}
+
+Przefiltrowane detekcje trafiają do bufora konsensusu klatek (\textit{multi-frame voting buffer}): gatunek uważa się za potwierdzony wyłącznie wtedy, gdy dominuje w co najmniej $4$ z $5$ ostatnich klatek. Bufor wygasza jednoklatkowe fluktuacje predykcji, zanim dotrą do warstwy decyzyjnej. Potwierdzone detekcje przechodzą przez asymetryczny filtr bezpieczeństwa: próg $0{,}18$ dla gatunków trujących, $0{,}60$ dla jadalnych. Wynik trafia równolegle do nakładki AR Jetpack Compose, rysującej ramki i etykiety, oraz — przy ręcznym zapisie — do bazy Room, gdzie encja \texttt{MushroomFind} przechowuje gatunek, kategorię toksyczności, wartość pewności, znacznik czasu i ścieżkę wycinka obrazu. Zasada \textit{safety-first} wymusza priorytetowe traktowanie klas trujących, co na etapie ewaluacji przekłada się na dążenie do wysokiego Recall dla gatunków niebezpiecznych.
+
+\subsection{Uzasadnienie wyboru modelu YOLO11 Medium}
+Wybór modelu to czterowymiarowy kompromis: dokładność, rozmiar binarny, opóźnienie inferencji i zużycie energii — wszystko przy spełnieniu budżetów z poprzedniego podrozdziału. Przeanalizowano cztery alternatywy:
+\begin{itemize}
+    \item architekturę YOLOv8n, reprezentującą wcześniejszą generację rodziny YOLO, cechującą się gorszym stosunkiem dokładności do liczby parametrów niż jej następca \cite{ultralytics2023yolov8},
+    \item lżejszy wariant YOLO11 Nano (\texttt{YOLO11n}), atrakcyjny ze względu na minimalny rozmiar artefaktu TFLite, lecz o niedostatecznej pojemności reprezentacyjnej w zadaniu rozróżniania wielu gatunków bliźniaczych \cite{ultralytics2024yolo11},
+    \item detektor MobileNet SSD, charakteryzujący się niższą precyzją detekcji, niewystarczającą dla wymagającego zadania rozróżniania gatunków bliźniaczych \cite{liu2016ssd},
+    \item rodzinę EfficientDet, której czas inferencji jest zbyt długi względem założeń pracy w reżimie czasu rzeczywistego.
+\end{itemize}
+Wybrano YOLO11 Medium (\texttt{YOLO11m}) \cite{ultralytics2024yolo11}. $\approx20{,}1$~mln parametrów daje pojemność wystarczającą do modelowania subtelnych cech morfologicznych $147$ gatunków, a konwersja do TFLite FP16 ($38{,}58$~MB) spycha opóźnienie inferencji wielokrotnie poniżej budżetu mobilnego. Wariant Nano, mimo mniejszego pliku, nie radził sobie z gatunkami bliźniaczymi — potwierdza to ablacja w rozdz.~\ref{chap:badania}. Wejście modelu to $640\times640$ pikseli; wyjście po dekodowaniu ma postać etykiet YOLO: \textit{class\_id cx cy w h}. Ilościową ocenę skuteczności przedstawia rozdz.~\ref{chap:badania}.
+
+
+\chapter{Implementacja rozwiązania}\label{chap:implementacja}
+\section{Przygotowanie zbioru danych i półautomatyczna anotacja}
+${\sim}64\,000$ owocników, 147 gatunków, zero gotowych etykiet lokalizacyjnych. Ręczne rysowanie ramek jest nierealne — to kilka miesięcy pracy dla jednej osoby. GroundingDINO rozwiązał ten problem bez jednej ręcznie narysowanej ramki: zero-shotowa lokalizacja frazą \texttt{"mushroom"} wygenerowała etykiety automatycznie, a nazwa gatunku brała się z folderu iNaturalist, nie z głowicy modelu. Potok: masowa akwizycja z filtrem \texttt{quality\_grade=research}, auto-anotacja, oczyszczenie duplikatów, podział $80/10/10\%$. Schemat przedstawia rys.~\ref{fig:potok_danych}.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[
+        etap/.style={draw, rounded corners=2pt, align=center, font=\scriptsize,
+                     text width=2.95cm, minimum height=9mm, inner sep=2.5pt},
+        src/.style={etap, fill=black!7},
+        acq/.style={etap, fill=EEBlue!14},
+        ann/.style={etap, fill=EEUltramarine!14},
+        cln/.style={etap, fill=EETangerine!20},
+        strz/.style={-latex, semithick}
+    ]
+        \node[src] (api) at (0,0) {iNaturalist REST API\\\texttt{quality\_grade}\\\texttt{=research}};
+        \node[acq] (dl) at (3.9,0) {Pobieranie\\$16$ wątków};
+        \node[acq] (val) at (7.8,0) {Walidacja PIL\\$<5$\,KB, 404/500};
+        \node[acq] (purge) at (11.7,0) {Czyszczenie klas\\$<500$ obrazów};
+
+        \node[ann] (dino) at (11.7,-2.1) {GroundingDINO\\zero-shot};
+        \node[ann] (reg) at (7.8,-2.1) {Rejestr klas\\\texttt{class\_registry}\\ID $0$--$146$};
+        \node[cln] (nms) at (3.9,-2.1) {Czyszczenie\\duplikatów ramek};
+        \node[cln] (split) at (0,-2.1) {Podział\\$80/10/10\%$};
+
+        \node[src] (yaml) at (0,-3.9) {\texttt{data.yaml}\\\texttt{nc: 147}};
+
+        \draw[strz] (api) -- (dl);
+        \draw[strz] (dl) -- (val);
+        \draw[strz] (val) -- (purge);
+        \draw[strz] (purge) -- (dino);
+        \draw[strz] (dino) -- (reg);
+        \draw[strz] (reg) -- (nms);
+        \draw[strz] (nms) -- (split);
+        \draw[strz] (split) -- (yaml);
+    \end{tikzpicture}
+    \caption{Potok przygotowania zbioru uczącego: akwizycja, walidacja jakościowa, auto-anotacja oraz czyszczenie i podział danych. Źródło: opracowanie własne.}
+    \label{fig:potok_danych}
+\end{figure}
+
+\subsection{Akwizycja danych z serwisu iNaturalist}
+Zbiór uczący pochodzi z iNaturalist \cite{inaturalist} — platformy citizen science z publicznym interfejsem REST API (\url{https://api.inaturalist.org/v1/observations}). Kluczowy filtr: \texttt{quality\_grade=research}. Obserwacja na tym poziomie przeszła weryfikację przez co najmniej dwóch niezależnych identyfikatorów ze społeczności. To nie amatorskie snapshoty — to konsensus przyrodników. Skrypt odpytuje API stronicowanymi żądaniami dla każdego taksonu, podmienia w adresie miniaturę \texttt{square} na wariant \texttt{large} i zapisuje plik lokalnie. Format anotacji: konwencja YOLO i COCO — ramka BBOX plus identyfikator klasy. Przykładowe ramki COCO przedstawia rys.~\ref{fig:coco_sample_web} \cite{lin2014coco}.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{coco_dataset_sample_official}
+    \caption{Przykładowe ramki BBOX ze zbioru COCO. Źródło: \cite{lin2014coco}.}
+    \label{fig:coco_sample_web}
+\end{figure}
+
+Sekwencyjne pobieranie stu gatunków po tysiąc obserwacji jest zbyt wolne. \texttt{ThreadPoolExecutor} z 16 wątkami rozwiązuje ten problem: obciążenie zdominowane przez I/O sieciowe, GIL nie stanowi wąskiego gardła. Wyjątek na poziomie pojedynczego wątku nie zatrzymuje reszty — pobieranie dla uszkodzonego taksonu można wznowić bez restartu procesu.
+
+Każdy pobrany plik przechodzi przez walidację PIL. Kontrola nagłówka bez pełnej dekompresji wykrywa uszkodzone artefakty szybko; reguła równoległa odrzuca kody 404/500 i pliki poniżej $5$\,KB. Uszkodzony plik znika z dysku — nigdy nie trafia do anotacji.
+
+Skrypt liczy poprawne obrazy po zakończeniu pobierania danego taksonu. Poniżej 500 — cały katalog gatunku usuwa \texttt{shutil.rmtree}. Gatunek z 80 zdjęciami zaburzałby rozkład treningowy. Do anotacji trafiają wyłącznie klasy o dostatecznej reprezentacji.
+
+Rdzeń opisanego mechanizmu akwizycji, obejmujący zrównoleglone pobieranie, walidację nagłówków oraz warunkowe czyszczenie katalogu gatunkowego, przedstawiono na listingu \ref{lst:scraper}.
+
+\begin{lstlisting}[language=Python,caption={Wielowątkowa akwizycja obrazów z serwisu iNaturalist wraz z walidacją PIL i dynamicznym czyszczeniem klas},label={lst:scraper}]
+MIN_IMAGES_PER_CLASS = 500
+MIN_FILE_BYTES = 5 * 1024
+API_URL = "https://api.inaturalist.org/v1/observations"
+
+def fetch_observation_urls(species, pages=20, per_page=50):
+    urls = []
+    for page in range(1, pages + 1):
+        params = {
+            "taxon_name": species,
+            "has[]": "photos",
+            "quality_grade": "research",
+            "per_page": per_page,
+            "page": page,
+        }
+        response = requests.get(API_URL, params=params, timeout=30)
+        if response.status_code != 200:
+            break
+        results = response.json().get("results", [])
+        if not results:
+            break
+        for observation in results:
+            for photo in observation.get("photos", []):
+                urls.append(photo["url"].replace("square", "large"))
+    return urls
+
+def download_and_validate(url, dest_path):
+    try:
+        response = requests.get(url, timeout=30)
+        if response.status_code != 200 or len(response.content) < MIN_FILE_BYTES:
+            return False
+        dest_path.write_bytes(response.content)
+        with Image.open(dest_path) as img:
+            img.verify()
+        return True
+    except Exception:
+        dest_path.unlink(missing_ok=True)
+        return False
+
+def harvest_species(species, out_root):
+    species_dir = out_root / species.replace(" ", "_")
+    species_dir.mkdir(parents=True, exist_ok=True)
+    urls = fetch_observation_urls(species)
+
+    valid = 0
+    with ThreadPoolExecutor(max_workers=16) as pool:
+        futures = {
+            pool.submit(download_and_validate, url, species_dir / f"{i:06d}.jpg"): url
+            for i, url in enumerate(urls)
+        }
+        for future in as_completed(futures):
+            if future.result():
+                valid += 1
+
+    if valid < MIN_IMAGES_PER_CLASS:
+        print(f"[PURGE] {species}: {valid} valid images, below threshold")
+        shutil.rmtree(species_dir, ignore_errors=True)
+        return 0
+
+    print(f"[OK] {species}: {valid} images retained")
+    return valid
+\end{lstlisting}
+
+\texttt{fetch\_observation\_urls} (linie 5--26) stronicuje API REST. \texttt{quality\_grade=research} ogranicza wyniki do obserwacji potwierdzonych przez społeczność; \texttt{has[]=photos} odrzuca rekordy bez zdjęcia. Pętla przerywa się wcześnie przy kodzie innym niż $200$ (linia 17) lub przy pustej liście wyników (linia 20) — bez marnowania żądań po wyczerpaniu obserwacji taksonu. Linia 24 podmienia miniaturę \texttt{square} na pełnowymiarowy \texttt{large}.
+
+\texttt{download\_and\_validate} (linie 28--39) to filtr jakościowy pojedynczego pliku. Linia 31 odrzuca kody 404/500 i pliki krótsze niż $5$\,KB — typowe placeholdery serwera. \texttt{img.verify()} (linia 34) sprawdza nagłówek bez pełnej dekompresji — ważne przy skali setek tysięcy plików. Blok \texttt{except} usuwa uszkodzony plik z dysku (linia 37): artefakt nie przenika do kolejnych etapów potoku.
+
+\texttt{harvest\_species} (linie 41--62) zarządza zrównolegleniem. Pula 16 wątków (linia 47) dopasowana do obciążenia zdominowanego przez I/O sieciowe — GIL nie blokuje. Linia 53 liczy wyłącznie pobrania, które przeszły walidację. Linia 55 to strażnik równowagi zbioru: poniżej 500 poprawnych obrazów \texttt{shutil.rmtree} usuwa cały katalog gatunku, zanim nierówna klasa zaburzy rozkład próbek w treningu.
+
+Zbiorcze zestawienie parametrów konfiguracyjnych oraz kryteriów odrzucenia zastosowanych w warstwie akwizycji przedstawiono w tab.~\ref{tab:scraper}.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Parametry skryptu akwizycji oraz kryteria filtracji jakościowej. Źródło: opracowanie własne.}
+    \label{tab:scraper}
+    \begin{tabular}{|p{5.3cm}|p{3.1cm}|p{4.2cm}|}
+        \hline
+        \textbf{Parametr} & \textbf{Wartość} & \textbf{Uzasadnienie} \\
+        \hline \hline
+        Liczba wątków roboczych & $16$ & obciążenie zdominowane przez I/O sieciowe \\
+        \hline
+        Stopień weryfikacji obserwacji & \texttt{research} & wyłącznie rekordy zweryfikowane \\
+        \hline
+        Rekordów na stronę / liczba stron & $50$ / $20$ & do $1000$ obserwacji na takson \\
+        \hline
+        Minimalny rozmiar pliku & $5$\,KB & odrzucenie pustych odpowiedzi \\
+        \hline
+        Odrzucane kody HTTP & $404$, $500$ & artefakty niedostępnych zasobów \\
+        \hline
+        Walidacja integralności & \texttt{PIL.Image}\newline\texttt{.verify()} & wykrycie uszkodzonych nagłówków \\
+        \hline
+        Minimalna liczebność klasy & $500$ obrazów & przeciwdziałanie nierównowadze klas \\
+        \hline
+        Liczba klas po czyszczeniu & $147$ & gatunki spełniające kryterium progu \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\subsection{Otwarto-słownikowa auto-anotacja GroundingDINO i rejestr klas}
+GroundingDINO dostaje tekst, nie indeks klasy. Ontologia \texttt{CaptionOntology(\{"mushroom": "mushroom"\})} mówi modelowi: znajdź obiekt semantycznie zgodny z pojęciem „mushroom" \cite{liu2023grounding}. Gatunek — \textit{Boletus edulis}, \textit{Amanita muscaria}, cokolwiek — pochodzi z nazwy katalogu iNaturalist, nie z głowicy klasyfikacyjnej. Zero-shot rozdziela dwa zadania: lokalizację owocnika od etykiety taksonomicznej. Predykcje trafiają do formatu YOLO: pięć wartości znormalizowanych — \texttt{class\_id cx cy w h}.
+
+Mapowanie nazw gatunków na identyfikatory numeryczne obsługuje rejestr \texttt{class\_registry.txt}. Funkcja \texttt{get\_or\_create\_id()} czyta istniejące mapowania i przy nowym taksonie przydziela kolejny inkrementowany identyfikator — reguła \textit{append-only}. Żadnej alphabetycznej renumeracji, która unieważniłaby wcześniejsze etykiety. Rejestr końcowy: 147 gatunków, identyfikatory od 0 do 146, jedno źródło prawdy dla warstwy anotacji, pliku YAML i aplikacji mobilnej.
+
+Ograniczenia VRAM wymuszają przetwarzanie partiami po 300 obrazów (\texttt{BATCH\_SIZE = 300}). Każda partia izoluje się w katalogach przejściowych \texttt{staging\_in} i \texttt{staging\_out} — niepełny przebieg inferencji nie zanieczyszcza zbioru wynikowego, a po przerwie demon wznawia pracę bezpiecznie. Po każdej partii \texttt{gc.collect()} zwalnia obiekty Pythona; dopiero potem \texttt{torch.cuda.empty\_cache()} oddaje bloki CUDA — kolejność istotna. Potok ma dwustopniowy mechanizm awaryjny: gdy inferencja całej partii zawiedzie, demon przełącza się na tryb pojedynczego elementu (\textit{single-item fallback}). Uszkodzony obraz, który wywołuje wyjątek w trybie izolowanym, trwale usuwa \texttt{os.remove} — nigdy więcej nie blokuje procesu.
+
+Po zakończeniu etykietowania skrypt regeneruje plik \texttt{data.yaml}: synchronizuje ścieżkę zbioru, liczbę klas \texttt{nc: 147} i tablicę nazw z aktualnym stanem rejestru. Konfiguracja przekazywana do Ultralytics zawsze odpowiada fizycznej strukturze katalogów \texttt{images/} i \texttt{labels/}.
+
+Zasadniczą pętlę demona auto-anotacji, obejmującą inicjalizację ontologii, przetwarzanie partiami, mechanizm awaryjny oraz zwalnianie pamięci karty graficznej, przedstawiono na listingu \ref{lst:autolabel}.
+
+\begin{lstlisting}[language=Python,caption={Auto-anotacja zero-shot modelem GroundingDINO z przetwarzaniem partiami i zwalnianiem pamięci VRAM (\texttt{scripts/auto\_label.py})},label={lst:autolabel}]
+BATCH_SIZE = 300
+
+base_model = GroundingDINO(ontology=CaptionOntology({"mushroom": "mushroom"}))
+
+for folder_name in os.listdir(BASE_DIR):
+    if folder_name in IGNORE_DIRS:
+        continue
+    src_path = os.path.join(BASE_DIR, folder_name)
+    class_id = get_or_create_id(folder_name)
+    files_to_process = collect_pending_images(src_path)
+
+    for i in range(0, len(files_to_process), BATCH_SIZE):
+        batch_files = files_to_process[i : i + BATCH_SIZE]
+        clear_staging()
+
+        for f in batch_files:
+            shutil.copy2(os.path.join(src_path, f), os.path.join(STAGING_IN, f))
+
+        try:
+            with torch.inference_mode():
+                base_model.label(input_folder=STAGING_IN, output_folder=STAGING_OUT)
+
+            generated_labels = index_generated_labels(STAGING_OUT)
+            for f in batch_files:
+                save_single_label(f, src_path, class_id, generated_labels)
+
+        except Exception as batch_error:
+            # Batch failed: retry one file at a time
+            print(f"[WARN] Batch failed ({batch_error}), falling back to single-item")
+            for single_f in batch_files:
+                clear_staging()
+                try:
+                    shutil.copy2(os.path.join(src_path, single_f),
+                                 os.path.join(STAGING_IN, single_f))
+                    with torch.inference_mode():
+                        base_model.label(input_folder=STAGING_IN,
+                                         output_folder=STAGING_OUT)
+                    save_single_label(single_f, src_path, class_id,
+                                      index_generated_labels(STAGING_OUT))
+                except Exception as single_error:
+                    print(f"[ERR] Dropping broken file {folder_name}/{single_f}")
+                    os.remove(os.path.join(src_path, single_f))
+        finally:
+            clear_staging()
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+\end{lstlisting}
+
+Linia 3 inicjalizuje model nauczyciela raz — poza pętlą po katalogach. Wielokrotne ładowanie wag do VRAM byłoby kosztowne. Ontologia \texttt{CaptionOntology} mapuje zapytanie \texttt{"mushroom"} na etykietę wynikową; model otwartego słownika lokalizuje owocniki wszystkich 147 gatunków jednym pojęciem językowym.
+
+Linia 9 przypisuje identyfikator z rejestru \textit{append-only} na podstawie nazwy katalogu — nie z predykcji GroundingDINO. Model odpowiada wyłącznie za geometrię ramki. \texttt{collect\_pending\_images} (linia 10) pomija obrazy z istniejącymi etykietami: proces jest idempotentny i odporny na przerwania.
+
+Pętla w linii 12 dzieli pliki na partie po 300. \texttt{clear\_staging()} (linia 14) czyści katalogi przejściowe przed każdą partią — indeksowanie wyników w linii 23 obejmuje wyłącznie etykiety bieżącego przebiegu. \texttt{torch.inference\_mode()} (linia 20) wyłącza budowę grafu gradientów i redukuje zapotrzebowanie na pamięć.
+
+Blok \texttt{except} (linie 27--41) realizuje fallback: wyjątek partii nie przerywa procesu. Pliki wracają w trybie izolowanym — uszkodzony obraz odpada na linii 41, $299$ pozostałych jest zachowanych. Obraz, który zawiedzie w trybie izolowanym, nigdy nie wraca do przetwarzania.
+
+Blok \texttt{finally} (linie 42--46) działa bezwarunkowo. Kolejność wywołań ma znaczenie: \texttt{gc.collect()} zwalnia referencje Pythona do tensorów, dopiero potem \texttt{torch.cuda.empty\_cache()} oddaje bloki CUDA alokatorowi. Odwrotna kolejność nie zwalniałaby bloków wciąż referencjonowanych przez żywe obiekty — prowadząc do fragmentacji VRAM i awarii demona przy długiej pracy.
+
+Rozkład $147$ gatunków objętych rejestrem względem kategorii toksykologicznej, zgodny z mapowaniem zaimplementowanym w rejestrze aplikacji mobilnej oraz z wykazem zamieszczonym w załączniku, przedstawiono w tab.~\ref{tab:toksycznosc} oraz, w ujęciu graficznym, na rys.~\ref{fig:rozklad_kategorii}. Gatunki objęte agresywnym progiem ostrzegawczym $0{,}18$ stanowią łącznie $17{,}7\%$ rejestru, natomiast pozostałe $82{,}3\%$ podlega progom zachowawczym.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[scale=1.0]
+        \def\sk{0.075}   % cm na jeden gatunek
+        \foreach \y/\n/\etyk/\kol in {
+            0/74/{Jadalny}/{EEBlue!45},
+            -0.9/47/{Niejadalny}/{black!25},
+            -1.8/19/{Trujący}/{EETangerine!70},
+            -2.7/7/{Śmiertelnie trujący}/{red!55}}{
+            \node[font=\scriptsize, anchor=east] at (-0.15,\y) {\etyk};
+            \fill[\kol, draw=black!50] (0,\y-0.28) rectangle (\n*\sk,\y+0.28);
+            \node[font=\scriptsize, anchor=west] at (\n*\sk+0.12,\y) {\n};
+        }
+        % os
+        \draw[semithick] (0,-3.15) -- (80*\sk,-3.15);
+        \foreach \x in {0,20,40,60,80}{
+            \draw[semithick] (\x*\sk,-3.15) -- (\x*\sk,-3.28)
+                node[below, font=\scriptsize] {\x};
+        }
+        \node[font=\scriptsize, anchor=north] at (40*\sk,-3.72) {liczba gatunków};
+    \end{tikzpicture}
+    \caption{Liczebność kategorii toksykologicznych w rejestrze $147$ gatunków. Źródło: opracowanie własne.}
+    \label{fig:rozklad_kategorii}
+\end{figure}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Rozkład $147$ gatunków objętych systemem względem kategorii toksykologicznej. Źródło: opracowanie własne.}
+    \label{tab:toksycznosc}
+    \begin{tabular}{|l|c|c|p{4.9cm}|}
+        \hline
+        \textbf{Kategoria} & \textbf{Liczba} & \textbf{Udział} & \textbf{Traktowanie w polityce} \\
+        \hline \hline
+        Jadalny & $74$ & $50{,}3\%$ & próg $0{,}60$ oraz konsensus $4$/$5$ \\
+        \hline
+        Niejadalny & $47$ & $32{,}0\%$ & status neutralny \\
+        \hline
+        Trujący & $19$ & $12{,}9\%$ & ostrzeżenie od $0{,}18$ \\
+        \hline
+        Śmiertelnie trujący & $7$ & $4{,}8\%$ & ostrzeżenie od $0{,}18$ \\
+        \hline \hline
+        \textbf{Razem} & $\mathbf{147}$ & $\mathbf{100{,}0\%}$ & --- \\
+        \hline
+    \end{tabular}
+\end{table}
+
+Do kategorii najwyższego ryzyka zaliczono siedem taksonów: \textit{Amanita phalloides}, \textit{Amanita virosa}, \textit{Amanita pantherina}, \textit{Galerina marginata}, \textit{Cortinarius rubellus}, \textit{Entoloma sinuatum} oraz \textit{Gyromitra esculenta}. Gatunki te stanowią jedynie $4{,}8\%$ rejestru, lecz odpowiadają za przeważającą część ciężkich zatruć rejestrowanych w Europie Środkowej \cite{garcia2015amanita}, co uzasadnia przypisanie im najniższego progu sygnalizacji.
+
+\subsection{Dwukryterialne czyszczenie duplikatów ramek}
+Surowe etykiety GroundingDINO zawierają charakterystyczny artefakt: kilka niemal identycznych ramek na tym samym owocniku. Klasyczny NMS z łagodnym progiem IoU zawodzi tu z konkretnego powodu — naturalne kępy opieńki (\textit{Armillaria mellea}) mają wysokie przestrzenne nakładanie sąsiednich osobników. Agresywne tłumienie usunęłoby prawdziwe detekcje w gęstych koloniach. Skrypt \texttt{clean\_duplicate\_boxes\_v2.py} rozwiązuje ten konflikt koniunkcją dwóch kryteriów. Dla pary ramek tej samej klasy w formacie YOLO ze środkami $(c_x, c_y)$ i wymiarami $(w, h)$ definiuje się odległość środków:
+\begin{equation}
+\mathrm{Center\_Distance}(B_i, B_j)
+=
+\sqrt{\bigl(c_{x,i}-c_{x,j}\bigr)^{2}+\bigl(c_{y,i}-c_{y,j}\bigr)^{2}},
+\end{equation}
+a także współczynnik przecięcia względem mniejszej ramki (ang. \textit{Intersection over Smallest}):
+\begin{equation}
+\mathrm{IoS}(B_i, B_j)
+=
+\frac{\lvert B_i \cap B_j \rvert}{\min\bigl(\lvert B_i \rvert,\,\lvert B_j \rvert\bigr)}.
+\end{equation}
+Ramkę uznawano za fantomowy duplikat wyłącznie wtedy, gdy jednocześnie spełnione były dwa warunki: wysokie pokrycie przestrzenne $\bigl(\mathrm{IoU} > 0{,}75$ albo $\mathrm{IoS} > 0{,}85\bigr)$ oraz bliskość geometrycznych środków $\bigl(\mathrm{Center\_Distance} < 0{,}06\bigr)$. Koniunkcja kryterium nakładania z kryterium bliskości środków pozwalała usuwać niemal identyczne kopie tej samej detekcji, jednocześnie zachowując sąsiadujące, lecz odrębne owocniki w naturalnych kępach. Geometryczną różnicę pomiędzy obiema konfiguracjami zilustrowano na rys.~\ref{fig:ios_geometria}.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[
+        ramka/.style={draw, thick},
+        srodek/.style={circle, fill=EETangerine, inner sep=1.3pt},
+        opis/.style={font=\footnotesize, align=center}
+    ]
+        % Przypadek A: duplikat fantomowy (zagniezdzenie, wspolny srodek)
+        \draw[ramka, EEUltramarine] (0,0) rectangle (3.0,2.4);
+        \draw[ramka, EEBlue] (0.45,0.4) rectangle (2.6,2.05);
+        \node[srodek] at (1.5,1.2) {};
+        \node[srodek] at (1.525,1.225) {};
+        \node[opis] at (1.5,-0.55) {(a) duplikat fantomowy\\$\mathrm{IoU}\approx0{,}49$, $\mathrm{IoS}\approx0{,}99$\\$\mathrm{Center\_Distance}\approx0{,}00$};
+        \node[opis, EETangerine] at (1.5,-1.75) {\textbf{usunięty}};
+
+        % Przypadek B: sasiadujace owocniki w kepie
+        \draw[ramka, EEUltramarine] (6.0,0) rectangle (8.4,2.4);
+        \draw[ramka, EEBlue] (7.6,0.15) rectangle (10.0,2.25);
+        \node[srodek] at (7.2,1.2) {};
+        \node[srodek] at (8.8,1.2) {};
+        \node[opis] at (8.0,-0.55) {(b) sąsiadujące owocniki\\$\mathrm{IoU}\approx0{,}17$, $\mathrm{IoS}\approx0{,}30$\\$\mathrm{Center\_Distance}$ znaczna};
+        \node[opis, EEUltramarine] at (8.0,-1.75) {\textbf{zachowane}};
+    \end{tikzpicture}
+    \caption{Rozróżnienie duplikatu fantomowego od sąsiadujących owocników przez koniunkcję kryteriów $\mathrm{IoS}$ i $\mathrm{Center\_Distance}$. Źródło: opracowanie własne.}
+    \label{fig:ios_geometria}
+\end{figure} Procedurę uruchomiono na wszystkich podziałach zbioru (\texttt{train}, \texttt{val}, \texttt{test}); wynik: $22\,173$ usuniętych fantomowych ramek w $19\,670$ plikach etykiet. Implementację obu miar i warunku koniunkcyjnego pokazuje listing \ref{lst:nms_cleaner}.
+
+\begin{lstlisting}[language=Python,caption={Dwukryterialna eliminacja fantomowych duplikatów ramek (\texttt{scripts/utils/clean\_duplicate\_boxes\_v2.py})},label={lst:nms_cleaner}]
+IOU_THRESHOLD = 0.75
+IOS_THRESHOLD = 0.85
+CENTER_DIST_THRESHOLD = 0.06
+
+def calculate_box_metrics(box1, box2):
+    # IoU, IoS, and center distance for two YOLO boxes [cls, cx, cy, w, h]
+    b1_x1, b1_x2 = box1[1] - box1[3] / 2, box1[1] + box1[3] / 2
+    b1_y1, b1_y2 = box1[2] - box1[4] / 2, box1[2] + box1[4] / 2
+    b2_x1, b2_x2 = box2[1] - box2[3] / 2, box2[1] + box2[3] / 2
+    b2_y1, b2_y2 = box2[2] - box2[4] / 2, box2[2] + box2[4] / 2
+
+    center_dist = math.sqrt((box1[1] - box2[1]) ** 2 + (box1[2] - box2[2]) ** 2)
+
+    inter_x1, inter_y1 = max(b1_x1, b2_x1), max(b1_y1, b2_y1)
+    inter_x2, inter_y2 = min(b1_x2, b2_x2), min(b1_y2, b2_y2)
+    inter_area = max(0, inter_x2 - inter_x1) * max(0, inter_y2 - inter_y1)
+
+    b1_area, b2_area = box1[3] * box1[4], box2[3] * box2[4]
+    min_area = min(b1_area, b2_area)
+    union_area = b1_area + b2_area - inter_area + 1e-6
+
+    iou = inter_area / union_area
+    ios = inter_area / (min_area + 1e-6)
+    return iou, ios, center_dist
+
+def filter_duplicates(boxes):
+    filtered_boxes = []
+    removed_in_file = 0
+
+    for box_a in boxes:
+        is_duplicate = False
+        for box_b in filtered_boxes:
+            if box_a[0] == box_b[0]:
+                iou, ios, center_dist = calculate_box_metrics(box_a, box_b)
+                if center_dist < CENTER_DIST_THRESHOLD and (
+                    iou > IOU_THRESHOLD or ios > IOS_THRESHOLD
+                ):
+                    is_duplicate = True
+                    removed_in_file += 1
+                    break
+        if not is_duplicate:
+            filtered_boxes.append(box_a)
+
+    return filtered_boxes, removed_in_file
+\end{lstlisting}
+
+Linie 7--10 przeliczają reprezentację YOLO, opisującą ramkę środkiem i wymiarami $(c_x, c_y, w, h)$, na współrzędne narożnikowe wymagane do wyznaczenia pola przecięcia. Przeliczenie wykonywane jest w przestrzeni znormalizowanej $[0,1]$, dzięki czemu progi decyzyjne pozostają niezależne od rozdzielczości obrazu źródłowego --- ta sama wartość $\mathrm{Center\_Distance} < 0{,}06$ oznacza to samo kryterium bliskości dla zdjęcia o boku $1024$ i $4096$ pikseli.
+
+Linia 12 realizuje bezpośrednio wzór na odległość środków. Linie 14--16 wyznaczają pole prostokąta przecięcia, przy czym funkcja \texttt{max(0, \ldots)} zeruje wynik dla ramek rozłącznych, zapobiegając ujemnym wartościom pola. Kluczowa dla przyjętego rozwiązania jest linia 23, wyznaczająca współczynnik $\mathrm{IoS}$ jako iloraz pola przecięcia i pola \emph{mniejszej} z ramek. W przeciwieństwie do klasycznego $\mathrm{IoU}$, miara ta przyjmuje wartość bliską jedności również wtedy, gdy mała ramka jest niemal całkowicie zawarta w większej --- a taka właśnie konfiguracja charakteryzuje zagnieżdżone duplikaty generowane przez model nauczyciela, dla których $\mathrm{IoU}$ pozostaje niskie z powodu istotnej różnicy pól. Stała $10^{-6}$ w mianownikach (linie 20 i 23) zabezpiecza przed dzieleniem przez zero dla ramek zdegenerowanych.
+
+Właściwa decyzja zapada w warunku z linii 34--36. Koniunkcja kryterium bliskości środków z alternatywą dwóch miar pokrycia oznacza, że wysokie nakładanie samo w sobie nie wystarcza do usunięcia ramki --- konieczne jest dodatkowo, aby oba owocniki miały praktycznie wspólny środek geometryczny. Dzięki temu sąsiadujące, silnie stykające się osobniki w kępie opieńki zostają zachowane, mimo że ich wzajemne $\mathrm{IoS}$ bywa wysokie. Porównanie ograniczone jest do ramek tej samej klasy (linia 32), a algorytm ma charakter zachłanny: każda nowa ramka zestawiana jest wyłącznie ze zbiorem już zaakceptowanym, co daje złożoność $O(n^2)$ względem liczby ramek w pliku, akceptowalną przy typowej liczbie kilku--kilkunastu anotacji na obraz.
+
+Wyniki zastosowania procedury do poszczególnych podziałów zbioru zestawiono w tab.~\ref{tab:nms_cleanup}.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Rezultaty dwukryterialnego czyszczenia duplikatów ramek w podziałach zbioru. Źródło: opracowanie własne.}
+    \label{tab:nms_cleanup}
+    \begin{tabular}{|l|c|c|}
+        \hline
+        \textbf{Kryterium / wynik} & \textbf{Wartość} & \textbf{Rola} \\
+        \hline \hline
+        Próg $\mathrm{IoU}$ & $0{,}75$ & pokrycie względem sumy pól \\
+        \hline
+        Próg $\mathrm{IoS}$ & $0{,}85$ & pokrycie względem mniejszej ramki \\
+        \hline
+        Próg $\mathrm{Center\_Distance}$ & $0{,}06$ & bliskość środków geometrycznych \\
+        \hline
+        Warunek usunięcia & \multicolumn{2}{c|}{$\bigl(\mathrm{IoU}>0{,}75 \;\lor\; \mathrm{IoS}>0{,}85\bigr) \;\land\; \mathrm{Center\_Distance}<0{,}06$} \\
+        \hline \hline
+        Zmodyfikowane pliki etykiet & $19\,670$ & podziały \texttt{train}, \texttt{val}, \texttt{test} \\
+        \hline
+        Usunięte ramki fantomowe & $22\,173$ & duplikaty tego samego owocnika \\
+        \hline
+        Średnio na zmodyfikowany plik & $1{,}13$ & --- \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\section{Proces treningu i optymalizacja modelu}
+Zbiór gotowy — pora uruchomić trening. Wagi YOLO11m wychodzą ze środowiska PyTorch i muszą trafić do pliku \texttt{.tflite} nadającego się do lokalnej inferencji na Snapdragonie.
+
+\subsection{Środowisko uczenia i parametry treningu YOLO11m}
+Stacja robocza: AMD Ryzen~5~3600, $32$\,GB DDR4, NVIDIA RTX~4070 ($12$\,GB VRAM), CUDA. Stos programowy: Python $3.11+$, PyTorch $2.x$, CUDA~$12.x$, Ultralytics \cite{pytorch, ultralytics2024yolo11}. Skrypt \texttt{train.py} inicjalizuje model, wczytuje \texttt{data.yaml} i uruchamia trening na GPU bez ręcznej interwencji. Dwa etapy uczenia różnią się rozmiarem wsadu i liczbą procesów ładujących dane — powód: po rozszerzeniu głowicy do 147 klas $12$\,GB VRAM przestaje wystarczać dla \texttt{batch=16}.
+
+Architektura bazowa: YOLO11 Medium — $20\,143\,369$ parametrów, złożoność $68{,}3$\,GFLOPs \cite{ultralytics2024yolo11}. Wariant Nano nie radzi sobie z 147 gatunkami bliźniaczymi; Large przekracza budżet RAM. Medium mieści się w obu ograniczeniach. Wagi startują z COCO (\texttt{yolo11m.pt}) — uczenie transferowe \cite{lin2014coco}. Niskopoziomowe filtry krawędzi i tekstur wyuczone na ogólnym zbiorze COCO stanowią punkt startowy; model dostosowuje wyższe warstwy i głowicę do mykologii.
+
+Rozdzielczość wejściowa: $640\times640$ pikseli w obu etapach. AMP/FP16 aktywne — Tensor Core RTX~4070 skracają czas epoki bez destabilizacji gradientów. Harmonogram kosinusoidalny: $\texttt{lr0}=0{,}01$, $\texttt{lrf}=0{,}01$.
+
+Trening podzielono na dwa etapy odpowiadające przyrostowej budowie rejestru klas.
+
+Etap podstawowy: wcześniejszy, mniejszy zestaw gatunków, \texttt{batch=16}, wczesne zatrzymanie z \texttt{patience=40} na mAP walidacyjnym. Brak poprawy w ciągu 40 epok kończy etap i zachowuje najlepsze wagi.
+
+Etap dostrajania: pełny zestaw 147 klas, wagi z etapu podstawowego. Rozszerzona głowica klasyfikacyjna kosztuje VRAM — \texttt{batch=16} nie mieści się, więc \texttt{batch=8} i \texttt{workers=2}. \texttt{freeze=10} stabilizuje pierwsze warstwy szkieletu: cechy niskopoziomowe wyuczone na COCO nie muszą się uczyć mykologii od nowa. Adaptacja koncentruje się na głębszych warstwach i głowicy detekcyjnej. Czas trwania: 15 epok (\texttt{epochs=15}), bez wczesnego zatrzymania — pełny horyzont gwarantuje powtarzalną adaptację głowicy do rozszerzonego zestawu.
+
+Konfigurację wywołania treningu dostrajającego, wraz z rozstrzyganiem urządzenia obliczeniowego, przedstawiono na listingu \ref{lst:train}.
+
+\begin{lstlisting}[language=Python,caption={Konfiguracja dostrajania modelu YOLO11m na $147$ klasach (\texttt{scripts/train.py})},label={lst:train}]
+DEFAULT_MODEL = "weights/yolo11m.pt"
+
+def resolve_device(requested: str) -> str:
+    # Map CLI device string to Ultralytics device id
+    cuda_available = torch.cuda.is_available()
+    if requested == "auto":
+        if cuda_available:
+            print(f"[device] GPU: {torch.cuda.get_device_name(0)} -> '0'")
+            return "0"
+        print("[device] No CUDA, using CPU")
+        return "cpu"
+    if requested == "cpu":
+        return "cpu"
+    return "0" if requested == "cuda" else requested
+
+def train(args) -> str:
+    device = resolve_device(args.device)
+    project = str(Path(args.project).resolve())
+
+    model = YOLO(args.model)
+
+    results = model.train(
+        data=args.data,          # data.yaml, nc: 147
+        epochs=args.epochs,      # 15 for the fine-tuning stage
+        imgsz=args.imgsz,        # 640 x 640
+        batch=args.batch,        # 8 (VRAM-bound after head expansion)
+        workers=args.workers,    # 2 dataloader processes
+        freeze=args.freeze,      # first 10 backbone layers frozen
+        amp=True,                # mixed precision FP16 on Tensor Cores
+        cos_lr=True,             # cosine learning-rate schedule
+        lr0=0.01,
+        lrf=0.01,
+        device=device,
+        project=project,
+        name=args.name,
+        plots=True,
+        show=False,
+        verbose=True,
+    )
+
+    save_dir = getattr(results, "save_dir", os.path.join(project, args.name))
+    return os.path.join(str(save_dir), "weights", "best.pt")
+\end{lstlisting}
+
+\texttt{resolve\_device} (linie 3--14) mapuje argument CLI na identyfikator Ultralytics. Tryb \texttt{auto} bez CUDA degraduje do CPU zamiast rzucać wyjątkiem — ten sam skrypt działa na stacji treningowej i na maszynie bez akceleratora do testów poprawności potoku.
+
+Linia 20 ładuje wagi COCO (\texttt{yolo11m.pt}) \cite{lin2014coco}. \texttt{model.train} (linie 22--38) uruchamia uczenie transferowe. Kluczowe hiperparametry:
+
+\texttt{epochs=15} (linia 24) — stała długość etapu dostrajania bez wczesnego zatrzymania; pełny horyzont gwarantuje powtarzalność adaptacji głowicy. \texttt{batch=8} (linia 26) — rozszerzona głowica 147 klas wyczerpuje $12$\,GB VRAM przy \texttt{batch=16}. \texttt{workers=2} (linia 27) — przy NVMe wąskim gardłem jest GPU, nie dysk.
+
+\texttt{freeze=10} (linia 28) zamraża pierwsze dziesięć warstw szkieletu. Cechy niskopoziomowe — krawędzie, gradienty, tekstury — są wspólne dla wszystkich domen. Dalsze ich aktualizowanie nie różnicuje gatunków mykologicznych, a grozi katastrofalnym zapominaniem reprezentacji wyuczonych na COCO. \texttt{amp=True} (linia 29) uruchamia mieszaną precyzję: przebieg w przód i wsteczny w FP16 na Tensor Core, akumulacja gradientów w FP32. Harmonogram kosinusoidalny (linie 30--32) wygasza współczynnik uczenia stopniowo, redukując oscylacje w końcowej fazie zbieżności.
+
+Zestawienie hiperparametrów obu etapów uczenia przedstawiono w tab.~\ref{tab:parametry_treningu}.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Hiperparametry dwuetapowego procesu uczenia modelu YOLO11m. Źródło: opracowanie własne.}
+    \label{tab:parametry_treningu}
+    \begin{tabular}{|p{4.5cm}|c|c|}
+        \hline
+        \textbf{Parametr} & \textbf{Etap podstawowy} & \textbf{Dostrajanie ($147$ klas)} \\
+        \hline \hline
+        Wagi inicjalizujące & \texttt{yolo11m.pt} (COCO) & \texttt{best.pt} etapu podstawowego \\
+        \hline
+        Rozdzielczość wejściowa & $640\times640$ & $640\times640$ \\
+        \hline
+        Rozmiar wsadu (\texttt{batch}) & $16$ & $8$ \\
+        \hline
+        Procesy wczytujące (\texttt{workers}) & $8$ & $2$ \\
+        \hline
+        Zamrożone warstwy (\texttt{freeze}) & --- & $10$ \\
+        \hline
+        Liczba epok & do $200$ & $15$ (stała) \\
+        \hline
+        Wczesne zatrzymanie & \texttt{patience=40} & wyłączone \\
+        \hline
+        Precyzja obliczeń & AMP FP16 & AMP FP16 \\
+        \hline
+        Harmonogram uczenia & kosinusoidalny & kosinusoidalny \\
+        \hline
+        $\texttt{lr0}$ / $\texttt{lrf}$ & $0{,}01$ / $0{,}01$ & $0{,}01$ / $0{,}01$ \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\subsection{Konwersja do formatu TensorFlow Lite}
+Najlepszy punkt kontrolny wag (\texttt{best.pt}) musi trafić na telefon jako plik \texttt{.tflite}. Tu pojawia się przeszkoda platformowa: bezpośredni eksport \texttt{format='tflite'} w Ultralytics $8.4+$ korzysta z LiteRT, które kompiluje tylko na Linux~x86\_64 i macOS. Na stacji Windows wywołanie kończy się asercją — bez artefaktu. Rozwiązanie: dwuetapowy potok w skrypcie \texttt{scripts/export\_tflite.py}. Etap pierwszy: Ultralytics eksportuje graf do TensorFlow SavedModel — obsługiwany na wszystkich platformach. Etap drugi: natywny \texttt{tf.lite.TFLiteConverter} kompiluje SavedModel do binarnego \texttt{.tflite} z żądaną precyzją. Żadnego przenoszenia wag na Linuksa; proces powtarzalny na stacji Windows. Oba etapy konwersji pokazuje listing \ref{lst:export}.
+
+\begin{lstlisting}[language=Python,caption={Dwuetapowy eksport PyTorch $\rightarrow$ SavedModel $\rightarrow$ TFLite FP16 (\texttt{scripts/export\_tflite.py})},label={lst:export}]
+def _run_export(weights: Path, quant: str, imgsz: int, data: str) -> Path:
+    # Two-stage export: SavedModel then TFLiteConverter. Returns .tflite path.
+    import tensorflow as tf
+
+    model = YOLO(str(weights))
+
+    export_kwargs = {"format": "saved_model", "imgsz": imgsz}
+    if quant == "int8":
+        export_kwargs["int8"] = True
+        export_kwargs["data"] = data
+
+    saved_model_path = Path(str(model.export(**export_kwargs)))
+
+    converter = tf.lite.TFLiteConverter.from_saved_model(str(saved_model_path))
+
+    if quant == "int8":
+        converter.optimizations = [tf.lite.Optimize.DEFAULT]
+    elif quant == "fp16":
+        converter.optimizations = [tf.lite.Optimize.DEFAULT]
+        converter.target_spec.supported_types = [tf.float16]
+    # fp32: converter defaults
+
+    tflite_model = converter.convert()
+
+    tflite_path = saved_model_path.parent / f"{saved_model_path.name}_{quant}.tflite"
+    tflite_path.write_bytes(tflite_model)
+    return tflite_path
+\end{lstlisting}
+
+Linia 12: \texttt{model.export} z \texttt{format='saved\_model'} omija LiteRT i generuje graf TensorFlow SavedModel — obsługiwany wszędzie. \texttt{imgsz} utrwala kształt tensora wejściowego $640\times640$ statycznie: Interpreter mobilny nie może realokować buforów przy każdej klatce.
+
+Linia 14 tworzy konwerter ze ścieżki SavedModel. Rozgałęzienie w liniach 16--21 konfiguruje precyzję. FP16 (linie 19--20) wymaga dwóch właściwości jednocześnie: \texttt{Optimize.DEFAULT} uruchamia kwantyzację wag, a \texttt{target\_spec.supported\_types = [tf.float16]} wymusza połowiczną precyzję zamiast domyślnej INT8. INT8 (linie 17--18) potrzebuje dodatkowo zbioru kalibracyjnego w \texttt{data} do wyznaczenia zakresów $[r_{\min}, r_{\max}]$ — ten wariant odrzucono z powodów opisanych wcześniej.
+
+\texttt{converter.convert()} (linia 23) kompiluje graf do FlatBuffer, który linia 26 zapisuje na dysk. Artefakt: \texttt{best\_saved\_model\_fp16.tflite}, $38{,}58$\,MB — mieści się w budżecie $40$\,MB (tab.~\ref{tab:budzety}).
+
+Strukturę tensora wyjściowego skompilowanego modelu, wraz z odwzorowaniem kanałów na wielkości fizyczne, zestawiono w tab.~\ref{tab:tensor}, a jej reprezentację graficzną --- na rys.~\ref{fig:tensor_geometria}.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[
+        opis/.style={font=\footnotesize, align=center},
+        strz/.style={-latex, semithick}
+    ]
+        % Kanaly (os pionowa)
+        \fill[EETangerine!35] (0,0) rectangle (10.5,0.55);
+        \draw (0,0) rectangle (10.5,0.55);
+        \node[opis] at (5.25,0.275) {kanały $0$--$3$: współrzędne ramki $(\mathit{cx},\,\mathit{cy},\,w,\,h)$};
+
+        \fill[EEUltramarine!22] (0,-2.35) rectangle (10.5,-0.05);
+        \draw (0,-2.35) rectangle (10.5,-0.05);
+        \node[opis] at (5.25,-1.2) {kanały $4$--$150$: $147$ prawdopodobieństw gatunkowych};
+
+        % Os pozioma - kotwice
+        \draw[strz] (0,-2.75) -- (10.5,-2.75);
+        \node[opis] at (5.25,-3.2) {$8400$ kotwic przestrzennych};
+
+        \draw[dashed, black!45] (5.0,-2.65) -- (5.0,0.65);
+        \draw[dashed, black!45] (7.5,-2.65) -- (7.5,0.65);
+        \node[opis] at (2.5,0.95) {siatka $80\times80$\\($6400$)};
+        \node[opis] at (6.25,0.95) {$40\times40$\\($1600$)};
+        \node[opis] at (9.0,0.95) {$20\times20$\\($400$)};
+
+        % Wymiar pionowy
+        \draw[latex-latex, semithick] (-0.45,-2.35) -- (-0.45,0.55);
+        \node[opis, rotate=90] at (-0.85,-0.9) {$151$ kanałów};
+    \end{tikzpicture}
+    \caption{Geometria tensora wyjściowego $[1,\,151,\,8400]$ z podziałem kotwic na trzy skale map cech. Źródło: opracowanie własne.}
+    \label{fig:tensor_geometria}
+\end{figure}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Geometria tensora wyjściowego modelu TFLite FP16 o kształcie $[1,\,151,\,8400]$. Źródło: opracowanie własne.}
+    \label{tab:tensor}
+    \begin{tabular}{|c|c|p{7.3cm}|}
+        \hline
+        \textbf{Wymiar} & \textbf{Rozmiar} & \textbf{Interpretacja} \\
+        \hline \hline
+        $0$ & $1$ & rozmiar wsadu (pojedyncza klatka) \\
+        \hline
+        $1$ & $151$ & $4$ współrzędne ramki $(\mathit{cx},\mathit{cy},w,h)$ oraz $147$ prawdopodobieństw gatunkowych \\
+        \hline
+        $2$ & $8400$ & kotwice przestrzenne: $80^2 + 40^2 + 20^2 = 6400+1600+400$ \\
+        \hline \hline
+        \multicolumn{3}{|l|}{Indeksowanie w dekoderze: $\mathit{idx} = \mathit{kanal} \cdot 8400 + \mathit{kotwica}$} \\
+        \hline
+        \multicolumn{3}{|l|}{Rozmiar bufora wyjściowego: $151 \cdot 8400 \cdot 4$\,B $\approx 4{,}84$\,MB (Float32)} \\
+        \hline
+    \end{tabular}
+\end{table}
+
+Eksperymenty porównały INT8 z FP16. Wybór: \texttt{best\_saved\_model\_fp16.tflite}, $38{,}58$\,MB. INT8 schodzi do około $20$\,MB i szybciej na NPU — ale ceną są blaszki, pierścień i łuski kapelusza. To właśnie te subtelne cechy makromorfologiczne odróżniają jadalną czubajkę od trującej czubajeczki, borowika od goryczaka. INT8 spłaszcza gradienty jasności na tych detalach do grubego kwantu $S$ — ryzyko fałszywych klasyfikacji rośnie. FP16 daje niemal dwukrotną redukcję wobec FP32 bez rzezi cech. Decyzja produkcyjna: tylko FP16.
+
+Tensor wyjściowy modelu ma kształt $[1,\;151,\;8400]$: $8400$ kotwic z trzech skalowych map cech ($80{\times}80$, $40{\times}40$, $20{\times}20$), $151$ kanałów — cztery współrzędne ramki i 147 prawdopodobieństw gatunkowych. Geometria zgodna z dekoderem po stronie Androida; jedyna transformacja to mapowanie indeksów klas z rejestru \texttt{class\_registry.txt}. Po poprawnej kompilacji FP16 plik \texttt{mushrooms\_yolo11m.tflite} trafia do aktywów aplikacji mobilnej.
+
+\section{Implementacja aplikacji mobilnej Android}
+Aplikacja mobilna to natywny Kotlin na Androida. Trzy warstwy: deklaratywny interfejs w Jetpack Compose, akwizycja klatek przez CameraX i warstwa ML z interpreterem TFLite, logiką śledzenia i filtrem bezpieczeństwa. Granice między warstwami są ostre — każdą można testować niezależnie. Razem realizują jeden cel: lokalna inferencja na żywo, bez serwera, w lesie bez LTE.
+
+\subsection{Architektura interfejsu w Jetpack Compose i CameraX}
+Ekran główny to Compose: \texttt{MushroomCameraScreen} trzyma uprawnienia, podgląd i nakładkę; \texttt{DetectionOverlay} rysuje ramki osobno od kamery \cite{jetpackcompose}. CameraX dostarcza use case'y z rys.~\ref{fig:camerax_web}: \texttt{Preview} zasila \texttt{PreviewView} przez \texttt{setSurfaceProvider(...)}, a \texttt{ImageAnalysis} podłącza analizator przez \texttt{setAnalyzer(...)} \cite{camerax}. W tej aplikacji liczy się właśnie \texttt{ImageAnalysis} --- stamtąd idą klatki do TFLite. \texttt{ImageCapture} i \texttt{VideoCapture} zostawiono na uboczu; ciągła detekcja nie potrzebuje zapisu wideo.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.9\textwidth]{camerax_arch_official}
+    \caption{Architektura biblioteki CameraX z modułem ImageAnalysis. Źródło: \cite{camerax}.}
+    \label{fig:camerax_web}
+\end{figure}
+
+\texttt{ImageAnalysis.Builder} dostał \texttt{STRATEGY\_KEEP\_ONLY\_LATEST}: w buforze zostaje tylko najnowsza klatka, reszta leci do kosza. Podgląd: \texttt{FILL\_CENTER}. Analizator pracuje na własnym wątku; przed inferencją mapa bitowa jest obracana do pionu i konwertowana do RGBA.
+
+Telefon nie wytrzyma 30 inferencji na sekundę. W \texttt{MushroomViewModel} \texttt{Mutex.tryLock()} przepuszcza co najwyżej jedną inferencję naraz. Interwał: $250$\,ms ($4$\,FPS). Na S23 Ultra ciągła analiza bez throttlingu szybko wchodziła w thermal throttling --- nakładka zaczynała się zacinać. Gdy \texttt{isSceneLocked()} zgłasza stabilną scenę, interwał rośnie do $1{,}5$\,s (\textit{heartbeat}): nie ma sensu liczyć w kółko tego samego owocnika. Listing \ref{lst:throttling} pokazuje obie bramki.
+
+\begin{lstlisting}[language=Kotlin,caption={Ograniczanie częstotliwości inferencji i tryb ekonomiczny (\texttt{MushroomViewModel.kt})},label={lst:throttling}]
+private val inferenceMutex = Mutex()
+private var lastInferenceAt = 0L
+
+fun onFrame(upright: Bitmap) {
+    val activeDetector = detector
+    if (activeDetector == null) {
+        upright.recycle()
+        return
+    }
+
+    val now = SystemClock.elapsedRealtime()
+    val interval = if (tracker.isSceneLocked()) LOCK_HEARTBEAT_MS else INFERENCE_INTERVAL_MS
+    if (now - lastInferenceAt < interval) {
+        upright.recycle()
+        return
+    }
+    // Skip if a previous inference is still running (keep only the latest frame).
+    if (!inferenceMutex.tryLock()) {
+        upright.recycle()
+        return
+    }
+    lastInferenceAt = now
+
+    viewModelScope.launch(Dispatchers.Default) {
+        try {
+            val lb = FrameCropper.letterbox(upright, aspect, activeDetector.inputResolution)
+            val detections = activeDetector.detect(lb.bitmap)
+                .map { it.copy(boundingBox = FrameCropper.toVisibleNormalized(it.boundingBox, lb)) }
+                // Asymmetric floor: toxic @ 0.18, other classes @ 0.20.
+                .filter { it.confidence >= MushroomRegistry.displayThresholdFor(it.species.classId) }
+            lb.bitmap.recycle()
+
+            val tracked = tracker.update(detections, now)
+            currentDetections = tracked
+            _uiState.value = MushroomUiState.Scanning(tracked, tracker.isSceneLocked())
+        } catch (t: Throwable) {
+            Log.e(TAG, "Inference failed for frame", t)
+            upright.recycle()
+        } finally {
+            inferenceMutex.unlock()
+        }
+    }
+}
+
+companion object {
+    /** Inference cadence: 4 FPS (one frame every 250 ms). */
+    private const val INFERENCE_INTERVAL_MS = 250L
+
+    /** Slow heartbeat used while the scene is locked, to conserve battery. */
+    private const val LOCK_HEARTBEAT_MS = 1_500L
+}
+\end{lstlisting}
+
+Linia 12 realizuje adaptacyjny dobór interwału. Predykat \texttt{tracker.isSceneLocked()} zwraca wartość prawdziwą, gdy wszystkie potwierdzone tory śledzenia zostały zamrożone, co odpowiada scenie statycznej --- użytkownik utrzymuje kamerę nieruchomo nad rozłożonymi owocnikami. W takiej sytuacji interwał wydłuża się z $250$\,ms do $1500$\,ms, redukując liczbę wywołań interpretera sześciokrotnie bez zauważalnej zmiany zawartości nakładki. Wykorzystano zegar \texttt{SystemClock.elapsedRealtime()} (linia 11), monotoniczny i odporny na zmiany czasu systemowego, w przeciwieństwie do \texttt{System.currentTimeMillis()}.
+
+Linie 13--16 stanowią pierwszą, tanią bramkę: klatka nadchodząca przed upływem interwału jest natychmiast zwalniana wywołaniem \texttt{recycle()}. Jawne zwalnianie map bitowych jest tu konieczne, ponieważ CameraX dostarcza klatki z częstotliwością rzędu $30$\,FPS, a przy $4$\,FPS inferencji około $87\%$ z nich zostaje odrzuconych --- pozostawienie ich odśmiecaczowi prowadziłoby do gwałtownego przyrostu zajętości sterty i widocznych zacięć interfejsu.
+
+Linie 18--21 realizują drugą bramkę, opartą na wzajemnym wykluczaniu. Metoda \texttt{tryLock()} obiektu \texttt{Mutex} z biblioteki \texttt{kotlinx.coroutines} jest nieblokująca: w przypadku zajętej blokady zwraca \texttt{false} zamiast wstrzymywać wątek wywołujący. Ma to zasadnicze znaczenie, ponieważ metoda \texttt{onFrame} wykonywana jest na wątku analizatora CameraX --- użycie blokującego \texttt{lock()} spowodowałoby narastanie kolejki zaległych klatek i wzrost opóźnienia prezentacji. Przyjęta konstrukcja gwarantuje, że w danej chwili wykonywana jest co najwyżej jedna inferencja, a klatki nadmiarowe są porzucane, co odpowiada semantyce strategii \texttt{STRATEGY\_KEEP\_ONLY\_LATEST} zastosowanej w warstwie akwizycji.
+
+Zwolnienie blokady umieszczono w bloku \texttt{finally} (linie 38--40), dzięki czemu wyjątek zgłoszony podczas inferencji nie prowadzi do trwałego zakleszczenia potoku. Filtr w linii 30 stosuje asymetryczny próg dekodera, omówiony szczegółowo w kolejnym podrozdziale.
+
+Wyniki trafiają na płótno Jetpack Compose (\texttt{Canvas}) w komponencie \texttt{DetectionOverlay}. Znormalizowane współrzędne ramek — przestrzeń wejściowa modelu $640{\times}640$ — mapują się na piksele podglądu w geometrii \texttt{FILL\_CENTER}: nakładka pokrywa się z obrazem kamery niezależnie od proporcji ekranu. Kolory obrysów ramek rejestr \texttt{MushroomRegistry} wiąże z klasą toksyczności \texttt{Toxicity} — zielony, szary, pomarańczowy i ciemnoczerwony rozróżniają gatunki bez zaglądania do etykiety tekstowej. Gesty dotykowe obsługuje \texttt{modifier.pointerInput} z \texttt{detectTapGestures}: po dotknięciu hit-test przestrzenny wskazuje aktywny prostokąt \texttt{Rect} i uruchamia ręczny zapis wybranej detekcji do historii znalezisk.
+
+\subsection{Dekodowanie tensorów i dwustopniowy filtr bezpieczeństwa}
+Interpreter TFLite zwraca tensor $[1,\;151,\;8400]$ w transponowanym układzie Ultralytics \cite{ultralytics2024yolo11}: $8400$ kotwic przestrzennych, $151$ kanałów — cztery współrzędne ramki i $147$ prawdopodobieństw gatunkowych. Dekoder przegląda wszystkie kotwice, wyznacza klasę o najwyższym wyniku i odrzuca kandydatów poniżej progu — globalnego i klasowo-zależnego — zanim powstanie jakakolwiek alokacja na stercie.
+
+Ograniczenie obciążenia GC wymusza fast-fail: do NMS trafia co najwyżej 50 najwyżej ocenionych kandydatów (\texttt{MAX\_NMS\_INPUT=50}). Zachłanny NMS usuwa nakładające się ramki powyżej progu IoU \cite{redmon2016yolo}. Stały górny pułap wejść eliminuje patologiczny koszt kwadratowy przy gęstych scenach i stabilizuje czas przetwarzania klatki na Snapdragonie. Dekoder i NMS implementuje listing \ref{lst:decoder}.
+
+\begin{lstlisting}[language=Kotlin,caption={Dekodowanie tensora \texttt{[1, 151, 8400]} z szybką eliminacją i tłumieniem niemaksymalnym (\texttt{MushroomDetector.kt})},label={lst:decoder}]
+private fun decode(data: FloatArray): List<RawDetection> {
+    val detections = ArrayList<RawDetection>()
+    val globalMin = MushroomRegistry.minSafetyThreshold
+
+    for (anchor in 0 until numAnchors) {
+        var bestClass = -1
+        var bestScore = 0f
+
+        for (c in 0 until numClasses) {
+            val score = data[(BOX_COORDS + c) * numAnchors + anchor]
+            if (score > bestScore) {
+                bestScore = score
+                bestClass = c
+            }
+        }
+
+        // Cheap global gate first, then the per-class safety threshold.
+        if (bestClass < 0 || bestScore < globalMin) continue
+        if (bestScore < MushroomRegistry.thresholdFor(bestClass)) continue
+
+        val cx = data[0 * numAnchors + anchor]
+        val cy = data[1 * numAnchors + anchor]
+        val w = data[2 * numAnchors + anchor]
+        val h = data[3 * numAnchors + anchor]
+        val half = 0.5f
+
+        detections.add(
+            RawDetection(
+                x1 = cx - w * half, y1 = cy - h * half,
+                x2 = cx + w * half, y2 = cy + h * half,
+                score = bestScore, classIndex = bestClass
+            )
+        )
+    }
+    return detections
+}
+
+private fun nonMaxSuppression(input: List<RawDetection>): List<RawDetection> {
+    if (input.isEmpty()) return emptyList()
+
+    val sorted = input.sortedByDescending { it.score }
+        .take(MAX_NMS_INPUT)
+        .toMutableList()
+    val kept = ArrayList<RawDetection>()
+
+    while (sorted.isNotEmpty()) {
+        val best = sorted.removeAt(0)
+        kept.add(best)
+        if (kept.size >= MAX_DETECTIONS) break
+
+        val iterator = sorted.iterator()
+        while (iterator.hasNext()) {
+            if (iou(best, iterator.next()) > IOU_THRESHOLD) iterator.remove()
+        }
+    }
+    return kept
+}
+
+private const val IOU_THRESHOLD = 0.45f
+private const val MAX_NMS_INPUT = 50
+private const val MAX_DETECTIONS = 20
+\end{lstlisting}
+
+Pętla zewnętrzna (linia 5) przebiega kolejno wszystkie $8400$ kotwic przestrzennych, natomiast pętla wewnętrzna (linia 9) wyszukuje wśród $147$ kanałów gatunkowych wynik maksymalny. Adresowanie w linii 10 odzwierciedla transponowany układ tensora: element o indeksie kanału $c$ i kotwicy $a$ znajduje się pod pozycją $(4+c)\cdot 8400 + a$, ponieważ dane zapisane są kanałami, a nie kotwicami. Bezpośrednia praca na spłaszczonej tablicy \texttt{FloatArray} zamiast na strukturach wielowymiarowych eliminuje pośrednictwo obiektów opakowujących w ścieżce wykonywanej $8400 \cdot 147 \approx 1{,}23$ mln razy na klatkę.
+
+Kluczowa dla wydajności jest kolejność bramek w liniach 18--19. Najpierw wykonywane jest porównanie z progiem globalnym \texttt{globalMin} (równym $0{,}18$), będące pojedynczym porównaniem zmiennoprzecinkowym; dopiero kandydat, który je przejdzie, podlega kosztowniejszemu odpytaniu rejestru o próg właściwy dla swojej klasy. Odwrócenie tej kolejności oznaczałoby wykonanie odczytu z mapy dla każdej z $8400$ kotwic, podczas gdy w praktyce warunek z linii 18 odrzuca zdecydowaną większość z nich. Istotne jest również, że alokacja obiektu \texttt{RawDetection} (linia 27) następuje dopiero po przejściu obu bramek --- dzięki temu klatka pozbawiona owocników nie generuje żadnej alokacji na stercie.
+
+Metoda \texttt{nonMaxSuppression} (linie 37--56) realizuje szybką eliminację oraz właściwe tłumienie. Wywołanie \texttt{take(MAX\_NMS\_INPUT)} w linii 41 ogranicza wejście algorytmu do $50$ najwyżej ocenionych kandydatów. Ponieważ złożoność zachłannego NMS jest kwadratowa względem liczby wejść, ograniczenie to zamienia potencjalnie nieograniczony koszt na stały górny pułap rzędu $50^2/2 = 1250$ porównań, co gwarantuje przewidywalny czas przetwarzania niezależnie od zawartości sceny --- także w przypadku patologicznym, gdy tekstura tła generuje setki słabych detekcji. Pętla główna (linie 45--55) w każdej iteracji przenosi kandydata o najwyższym wyniku do zbioru zaakceptowanego, a następnie usuwa z listy roboczej wszystkie ramki wykazujące z nim $\mathrm{IoU} > 0{,}45$. Zastosowanie iteratora z metodą \texttt{remove()} (linie 51--53) pozwala na usuwanie elementów w trakcie przechodzenia kolekcji bez tworzenia list pośrednich. Ogranicznik \texttt{MAX\_DETECTIONS} (linia 48) przerywa pętlę po $20$ zachowanych detekcjach, co odpowiada praktycznemu maksimum liczby owocników czytelnie prezentowanych jednocześnie na ekranie urządzenia mobilnego.
+
+Detekcje przeżywające etap NMS podlegają następnie asymetrycznej polityce bezpieczeństwa mykologicznego, scentralizowanej w metodzie \texttt{MushroomRegistry.displayStatus} oraz w buforze konsensusu klatek klasy \texttt{DetectionTracker}. Filtr ten stanowi jedyne źródło prawdy dla etykiet i kolorów prezentowanych zarówno na nakładce na żywo, jak i w historii zapisów. Zanim kandydat trafi do warstwy decyzyjnej, podlega on jeszcze absolutnemu progowi odrzucenia na poziomie dekodera: wynik poniżej $0{,}18$ dla klas \texttt{POISONOUS} i \texttt{DEADLY} lub poniżej $0{,}20$ dla pozostałych klas jest odrzucany jeszcze przed alokacją struktur wynikowych, co eliminuje fałszywe alarmy tła, takie jak tekstury biurek czy klawiatury. Powyżej tego progu obowiązują następujące reguły prezentacji:
+\begin{itemize}
+    \item wczesne ostrzeżenie toksyczne ($\ge 0{,}18$ dla klas \texttt{POISONOUS} i \texttt{DEADLY}) --- natychmiastowe wyświetlenie czerwonej lub ciemnoczerwonej etykiety ,,Trujący'' / ,,Śmiertelnie trujący'', bez wymogu potwierdzenia w buforze konsensusu klatek,
+    \item status jadalności ($\ge 0{,}60$ dla gatunku klasy \texttt{EDIBLE}) --- wyświetlenie zielonej etykiety ,,Jadalny'' wyłącznie wtedy, gdy dodatkowo spełniony jest warunek \texttt{voteConfirmed}, tzn. dany gatunek stanowił najwyżej ocenioną predykcję w co najmniej $4$ z ostatnich $5$ klatek śledzonych w danym torze przez \texttt{DetectionTracker},
+    \item status neutralny (pasmo pośrednie) --- gdy detekcja nie spełnia żadnego z powyższych warunków, tj. dla pewności z przedziału orientacyjnie $0{,}20$--$0{,}55$, a także dla detekcji gatunku jadalnego o pewności $\ge 0{,}60$, która nie została jeszcze potwierdzona przez bufor konsensusu klatek, wyświetlana jest szara etykieta neutralna ,,Obiekt nierozpoznany / Zbliż kamerę''; w tym paśmie nigdy nie prezentowano zielonego statusu jadalności, aby wyeliminować ryzyko fatalnej pomyłki konsumpcyjnej.
+\end{itemize}
+Rozdzielenie warunku pewności od warunku czasowego bufora konsensusu wynika z obserwacji, że jednoklatkowy skok pewności powyżej progu $0{,}60$ bywa chwilowym artefaktem szumu inferencji, natomiast wymaganie stabilności predykcji w oknie pięciu klatek istotnie redukuje liczbę fałszywie potwierdzonych statusów jadalności. Dwustopniowość rozwiązania polega zatem na rozdzieleniu filtracji geometryczno-statystycznej (dekodowanie tensora, szybka eliminacja, NMS) od filtracji semantyczno-bezpieczeństwowej (asymetryczna polityka progów i konsensusu czasowego). Pierwszy etap ogranicza złożoność obliczeniową i liczbę fałszywych detekcji przestrzennych, natomiast drugi egzekwuje zasadę \textit{safety first}: ostrzeżenia o gatunkach trujących prezentowane są wcześniej, bardziej agresywnie i bez opóźnienia buforowego względem potwierdzeń jadalności, które wymagają jednocześnie wyższej pewności oraz stabilności czasowej. Rozkład progów decyzyjnych na osi pewności, wraz z zaznaczeniem pasma neutralnego oraz asymetrii pomiędzy ścieżką ostrzeżenia a ścieżką asercji jadalności, przedstawiono na rys.~\ref{fig:progi_asymetryczne}.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[
+        opis/.style={font=\footnotesize, align=center},
+        strz/.style={-latex, semithick}
+    ]
+        % Os pewnosci
+        \draw[strz] (0,0) -- (12.4,0);
+        \node[opis] at (12.9,0) {$\mathrm{conf}$};
+        \foreach \x/\l in {0/0{,}00, 2.16/0{,}18, 2.4/{}, 6.6/0{,}55, 7.2/0{,}60, 12/1{,}00}{
+            \draw (\x,-0.1) -- (\x,0.1);
+        }
+        \node[opis] at (0,-0.4) {$0{,}00$};
+        \node[opis] at (2.16,-0.4) {$0{,}18$};
+        \node[opis] at (2.75,-0.85) {$0{,}20$};
+        \node[opis] at (6.6,-0.4) {$0{,}55$};
+        \node[opis] at (7.35,-0.85) {$0{,}60$};
+        \node[opis] at (12,-0.4) {$1{,}00$};
+
+        % Sciezka toksyczna (gora)
+        \fill[black!12] (0,0.35) rectangle (2.16,1.05);
+        \fill[EETangerine!45] (2.16,0.35) rectangle (12,1.05);
+        \draw (0,0.35) rectangle (12,1.05);
+        \node[opis] at (1.08,0.7) {odrzucone};
+        \node[opis] at (7.1,0.7) {\textbf{ostrzeżenie toksyczne} --- natychmiast, bez konsensusu};
+        \node[opis, anchor=east] at (-0.2,0.7) {klasy\\trujące};
+
+        % Sciezka jadalna (dol)
+        \fill[black!12] (0,-2.2) rectangle (2.4,-1.5);
+        \fill[black!25] (2.4,-2.2) rectangle (7.2,-1.5);
+        \fill[EEBlue!35] (7.2,-2.2) rectangle (12,-1.5);
+        \draw (0,-2.2) rectangle (12,-1.5);
+        \node[opis] at (1.2,-1.85) {odrzucone};
+        \node[opis] at (4.8,-1.85) {status neutralny (szary)};
+        \node[opis] at (9.6,-1.85) {\textbf{,,Jadalny''}\\wymaga konsensusu $4$/$5$};
+        \node[opis, anchor=east] at (-0.2,-1.85) {klasy\\jadalne};
+    \end{tikzpicture}
+    \caption{Asymetryczna polityka progów decyzyjnych: ścieżka ostrzeżenia toksycznego (próg $0{,}18$) wobec ścieżki asercji jadalności (próg $0{,}60$ i konsensus czasowy). Źródło: opracowanie własne.}
+    \label{fig:progi_asymetryczne}
+\end{figure}
+
+Scentralizowaną implementację tej polityki przedstawiono na listingu \ref{lst:safety}.
+
+\begin{lstlisting}[language=Kotlin,caption={Asymetryczny filtr bezpieczeństwa mykologicznego (\texttt{MushroomRegistry.kt})},label={lst:safety}]
+// Asymmetric thresholds: toxic warns early, edible needs a high bar + vote buffer.
+const val UNSAFE_THRESHOLD = 0.18f
+const val SAFE_THRESHOLD = 0.60f
+
+// Mid band: detection exists but app asserts neither SAFE nor UNSAFE.
+const val NEUTRAL_MIN_CONFIDENCE = 0.20f
+const val NEUTRAL_MAX_CONFIDENCE = 0.55f
+
+// SAFE badge: species must win 4 of the last 5 frames.
+const val VOTE_REQUIRED = 4
+const val VOTE_WINDOW = 5
+
+// Decode / pre-tracker gate: toxic from 0.18, everything else from 0.20.
+fun thresholdFor(classId: Int): Float =
+    if (speciesMap[classId]?.toxicity?.isDangerous == true) UNSAFE_THRESHOLD
+    else NEUTRAL_MIN_CONFIDENCE
+
+// Badge policy:
+// - toxic/deadly @ >= 0.18 -> immediate warning colour
+// - edible @ >= 0.60 AND voteConfirmed -> green "Jadalny"
+// - otherwise -> neutral gray
+fun displayStatus(
+    toxicity: Toxicity,
+    confidence: Float,
+    voteConfirmed: Boolean = true
+): DisplayStatus =
+    when {
+        toxicity.isDangerous && confidence >= UNSAFE_THRESHOLD ->
+            DisplayStatus(toxicity.labelPl, toxicity.color)
+
+        toxicity == Toxicity.EDIBLE &&
+            confidence >= SAFE_THRESHOLD &&
+            voteConfirmed ->
+            DisplayStatus(toxicity.labelPl, toxicity.color)
+
+        else ->
+            DisplayStatus(NEUTRAL_LABEL, NEUTRAL_COLOR)
+    }
+\end{lstlisting}
+
+Linie 2--3 definiują dwa niesymetryczne progi decyzyjne, stanowiące formalny zapis hipotezy $H_2$. Ponad trzykrotna różnica pomiędzy progiem ostrzeżenia ($0{,}18$) a progiem asercji jadalności ($0{,}60$) odzwierciedla nierówny koszt obu typów błędu: fałszywe ostrzeżenie skutkuje pozostawieniem jadalnego owocnika w lesie, natomiast fałszywe potwierdzenie jadalności może prowadzić do spożycia gatunku toksycznego.
+
+Funkcja \texttt{thresholdFor} (linie 14--16) stanowi bramkę stosowaną jeszcze na poziomie dekodera, przed przekazaniem detekcji do trackera. Zwraca ona $0{,}18$ dla gatunków oznaczonych predykatem \texttt{isDangerous}, obejmującym kategorie \texttt{POISONOUS} oraz \texttt{DEADLY}, natomiast $0{,}20$ dla pozostałych. Dolny próg $0{,}20$ dla klas nietoksycznych pełni funkcję filtra szumu tła --- eliminuje przypadkowe aktywacje na teksturach niebędących owocnikami, zanim wygenerują one obiekt na stercie.
+
+Właściwa polityka prezentacji zawarta jest w wyrażeniu \texttt{when} (linie 27--38), którego kolejność gałęzi ma znaczenie semantyczne. Gałąź pierwsza (linie 28--29) obsługuje gatunki niebezpieczne i jest ewaluowana jako pierwsza, wobec czego ostrzeżenie ma bezwarunkowe pierwszeństwo przed jakimkolwiek innym statusem. Nie występuje w niej odwołanie do zmiennej \texttt{voteConfirmed} --- ostrzeżenie prezentowane jest natychmiast, już przy pierwszej klatce przekraczającej próg, bez oczekiwania na potwierdzenie czasowe.
+
+Gałąź druga (linie 31--34) formułuje warunek koniunkcyjny dla statusu jadalności: wymagana jest jednocześnie przynależność do kategorii \texttt{EDIBLE}, pewność nie mniejsza niż $0{,}60$ oraz pozytywny wynik bufora konsensusu. Niespełnienie któregokolwiek z trzech warunków przenosi detekcję do gałęzi domyślnej (linie 36--37), zwracającej neutralną, szarą etykietę. Konstrukcja ta realizuje projekt bezpieczny w razie awarii (ang. \textit{fail-safe}): każdy stan nieprzewidziany jawnie --- w tym detekcja o pewności z pasma $0{,}20$--$0{,}55$ oraz gatunek jadalny oczekujący na potwierdzenie konsensusu --- skutkuje statusem neutralnym, nigdy zaś zielonym. Parametr \texttt{voteConfirmed} zadeklarowano z wartością domyślną \texttt{true} (linia 25) na potrzeby ekranu historii, w którym bufor czasowy jest niedostępny retrospektywnie, a o statusie decyduje wyłącznie utrwalona pewność predykcji.
+
+Zasadę działania okna przesuwnego, wraz z przykładowym przebiegiem prowadzącym do potwierdzenia i do jego cofnięcia, zilustrowano na rys.~\ref{fig:bufor_konsensusu}.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[
+        klatka/.style={draw, minimum width=1.15cm, minimum height=0.72cm,
+                       font=\footnotesize, inner sep=1pt},
+        zgodna/.style={klatka, fill=EEBlue!28},
+        odstajaca/.style={klatka, fill=EETangerine!45},
+        opis/.style={font=\footnotesize, align=left}
+    ]
+        % Naglowek osi klatek
+        \foreach \i/\x in {1/0, 2/1.25, 3/2.5, 4/3.75, 5/5.0}{
+            \node[font=\scriptsize] at (\x,0.75) {$k_{\i}$};
+        }
+
+        % Przebieg A: 4 z 5 -> potwierdzone
+        \node[zgodna] at (0,0) {A};
+        \node[zgodna] at (1.25,0) {A};
+        \node[odstajaca] at (2.5,0) {B};
+        \node[zgodna] at (3.75,0) {A};
+        \node[zgodna] at (5.0,0) {A};
+        \draw[EEUltramarine, thick, rounded corners=3pt] (-0.65,-0.5) rectangle (5.65,0.5);
+        \node[opis, anchor=west, EEUltramarine] at (6.1,0) {$4$ z $5$ dla klasy A\\$\Rightarrow$ \texttt{voteConfirmed} $=$ \texttt{true}};
+
+        % Przebieg B: 3 z 5 -> niepotwierdzone
+        \node[zgodna] at (0,-1.55) {A};
+        \node[odstajaca] at (1.25,-1.55) {B};
+        \node[zgodna] at (2.5,-1.55) {A};
+        \node[odstajaca] at (3.75,-1.55) {C};
+        \node[zgodna] at (5.0,-1.55) {A};
+        \draw[EETangerine, thick, rounded corners=3pt] (-0.65,-2.05) rectangle (5.65,-1.05);
+        \node[opis, anchor=west, EETangerine] at (6.1,-1.55) {$3$ z $5$ dla klasy A\\$\Rightarrow$ status neutralny};
+    \end{tikzpicture}
+    \caption{Bufor konsensusu klatek: okno pięcioelementowe dopuszcza jedną klatkę odstającą, lecz blokuje status jadalności przy dwóch lub więcej niezgodnościach. Źródło: opracowanie własne.}
+    \label{fig:bufor_konsensusu}
+\end{figure}
+
+Klasę \texttt{DetectionTracker} realizującą ten bufor prezentuje listing \ref{lst:voting}.
+
+\begin{lstlisting}[language=Kotlin,caption={Bufor konsensusu klatek --- potwierdzenie gatunku w $4$ z ostatnich $5$ klatek (\texttt{DetectionTracker.kt})},label={lst:voting}]
+private class Track(val id: Int, seed: DetectionResult, nowMs: Long) {
+    var species: MushroomSpecies = seed.species
+    var confidence: Float = seed.confidence
+    var box: NormalizedBox = seed.boundingBox
+    var frozen: Boolean = false
+
+    // Number of consecutive frames this track kept the same species class.
+    var confirmCount: Int = 1
+
+    // Rolling top-class ids for SAFE vote: need VOTE_REQUIRED hits in VOTE_WINDOW.
+    private val recentClassIds = ArrayDeque<Int>(MushroomRegistry.VOTE_WINDOW)
+
+    init {
+        recentClassIds.addLast(seed.species.classId)
+    }
+
+    fun absorb(detection: DetectionResult, nowMs: Long) {
+        lastSeenMs = nowMs
+        confidence = detection.confidence
+
+        confirmCount = if (detection.species.classId == species.classId) {
+            confirmCount + 1
+        } else {
+            1
+        }
+        species = detection.species
+
+        recentClassIds.addLast(detection.species.classId)
+        if (recentClassIds.size > MushroomRegistry.VOTE_WINDOW) {
+            recentClassIds.removeFirst()
+        }
+
+        if (nowMs - firstSeenMs >= FREEZE_MS) {
+            frozen = true
+            return
+        }
+        box = smooth(box, detection.boundingBox)
+    }
+
+    // True when current species won >= VOTE_REQUIRED of the recent window.
+    fun voteConfirmed(): Boolean =
+        recentClassIds.count { it == species.classId } >= MushroomRegistry.VOTE_REQUIRED
+
+    fun toTracked(): TrackedDetection =
+        TrackedDetection(id, species, confidence, box, frozen, voteConfirmed())
+}
+\end{lstlisting}
+
+Strukturą nośną bufora jest kolejka dwustronna \texttt{ArrayDeque} (linia 11), zainicjalizowana pojemnością równą rozmiarowi okna. Wybór tej struktury wynika z wzorca dostępu: w każdej klatce wykonywane jest jedno dopisanie na końcu oraz co najwyżej jedno usunięcie z początku, a obie operacje realizowane są w czasie stałym. Zastosowanie zwykłej listy \texttt{ArrayList} wymuszałoby przesuwanie wszystkich elementów przy usuwaniu z czoła.
+
+Metoda \texttt{absorb} (linie 17--38) wywoływana jest po dopasowaniu toru do detekcji z bieżącej klatki metodą IoU. Linie 28--31 realizują właściwy mechanizm okna przesuwnego: nowa etykieta klasowa dopisywana jest na końcu kolejki, a po przekroczeniu rozmiaru okna najstarszy element jest usuwany. Kolejka utrzymuje zatem stale co najwyżej pięć ostatnich rozstrzygnięć klasowych danego toru.
+
+Metoda \texttt{voteConfirmed} (linie 41--42) zlicza w oknie wystąpienia identyfikatora klasy aktualnie przypisanej do toru i porównuje wynik z progiem $4$. Warto zwrócić uwagę na różnicę względem licznika \texttt{confirmCount} (linie 21--25), zliczającego wyłącznie serie \emph{następujących po sobie} klatek o tej samej klasie i resetowanego przy każdej zmianie etykiety. Kryterium głosowania jest łagodniejsze --- dopuszcza pojedynczą klatkę odstającą wewnątrz okna --- co odpowiada rzeczywistemu charakterowi zakłóceń: chwilowe migotanie predykcji pomiędzy dwoma zbliżonymi gatunkami nie powinno całkowicie unieważniać stabilnego rozpoznania, natomiast systematyczna niepewność, przejawiająca się dwiema lub więcej klatkami odstającymi w oknie pięcioelementowym, blokuje wyświetlenie zielonego statusu.
+
+Metoda \texttt{toTracked} (linie 44--45) przekazuje wynik głosowania do warstwy prezentacji jako pole \texttt{voteConfirmed} struktury \texttt{TrackedDetection}, gdzie jest ono odczytywane przez omówioną wcześniej funkcję \texttt{displayStatus}. Rozdzielenie odpowiedzialności jest tu ścisłe: tracker odpowiada wyłącznie za stabilność czasową predykcji, natomiast rejestr --- za interpretację bezpieczeństwa. Pełny cykl życia pojedynczego toru, od utworzenia po wygaśnięcie, przedstawiono na rys.~\ref{fig:cykl_toru}.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[
+        stan/.style={draw, rounded corners=4pt, align=center, font=\scriptsize,
+                     text width=2.5cm, minimum height=9mm, inner sep=2.5pt},
+        nowy/.style={stan, fill=black!7},
+        akt/.style={stan, fill=EEBlue!14},
+        pot/.style={stan, fill=EETangerine!25},
+        kon/.style={stan, fill=black!12},
+        p/.style={-latex, semithick, font=\scriptsize}
+    ]
+        \node[nowy] (n) at (0,0)      {\textsc{Nowy}\\okno: $1$ klatka};
+        \node[akt]  (a) at (4.6,0)    {\textsc{Śledzony}\\dopasowanie IoU};
+        \node[pot]  (p) at (9.2,0)    {\textsc{Potwierdzony}\\$4$/$5$ zgodnych};
+        \node[kon]  (k) at (4.6,-3.4) {\textsc{Wygasły}\\brak dopasowania};
+
+        \draw[p] (-1.7,0) -- node[above] {detekcja} (n);
+        \draw[p] (n) -- node[above, align=center] {kolejna\\klatka} (a);
+        \draw[p] (a) to[bend left=22] node[above, align=center] {konsensus\\osiągnięty} (p);
+        \draw[p] (p) to[bend left=22] node[below, align=center] {zmiana klasy\\w oknie} (a);
+        \draw[p] (a) -- node[right, align=left, xshift=2pt] {przekroczony\\limit czasu} (k);
+        \draw[p] (p.south) |- node[pos=0.75, above] {utrata obiektu} (k.east);
+    \end{tikzpicture}
+    \caption{Cykl życia pojedynczego toru w module \texttt{DetectionTracker}: przejście do stanu potwierdzonego wymaga konsensusu $4$ z $5$ klatek i jest odwracalne. Źródło: opracowanie własne.}
+    \label{fig:cykl_toru}
+\end{figure}
+
+\subsection{Lokalna baza danych Room i zapis historii znalezisk}
+Historia znalezisk nie może ginąć po zamknięciu aplikacji. Persystencję realizuje Room nad SQLite \cite{androidroom}. Przepływ danych jest prosty: aplikacja pobiera DAO z \texttt{MushroomDatabase}, DAO odczytuje lub zapisuje encje, warstwa UI czyta i ustawia pola — Backbone/DAO/UI bez żadnych warstw pośrednich. Schemat ilustruje rys.~\ref{fig:room_db_web}.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.85\textwidth]{room_db_arch_official}
+    \caption{Struktura lokalnej bazy danych Room. Źródło: \cite{androidroom}.}
+    \label{fig:room_db_web}
+\end{figure}
+
+Encja \texttt{MushroomFind} mapuje tabelę \texttt{mushroom\_finds}: klucz \texttt{id}, nazwa łacińska \texttt{speciesName}, etykieta toksyczności \texttt{toxicityLabel}, \texttt{confidence}, \texttt{timestamp} oraz \texttt{imagePath} do JPEG w \texttt{filesDir}. DAO to \texttt{MushroomFindDao}; repozytorium \texttt{FindsRepository} woła go z \texttt{Dispatchers.IO}, żeby dysk nie blokował Compose. Lista historii to \texttt{Flow} --- ekran odświeża się sam po każdym zapisie.
+
+Interfejs DAO i warstwę repozytorium pokazano na listingu \ref{lst:room}.
+
+\begin{lstlisting}[language=Kotlin,caption={Asynchroniczna warstwa persystencji Room z reaktywnym strumieniem \texttt{Flow} (\texttt{MushroomFindDao.kt}, \texttt{FindsRepository.kt})},label={lst:room}]
+@Dao
+interface MushroomFindDao {
+
+    /** Insert a new find and return its generated row id. */
+    @Insert
+    suspend fun insert(find: MushroomFind): Long
+
+    /** Observe all finds, newest first. */
+    @Query("SELECT * FROM mushroom_finds ORDER BY timestamp DESC")
+    fun observeAll(): Flow<List<MushroomFind>>
+
+    /** Delete a find by id (does not remove the backing image file). */
+    @Query("DELETE FROM mushroom_finds WHERE id = :id")
+    suspend fun deleteById(id: Long)
+}
+
+class FindsRepository(context: Context) {
+
+    private val appContext = context.applicationContext
+    private val dao = MushroomDatabase.get(appContext).findDao()
+
+    /** All saved finds, newest first, as a reactive stream. */
+    val finds: Flow<List<MushroomFind>> = dao.observeAll()
+
+    suspend fun save(
+        speciesName: String,
+        toxicityLabel: String,
+        confidence: Float,
+        crop: Bitmap
+    ): MushroomFind = withContext(Dispatchers.IO) {
+        val dir = File(appContext.filesDir, FINDS_DIR).apply { mkdirs() }
+        val file = File(dir, "find_${UUID.randomUUID()}.jpg")
+
+        FileOutputStream(file).use { out ->
+            crop.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, out)
+        }
+
+        val find = MushroomFind(
+            speciesName = speciesName,
+            toxicityLabel = toxicityLabel,
+            confidence = confidence,
+            timestamp = System.currentTimeMillis(),
+            imagePath = file.absolutePath
+        )
+        val id = dao.insert(find)
+        find.copy(id = id)
+    }
+}
+\end{lstlisting}
+
+Adnotacje \texttt{@Dao}, \texttt{@Insert} oraz \texttt{@Query} (linie 1--14) przetwarzane są przez procesor adnotacji Room na etapie kompilacji, który generuje implementację interfejsu wraz z kodem wiążącym parametry zapytań. Zapytania SQL są przy tym weryfikowane składniowo i semantycznie względem schematu bazy w czasie budowy projektu, wobec czego literówka w nazwie kolumny skutkuje błędem kompilacji, a nie wyjątkiem czasu wykonania.
+
+Istotne jest rozróżnienie sygnatur w liniach 6 i 10. Metody modyfikujące \texttt{insert} oraz \texttt{deleteById} zadeklarowano ze słowem kluczowym \texttt{suspend}, co wymusza ich wywołanie z wnętrza korutyny i uniemożliwia przypadkowe wykonanie operacji dyskowej na wątku głównym --- próba takiego wywołania zostanie odrzucona przez kompilator. Metoda \texttt{observeAll} nie jest natomiast funkcją zawieszalną, lecz zwraca strumień \texttt{Flow}; Room monitoruje tabelę \texttt{mushroom\_finds} i emituje nową listę przy każdej modyfikacji jej zawartości. Warstwa interfejsu użytkownika nie musi zatem jawnie odświeżać widoku po zapisie --- ekran historii aktualizuje się jako konsekwencja propagacji strumienia.
+
+Metoda \texttt{save} (linie 25--47) łączy dwie operacje o odmiennym charakterze: zapis pliku binarnego oraz wstawienie rekordu do bazy. Całość opakowano w \texttt{withContext(Dispatchers.IO)} (linia 30), przenosząc wykonanie do puli wątków przeznaczonej dla operacji blokujących. Katalog docelowy tworzony jest wewnątrz \texttt{context.filesDir} (linia 31), czyli w prywatnej piaskownicy aplikacji --- wycinki nie trafiają do publicznej galerii urządzenia i są automatycznie usuwane wraz z odinstalowaniem aplikacji. Nazwę pliku generuje identyfikator \texttt{UUID} (linia 32), co eliminuje ryzyko kolizji przy zapisach wykonanych w tej samej milisekundzie.
+
+Konstrukcja \texttt{FileOutputStream(file).use \{ \ldots \}} (linie 34--36) wykorzystuje funkcję rozszerzającą \texttt{use}, stanowiącą odpowiednik konstrukcji \textit{try-with-resources}: strumień jest zamykany również w przypadku zgłoszenia wyjątku podczas kompresji, co zapobiega wyciekowi deskryptorów plików. Kolejność operacji jest przy tym zamierzona --- plik obrazu zapisywany jest przed wstawieniem rekordu (linia 45), dzięki czemu w bazie nie może powstać wiersz wskazujący na nieistniejący plik. Zwracany obiekt \texttt{find.copy(id = id)} (linia 46) uzupełnia encję o wygenerowany klucz główny, ponieważ instancje danych w języku Kotlin są niemodyfikowalne.
+
+Ręczny zapis uruchamia \texttt{FrameCropper}: aplikacja przechwytuje pełnorozdzielczą, zorientowaną pionowo klatkę i wycina region znormalizowanej ramki otaczającej. Wycinek trafia do JPEG w prywatnym katalogu piaskownicy (\texttt{context.filesDir}) — poza publiczną galerią urządzenia. Dane użytkownika pozostają izolowane i znikają automatycznie przy odinstalowaniu.
+
+Ekran historii (\texttt{HistoryScreen}) to deklaratywna lista \texttt{LazyColumn}. Biblioteka Coil (\texttt{coil-compose}, \texttt{AsyncImage}) ładuje miniatury leniwie — pamięć nie rośnie liniowo wraz z liczbą zapisów \cite{coil}. Status wizualny każdego elementu wyznacza \texttt{MushroomRegistry.displayStatus} z zapisanej pewności predykcji. Bufor konsensusu klatek jest strukturą czasową — retrospektywnie niedostępną — więc \texttt{voteConfirmed} przyjmuje tu wartość potwierdzoną. O statusie decyduje wyłącznie zapisana pewność: gatunek jadalny poniżej $0{,}60$ pokazuje szarą etykietę neutralną; zielone ,,Jadalny'' dostają tylko znaleziska z pewnością w chwili zapisu powyżej progu asercji. Stały czerwony baner na górze ekranu przypomina: ,,Ostrzeżenie: Aplikacja ma charakter pomocniczy. Nigdy nie spożywaj grzybów bez pewności eksperta''.
+
+\chapter{Badanie i analiza skuteczności systemu}\label{chap:badania}
+
+\section{Metodyka testowania i miary oceny}
+Do końcowej ewaluacji wydzielono niezależny zbiór testowy (\texttt{images/test}, \texttt{labels/test}), który nie uczestniczył ani w treningu, ani w doborze hiperparametrów. Zapobiega to wyciekowi informacji ze zbioru uczącego do etapu oceny i pozwala obiektywnie oszacować zdolność generalizacji modelu. Zbiór testowy, stanowiący $10\%$ całej bazy obrazów, obejmował $30\,171$ obrazów oraz $64\,345$ anotowanych instancji owocników rozłożonych na $147$ klasach gatunkowych. Wszystkie raportowane w tym rozdziale wartości metryk uzyskano wyłącznie na tym izolowanym podzbiorze.
+
+Jakościowe dopasowanie ramki predykowanej $B_p$ do ramki referencyjnej $B_{gt}$ mierzono współczynnikiem przecięcia nad sumą (IoU), zgodnie z definicją wprowadzoną wcześniej:
+\begin{equation}
+\mathrm{IoU}(B_p, B_{gt}) = \frac{\lvert B_p \cap B_{gt} \rvert}{\lvert B_p \cup B_{gt} \rvert}.
+\end{equation}
+Interpretację geometryczną licznika i mianownika powyższego ilorazu, wraz z wpływem wartości progu na kwalifikację detekcji, przedstawiono na rys.~\ref{fig:iou_definicja}.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[scale=0.92]
+        % --- (a) przeciecie
+        \begin{scope}[shift={(0,0)}]
+            \fill[EEBlue!30] (0,0) rectangle (2.4,1.8);
+            \fill[EETangerine!35] (1.1,0.6) rectangle (3.5,2.4);
+            \fill[EEUltramarine!55] (1.1,0.6) rectangle (2.4,1.8);
+            \draw[EEUltramarine, very thick] (0,0) rectangle (2.4,1.8);
+            \draw[EETangerine, very thick] (1.1,0.6) rectangle (3.5,2.4);
+            \node[font=\scriptsize, anchor=north] at (1.75,-0.25) {(a) $\lvert B_p \cap B_{gt}\rvert$};
+        \end{scope}
+        % --- (b) suma
+        \begin{scope}[shift={(5.0,0)}]
+            \fill[black!20] (0,0) rectangle (2.4,1.8);
+            \fill[black!20] (1.1,0.6) rectangle (3.5,2.4);
+            \draw[EEUltramarine, very thick] (0,0) rectangle (2.4,1.8);
+            \draw[EETangerine, very thick] (1.1,0.6) rectangle (3.5,2.4);
+            \node[font=\scriptsize, anchor=north] at (1.75,-0.25) {(b) $\lvert B_p \cup B_{gt}\rvert$};
+        \end{scope}
+        % legenda
+        \draw[EEUltramarine, very thick] (9.4,1.9) -- (10.0,1.9);
+        \node[font=\scriptsize, anchor=west] at (10.1,1.9) {$B_{gt}$ --- ramka referencyjna};
+        \draw[EETangerine, very thick] (9.4,1.35) -- (10.0,1.35);
+        \node[font=\scriptsize, anchor=west] at (10.1,1.35) {$B_p$ --- ramka predykowana};
+        \node[font=\scriptsize, anchor=west, align=left] at (9.4,0.45)
+            {$\mathrm{IoU}\ge0{,}50 \Rightarrow TP$\\[1pt] $\mathrm{IoU}<0{,}50 \Rightarrow FP$ oraz $FN$};
+    \end{tikzpicture}
+    \caption{Geometryczna interpretacja współczynnika IoU oraz reguła kwalifikacji detekcji przy progu $0{,}50$. Źródło: opracowanie własne.}
+    \label{fig:iou_definicja}
+\end{figure}
+
+Na podstawie progu IoU oraz zgodności etykiet klasowych klasyfikowano detekcje jako prawdziwie dodatnie ($TP$), fałszywie dodatnie ($FP$) lub fałszywie ujemne ($FN$). Precyzję $P$ oraz czułość (ang. \textit{recall}) $R$ zdefiniowano odpowiednio jako:
+\begin{equation}
+P = \frac{TP}{TP + FP}, \qquad R = \frac{TP}{TP + FN}.
+\end{equation}
+Średnią precyzję dla pojedynczej klasy ($AP$) obliczano jako pole pod krzywą precyzja--czułość:
+\begin{equation}
+AP = \int_{0}^{1} p(r)\,dr,
+\end{equation}
+natomiast średnią precyzję dla wielu klas ($mAP$) jako średnią arytmetyczną wartości $AP$ po $K$ gatunkach:
+\begin{equation}
+mAP = \frac{1}{K}\sum_{i=1}^{K} AP_i.
+\end{equation}
+
+W praktyce raportowano dwa warianty tej miary, zgodne ze standardem protokołu COCO \cite{lin2014coco}:
+\begin{itemize}
+    \item $mAP_{50}$ (mAP@$0,50$) — ewaluacja przy łagodnym progu przestrzennym $\mathrm{IoU}=0{,}50$, akcentująca poprawność klasyfikacji przy umiarkowanych wymaganiach lokalizacyjnych,
+    \item $mAP_{50\text{--}95}$ (mAP@$0,50{:}0,95$) — średnia z dziesięciu progów IoU od $0{,}50$ do $0{,}95$ z krokiem $0{,}05$, mierząca ścisłość lokalizacji ramek.
+\end{itemize}
+Pierwsza miara jest bardziej odporna na drobne przesunięcia geometrii, druga natomiast surowiej karze niedokładne dopasowanie przestrzenne.
+
+W kontekście identyfikacji grzybów profil ryzyka ma charakter asymetryczny. Fałszywie dodatnia detekcja ($FP$) — np. błędne wskazanie gatunku jadalnego — skutkuje co najwyżej irytacją użytkownika. Fałszywie ujemny wynik ($FN$), polegający na przeoczeniu gatunku trującego lub jego zaklasyfikowaniu jako jadalnego, niesie natomiast poważne konsekwencje zdrowotne. Z tego względu maksymalizacja czułości ($R$) dla klas toksycznych jest nadrzędnym kryterium projektowym, nawet kosztem pewnego spadku precyzji. Asymetria ta uzasadnia również polityki progów pewności wdrożone w aplikacji mobilnej, opisane w rozdziale \ref{chap:implementacja}.
+
+\section{Analiza wyników detekcji na zbiorze testowym}
+Model wytrenowany na architekturze YOLO11m poddano ewaluacji na izolowanym zbiorze testowym, stanowiącym $10\%$ całej bazy obrazów. Obrazy i etykiety tego podzbioru nie brały udziału w uczeniu ani w strojeniu hiperparametrów. Pomiarów dokonano standardowym potokiem walidacyjnym biblioteki Ultralytics, zapewniającym porównywalność wyników z protokołem raportowania mAP w detekcji obiektów \cite{ultralytics2024yolo11, lin2014coco}.
+
+Globalne metryki na całym zbiorze testowym ($147$ gatunków) wyniosły: $mAP_{50}=0{,}8858$ ($88{,}58\%$), $mAP_{50\text{--}95}=0{,}8413$ ($84{,}13\%$), precyzja $P=0{,}8507$ ($85{,}07\%$) oraz czułość $R=0{,}8077$ ($80{,}77\%$). Wysoka wartość $mAP_{50}$ potwierdza, że model skutecznie lokalizuje i rozpoznaje owocniki w zróżnicowanych warunkach oświetlenia naturalnego oraz na tle leśnym. Poza wynikiem zagregowanym po wszystkich klasach obliczono również metryki odrębnie dla dwóch podzbiorów gatunkowych zdefiniowanych kategorią toksykologiczną: gatunków jadalnych i warunkowo jadalnych oraz gatunków trujących i śmiertelnie trujących. Charakterystykę zbioru testowego wraz z globalnymi metrykami zagregowanymi po wszystkich klasach przedstawiono w tab.~\ref{tab:wyniki_detekcji}, natomiast rozbicie wyników na kategorie toksykologiczne --- w tab.~\ref{tab:wyniki_kategorie}. Asymetrię ryzyka konsumpcyjnego oceniono odrębnie w macierzy bezpieczeństwa (rozdz.~\ref{sec:safety_matrix}).
+
+\begin{table}[h!]
+    \centering
+    \caption{Charakterystyka zbioru testowego oraz globalne metryki detekcji modelu YOLO11m. Źródło: opracowanie własne.}
+    \label{tab:wyniki_detekcji}
+    \begin{tabular}{|l|c|}
+        \hline
+        \textbf{Wielkość} & \textbf{Wartość} \\
+        \hline \hline
+        Liczba obrazów testowych & $30\,171$ \\
+        \hline
+        Liczba anotowanych instancji & $64\,345$ \\
+        \hline
+        Udział w całej bazie danych & $10\%$ \\
+        \hline
+        Liczba klas gatunkowych & $147$ \\
+        \hline \hline
+        $mAP_{50}$ & $0{,}8858$ \quad ($88{,}58\%$) \\
+        \hline
+        $mAP_{50\text{--}95}$ & $0{,}8413$ \quad ($84{,}13\%$) \\
+        \hline
+        Precyzja $P$ & $0{,}8507$ \quad ($85{,}07\%$) \\
+        \hline
+        Czułość $R$ & $0{,}8077$ \quad ($80{,}77\%$) \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Wyniki detekcji na izolowanym zbiorze testowym w podziale na kategorie toksykologiczne. Źródło: opracowanie własne.}
+    \label{tab:wyniki_kategorie}
+    \begin{tabular}{|l|c|c|c|c|}
+        \hline
+        \textbf{Zakres ewaluacji} & $\boldsymbol{mAP_{50}}$ & $\boldsymbol{mAP_{50\text{--}95}}$ & $\boldsymbol{P}$ & $\boldsymbol{R}$ \\
+        \hline \hline
+        Cały zbiór testowy ($147$ klas) & $0{,}8858$ & $0{,}8413$ & $0{,}8507$ & $0{,}8077$ \\
+        \hline
+        Gatunki jadalne i warunkowo jadalne & $0{,}8910$ & $0{,}8480$ & $0{,}8620$ & $0{,}7980$ \\
+        \hline
+        Gatunki trujące i śmiertelnie trujące & $0{,}8790$ & $0{,}8290$ & $0{,}8310$ & $0{,}8290$ \\
+        \hline
+    \end{tabular}
+\end{table}
+
+Uzyskany poziom $mAP_{50}=88{,}58\%$ przy precyzji $85{,}07\%$ i czułości $80{,}77\%$ stanowi bazę operacyjną detektora. Rozbicie wyniku na podzbiory toksykologiczne ujawnia zjawisko istotne z punktu widzenia bezpieczeństwa: choć podzbiór gatunków jadalnych osiąga nieznacznie wyższe wartości $mAP_{50}$ i precyzji ($88{,}90\%$ / $86{,}20\%$) niż podzbiór gatunków trujących, to właśnie dla gatunków trujących uzyskano wyższą czułość ($R=82{,}90\%$ wobec $79{,}80\%$ dla jadalnych). Taka relacja jest korzystna z perspektywy przyjętej polityki \textit{safety first}: detektor rzadziej pomija owocnik toksyczny niż jadalny, co ogranicza liczbę potencjalnie niebezpiecznych przeoczeń jeszcze przed zastosowaniem asymetrycznej warstwy progów opisanej w kolejnym podrozdziale. Spełnienie polityki \textit{safety first} nie wynika jednak wyłącznie z globalnych wartości $P$ i $R$, lecz z asymetrycznej warstwy progów pewności oraz z macierzy ryzyka toksykologicznego.
+
+Zaobserwowano także systematyczną lukę pomiędzy $mAP_{50}$ a $mAP_{50\text{--}95}$, widoczną we wszystkich trzech zakresach ewaluacji. Niższy wynik przy surowych progach IoU ($0{,}50$--$0{,}95$) wynika z naturalnej zmienności morfologicznej kapeluszy oraz częściowego przesłonięcia owocników ściółką liściową, które utrudniają idealne dopasowanie geometryczne ramek. Różnica ta nie podważa użyteczności modelu w scenariuszu mobilnym, gdzie nadrzędne jest prawidłowe wykrycie i klasyfikacja gatunku, a nie milimetrowa precyzja obrysu.
+
+\section{Analiza macierzy ryzyka i asymetryczna polityka bezpieczeństwa}\label{sec:safety_matrix}
+Szczególną kategorię błędów detekcji stanowią pomyłki pomiędzy gatunkami bliźniaczymi (ang. \textit{look-alikes}), czyli parami taksonów o zbliżonych cechach makromorfologicznych --- barwie kapelusza, kształcie trzonu lub strukturze blaszek --- których wzajemna zamiana w wyniku klasyfikacji stanowi krytyczną awarię bezpieczeństwa. W odróżnieniu od typowych błędów lokalizacji, taka pomyłka może prowadzić bezpośrednio do decyzji konsumpcyjnej. Dlatego na zbiorze testowym oceniono nie tylko globalne metryki $mAP$, lecz także macierz ryzyka bezpieczeństwa (ang. \textit{safety risk matrix}), w której poszczególne gatunki zredukowano do trzech semantycznych kategorii toksykologicznych: \texttt{SAFE} (jadalne), \texttt{NEUTRAL} (niejadalne lub nierozpoznane) oraz \texttt{UNSAFE} (trujące i śmiertelnie trujące). Takie agregowanie umożliwia bezpośredni pomiar zdarzeń krytycznych typu ,,gatunek niebezpieczny prezentowany jako bezpieczny'', niezależnie od dokładnej pomyłki taksonomicznej wewnątrz grupy.
+
+Macierz ryzyka wygenerowano skryptem ewaluacyjnym z asymetryczną logiką progów zgodną z aplikacją mobilną: $\mathrm{conf}_{\mathrm{toxic}}=0{,}18$ (natychmiastowe ostrzeżenie toksyczne) oraz $\mathrm{conf}_{\mathrm{edible}}=0{,}60$ (asercja statusu jadalności). Predykcje mieszczące się w paśmie pośrednim mapowano do kategorii \texttt{NEUTRAL}. Wiersze odpowiadają kategorii referencyjnej (ang. \textit{ground truth}), a kolumny --- kategorii przypisanej przez system po zastosowaniu progów. Spośród $9\,760$ obiektów oznaczonych jako \texttt{UNSAFE} w etykietach referencyjnych, $103$ zostało sklasyfikowanych jako \texttt{SAFE}. Współczynnik krytycznych fałszywych pozytywów (ang. \textit{Critical False Positive Rate}, CFPR) wynosi zatem:
+\begin{equation}
+\mathrm{CFPR}
+=
+\frac{103}{9\,760}
+=
+0{,}0106
+\quad (1{,}06\%).
+\end{equation}
+Oznacza to, że wskaźnik ochrony bezpieczeństwa (ang. \textit{Safety Protection Rate}), zdefiniowany jako $1-\mathrm{CFPR}$, osiąga wartość $98{,}94\%$: spośród obiektów toksycznych $9\,657$ zostało poprawnie zablokowanych lub oznaczonych jako \texttt{UNSAFE}/\texttt{NEUTRAL} i nie otrzymało statusu jadalności. Współczynnik fałszywych alarmów (ang. \textit{False Alarm Rate}), czyli $P(\mathrm{pred}=\texttt{UNSAFE}\mid\mathrm{gt}=\texttt{SAFE})$, wyniósł $0{,}86\%$ ($469$ obiektów) i stanowi akceptowalny kompromis bezpieczeństwa. Pełny rozkład macierzy przedstawia się następująco: dla kategorii referencyjnej \texttt{SAFE} ($54\,585$ obiektów) uzyskano $36\,705$ predykcji \texttt{SAFE}, $17\,411$ \texttt{NEUTRAL} oraz $469$ \texttt{UNSAFE}; dla \texttt{UNSAFE} ($9\,760$) --- $103$ \texttt{SAFE}, $1\,315$ \texttt{NEUTRAL} oraz $8\,342$ \texttt{UNSAFE}. Liczbowe zestawienie macierzy wraz z wyprowadzonymi wskaźnikami bezpieczeństwa przedstawiono w tab.~\ref{tab:macierz_ryzyka}, a jej wizualizację w postaci mapy cieplnej --- na rys.~\ref{fig:safety_matrix_heatmap}.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Macierz ryzyka bezpieczeństwa mykologicznego przy progach $\mathrm{conf}_{\mathrm{toxic}}=0{,}18$ oraz $\mathrm{conf}_{\mathrm{edible}}=0{,}60$ na izolowanym zbiorze testowym. Źródło: opracowanie własne.}
+    \label{tab:macierz_ryzyka}
+    \begin{tabular}{|l|c|c|c|c|}
+        \hline
+        \multirow{2}{*}{\textbf{Kategoria referencyjna}} & \multicolumn{3}{c|}{\textbf{Predykcja systemu}} & \multirow{2}{*}{\textbf{Razem}} \\
+        \cline{2-4}
+        & \texttt{SAFE} & \texttt{NEUTRAL} & \texttt{UNSAFE} & \\
+        \hline \hline
+        \texttt{SAFE} (jadalne) & $36\,705$ & $17\,411$ & $469$ & $54\,585$ \\
+        \hline
+        \texttt{UNSAFE} (trujące) & $\mathbf{103}$ & $1\,315$ & $8\,342$ & $9\,760$ \\
+        \hline \hline
+        \multicolumn{5}{|l|}{Krytyczne fałszywe pozytywy (CFP): $103$ obiekty} \\
+        \hline
+        \multicolumn{5}{|l|}{Wskaźnik CFPR $= 103/9\,760 = 0{,}0106$ \quad ($1{,}06\%$)} \\
+        \hline
+        \multicolumn{5}{|l|}{Wskaźnik ochrony bezpieczeństwa $= 1-\mathrm{CFPR} = 98{,}94\%$ \quad ($9\,657$ obiektów)} \\
+        \hline
+        \multicolumn{5}{|l|}{Wskaźnik fałszywych alarmów $= 469/54\,585 = 0{,}0086$ \quad ($0{,}86\%$)} \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.85\textwidth]{wyniki/safety_matrix_heatmap}
+    \caption{Macierz ryzyka bezpieczeństwa mykologicznego (kategorie SAFE / NEUTRAL / UNSAFE) na izolowanym zbiorze testowym przy progach asymetrycznych $\mathrm{conf}_{\mathrm{toxic}}=0{,}18$, $\mathrm{conf}_{\mathrm{edible}}=0{,}60$. Źródło: opracowanie własne.}
+    \label{fig:safety_matrix_heatmap}
+\end{figure}
+
+Uzyskany poziom CFPR równy $1{,}06\%$ należy interpretować w kontekście asymetrii ryzyka oraz ewolucji polityki progów. Przy wcześniejszej, bardziej liberalnej agregacji macierzy (bez twardego rozdzielenia $\mathrm{conf}_{\mathrm{toxic}}$ i $\mathrm{conf}_{\mathrm{edible}}$) współczynnik CFPR wynosił $4{,}01\%$. Wprowadzenie logiki asymetrycznej obniżyło CFPR do $1{,}06\%$ i podniosło wskaźnik ochrony bezpieczeństwa do $98{,}94\%$. Nawet przy wysokiej średniej skuteczności detektora zdarzają się predykcje o umiarkowanej pewności na obrazach gatunków bliźniaczych; gdyby system prezentował w takiej sytuacji zieloną etykietę ,,Jadalny'', użytkownik mógłby uznać wynik za wystarczającą podstawę do spożycia. Dlatego warstwa aplikacji, opisana w rozdziale~\ref{chap:implementacja}, wymaga dla statusu jadalności pewności $\ge 0{,}60$ oraz potwierdzenia w buforze głosowania czasowego, a ostrzeżenia toksyczne prezentuje już od progu $0{,}18$. W efekcie filtr czasu rzeczywistego uzupełnia czysto statystyczną ocenę macierzy ryzyka o dodatkową warstwę ochronną na etapie prezentacji wyników.
+
+Dobór operacyjnych progów pewności aplikacji uzasadniono systematycznym przeciągnięciem progu detekcji (ang. \textit{confidence threshold sweep}) w zakresie od $0{,}05$ do $0{,}95$, zarejestrowanym skryptem \texttt{test3\_threshold\_sweep.py}, oraz niezależną ewaluacją macierzy bezpieczeństwa przy parach $(\mathrm{conf}_{\mathrm{toxic}},\,\mathrm{conf}_{\mathrm{edible}})=(0{,}18,\,0{,}60)$. Dla każdego węzła przeciągnięcia obliczano precyzję, czułość, miarę $F_1$ oraz $mAP_{50}$. Krzywa $F_1$ osiąga maksimum w okolicy niskich progów ($F_1^{\max}=0{,}8286$ przy $\mathrm{conf}=0{,}05$), jednak tak niski próg generowałby nadmierną liczbę fałszywych alarmów w warunkach terenowych.
+
+We wcześniejszej iteracji polityki progów, poprzedzającej wprowadzenie podziału asymetrycznego, aplikacja korzystała z pojedynczego, globalnego progu operacyjnego wyznaczonego na podstawie tego samego przeciągnięcia, ustalonego na poziomie $\mathrm{conf}=0{,}304$. Najbliższy zarejestrowany węzeł przeciągnięcia ($\mathrm{conf}=0{,}30$) daje następujące wartości: precyzja $P=84{,}68\%$, czułość $R=80{,}54\%$, miara $F_1=82{,}56\%$ oraz $mAP_{50}=78{,}15\%$. Pojedynczy próg globalny tego rzędu zapewniał akceptowalną równowagę pomiędzy precyzją a czułością w ujęciu zagregowanym, nie różnicował jednak ryzyka konsumpcyjnego pomiędzy gatunkami jadalnymi a trującymi — przy takiej konfiguracji współczynnik CFPR sięgał $4{,}01\%$, przywołany we wcześniejszej części podrozdziału. Ograniczenie to stanowiło bezpośrednią przesłankę do zastąpienia pojedynczego progu globalnego opisaną wyżej parą progów asymetrycznych $(\mathrm{conf}_{\mathrm{toxic}},\,\mathrm{conf}_{\mathrm{edible}})=(0{,}18,\,0{,}60)$, która przy zbliżonym poziomie ogólnej skuteczności detekcji obniżyła CFPR do $1{,}06\%$. Jako docelowy punkt asercji jadalności przyjęto ostatecznie $\mathrm{conf}_{\mathrm{edible}}=0{,}60$, natomiast próg ostrzeżeń toksycznych ustalono na $\mathrm{conf}_{\mathrm{toxic}}=0{,}18$. Wybrane węzły przeciągnięcia, obejmujące zakres od maksimum krzywej $F_1$ po progi wysokiej precyzji, zestawiono w tab.~\ref{tab:threshold_sweep}. Przebieg zależności $F_1$ od progu pewności przedstawiono na rys.~\ref{fig:threshold_sweep_f1}.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Wybrane węzły przeciągnięcia progu pewności detekcji w zakresie $0{,}05$--$0{,}95$. Źródło: opracowanie własne na podstawie \texttt{threshold\_sweep.csv}.}
+    \label{tab:threshold_sweep}
+    \begin{tabular}{|c|c|c|c|c|l|}
+        \hline
+        $\mathbf{conf}$ & $\boldsymbol{P}$ & $\boldsymbol{R}$ & $\boldsymbol{F_1}$ & $\boldsymbol{mAP_{50}}$ & \textbf{Uwagi} \\
+        \hline \hline
+        $0{,}05$ & $0{,}8507$ & $0{,}8077$ & $\mathbf{0{,}8286}$ & $0{,}8587$ & maksimum $F_1$ \\
+        \hline
+        $0{,}18$ & $0{,}8507$ & $0{,}8077$ & $0{,}8286$ & $\approx 0{,}815$ & próg ostrzeżeń toksycznych \\
+        \hline
+        $0{,}20$ & $0{,}8507$ & $0{,}8077$ & $0{,}8286$ & $0{,}8094$ & dolna granica pasma neutralnego \\
+        \hline
+        $0{,}30$ & $0{,}8468$ & $0{,}8054$ & $0{,}8256$ & $0{,}7815$ & dawny próg globalny \\
+        \hline
+        $0{,}45$ & $0{,}8962$ & $0{,}7508$ & $0{,}8171$ & $0{,}7343$ & --- \\
+        \hline
+        $0{,}55$ & $0{,}9137$ & $0{,}7102$ & $0{,}7992$ & $0{,}6975$ & górna granica pasma neutralnego \\
+        \hline
+        $0{,}60$ & $0{,}9237$ & $0{,}6873$ & $0{,}7882$ & $0{,}6764$ & \textbf{próg asercji jadalności} \\
+        \hline
+        $0{,}75$ & $0{,}9495$ & $0{,}5936$ & $0{,}7305$ & $0{,}5878$ & --- \\
+        \hline
+        $0{,}90$ & $0{,}9613$ & $0{,}3947$ & $0{,}5596$ & $0{,}3930$ & załamanie czułości \\
+        \hline
+    \end{tabular}
+\end{table}
+
+Zestawienie ujawnia zasadniczą własność wykorzystaną przy doborze progu asercji jadalności: przejście od $\mathrm{conf}=0{,}30$ do $\mathrm{conf}=0{,}60$ podnosi precyzję z $84{,}68\%$ do $92{,}37\%$ kosztem spadku czułości z $80{,}54\%$ do $68{,}73\%$. W zastosowaniu ogólnym byłby to kompromis niekorzystny, ponieważ miara $F_1$ maleje z $0{,}8256$ do $0{,}7882$. W rozważanym zadaniu utrata czułości oznacza jednak wyłącznie brak zielonej etykiety dla części owocników rzeczywiście jadalnych --- niedogodność, nie zagrożenie --- podczas gdy przyrost precyzji o blisko osiem punktów procentowych bezpośrednio redukuje liczbę błędnych asercji jadalności. Symetryczna miara $F_1$ nie jest zatem właściwym kryterium doboru progu w warstwie decyzyjnej tego systemu.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.85\textwidth]{wyniki/threshold_sweep_f1}
+    \caption{Zależność miary $F_1$ od progu pewności detekcji w zakresie $0{,}05$--$0{,}95$; punkt asercji jadalności aplikacji $\mathrm{conf}_{\mathrm{edible}}=0{,}60$. Źródło: opracowanie własne.}
+    \label{fig:threshold_sweep_f1}
+\end{figure}
+
+Wykazano zatem, że skuteczność systemu w przypadkach bliźniaczych nie sprowadza się wyłącznie do zdolności sieci do rozróżniania klas, lecz zależy od sprzężenia detektora z polityką progów i wyświetlania. Macierz ryzyka dokumentuje, że $98{,}94\%$ obiektów toksycznych nie otrzymuje statusu \texttt{SAFE}, a para progów $(\mathrm{conf}_{\mathrm{toxic}},\,\mathrm{conf}_{\mathrm{edible}})=(0{,}18,\,0{,}60)$ stanowi kompromis zgodny z zasadą \textit{safety first} oraz z logiką \texttt{MushroomRegistry.displayStatus}.
+
+\section{Test odporności na zakłócenia leśne}
+W warunkach terenowych jakość obrazu z kamery smartfonu jest systematycznie degradowana przez czynniki optyczne i środowiskowe: obniżone oświetlenie podszytu, rozmycie wynikające z ruchu ręki oraz szum elektroniczny matrycy przy podwyższonej czułości ISO. W celu ilościowej oceny odporności detektora na takie zaburzenia przeprowadzono test obciążeniowy (ang. \textit{stress test}) zaimplementowany w skrypcie \texttt{test2\_robustness\_noise.py}. Na izolowanym zbiorze testowym zasymulowano jednoczesne działanie trzech czynników: ściemnienia obrazu ze współczynnikiem jasności $0{,}6$ (redukcja o $40\%$), rozmycia ruchowego z jądrem konwolucyjnym o rozmiarze $5$ pikseli oraz addytywnego szumu Gaussa o odchyleniu standardowym $\sigma=8{,}0$, odpowiadającego typowemu szumowi matrycy przy podwyższonym ISO. Parametry symulacji oraz uzyskane wyniki zestawiono w tab.~\ref{tab:odpornosc}.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Parametry symulacji zakłóceń leśnych oraz degradacja skuteczności detekcji. Źródło: opracowanie własne na podstawie \texttt{robustness\_noise\_summary.json}.}
+    \label{tab:odpornosc}
+    \begin{tabular}{|p{5.0cm}|c|p{5.0cm}|}
+        \hline
+        \textbf{Czynnik zakłócający} & \textbf{Parametr} & \textbf{Odwzorowywane zjawisko} \\
+        \hline \hline
+        Ściemnienie obrazu & $0{,}6$ & zacienienie podszytu leśnego \\
+        \hline
+        Rozmycie ruchowe & jądro $5$\,px & drżenie ręki podczas akwizycji \\
+        \hline
+        Addytywny szum Gaussa & $\sigma=8{,}0$ & szum matrycy przy wysokim ISO \\
+        \hline \hline
+        \textbf{Wynik} & \textbf{Wartość} & \textbf{Komentarz} \\
+        \hline \hline
+        $mAP_{50}$ --- obrazy czyste & $0{,}8825$ & wynik odniesienia \\
+        \hline
+        $mAP_{50}$ --- obrazy zakłócone & $0{,}6592$ & wszystkie trzy czynniki łącznie \\
+        \hline
+        Degradacja bezwzględna & $22{,}33$\,pp & różnica wartości $mAP_{50}$ \\
+        \hline
+        Degradacja względna & $25{,}30\%$ & odniesiona do wyniku czystego \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}
+        \def\sk{5.6}   % cm na jednostke mAP
+        % os pozioma
+        \draw[semithick] (0,-0.55) -- (1.0*\sk,-0.55);
+        \foreach \x/\e in {0/0{,}0, 0.2/0{,}2, 0.4/0{,}4, 0.6/0{,}6, 0.8/0{,}8, 1.0/1{,}0}{
+            \draw[semithick] (\x*\sk,-0.55) -- (\x*\sk,-0.68) node[below, font=\scriptsize] {$\e$};
+        }
+        \node[font=\scriptsize, anchor=north] at (0.5*\sk,-1.1) {$mAP_{50}$};
+        % slupki
+        \node[font=\scriptsize, anchor=east] at (-0.15,0.85) {obrazy czyste};
+        \fill[EEBlue!45, draw=black!50] (0,0.55) rectangle (0.8825*\sk,1.15);
+        \node[font=\scriptsize, anchor=west] at (0.8825*\sk+0.12,0.85) {$0{,}8825$};
+
+        \node[font=\scriptsize, anchor=east] at (-0.15,0.0) {obrazy zakłócone};
+        \fill[EETangerine!60, draw=black!50] (0,-0.3) rectangle (0.6592*\sk,0.3);
+        \node[font=\scriptsize, anchor=west] at (0.6592*\sk+0.12,0.0) {$0{,}6592$};
+
+        % zaznaczenie degradacji
+        \draw[latex-latex, semithick, red!70]
+            (0.6592*\sk,1.55) -- node[above, font=\scriptsize, red!70] {$-22{,}33$\,pp} (0.8825*\sk,1.55);
+        \draw[dashed, red!50] (0.6592*\sk,0.3) -- (0.6592*\sk,1.55);
+        \draw[dashed, red!50] (0.8825*\sk,1.15) -- (0.8825*\sk,1.55);
+    \end{tikzpicture}
+    \caption{Degradacja skuteczności detekcji pod wpływem skumulowanych zakłóceń leśnych. Źródło: opracowanie własne na podstawie \texttt{robustness\_noise\_summary.json}.}
+    \label{fig:odpornosc_wykres}
+\end{figure}
+
+Na obrazach niezakłóconych model YOLO11m osiągnął $mAP_{50}=0{,}8825$ ($88{,}25\%$). Po wprowadzeniu skumulowanych zakłóceń leśnych wartość ta spadła do $mAP_{50}=0{,}6592$ ($65{,}92\%$), co zilustrowano na rys.~\ref{fig:odpornosc_wykres}. Absolutna degradacja wyniosła zatem $22{,}33$ punktu procentowego, a degradacja względna --- $25{,}30\%$ względem wyniku bazowego. Mimo istotnego spadku dokładności detektor zachował użyteczność operacyjną na poziomie $mAP_{50}>65\%$, co wskazuje, że reprezentacje cech wyuczone na zbiorze iNaturalist generalizują się do warunków o obniżonej jakości obrazu. Wynik ten uzasadnia jednocześnie konserwatywną politykę progów w aplikacji mobilnej: w warunkach leśnych część predykcji naturalnie traci pewność, a warstwa \texttt{displayStatus} zapobiega prezentowaniu niepewnych wskazań jadalności jako zielonego statusu ,,Jadalny''.
+
+\section{Analiza porównawcza architektur (studium ablacyjne)}
+Wybór wariantu YOLO11m zamiast lżejszego YOLO11n wymagał empirycznego uzasadnienia, ponieważ na urządzeniach mobilnych naturalną tendencją projektową jest minimalizacja liczby parametrów i rozmiaru artefaktu TFLite. Przeprowadzono zatem studium ablacyjne (ang. \textit{ablation study}), w którym obie architektury wytrenowano i oceniono na tym samym zadaniu rozpoznawania $147$ gatunków. Zestawienie kluczowych parametrów oraz wyników przedstawiono w tab.~\ref{tab:ablation_yolo11}.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Porównanie ablacyjne architektur YOLO11m i YOLO11n na zadaniu detekcji $147$ gatunków. Źródło: opracowanie własne.}
+    \label{tab:ablation_yolo11}
+    \begin{tabular}{|l|c|c|}
+        \hline
+        \textbf{Parametr} & \textbf{YOLO11m (wybrany)} & \textbf{YOLO11n (bazowy)} \\
+        \hline \hline
+        Liczba parametrów & $20{,}14$\,M & $2{,}66$\,M \\
+        \hline
+        Złożoność obliczeniowa & $68{,}3$\,GFLOPs & $6{,}7$\,GFLOPs \\
+        \hline
+        Rozmiar TFLite FP16 & $38{,}58$\,MB & $5{,}60$\,MB \\
+        \hline
+        $mAP_{50}$ (test) & $88{,}58\%$ & $48{,}00\%$ \\
+        \hline
+        $mAP_{50\text{--}95}$ (test) & $84{,}13\%$ & $42{,}10\%$ \\
+        \hline
+        Opóźnienie inferencji (GPU) & $14{,}00$\,ms & $1{,}10$\,ms \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}
+        \def\sk{0.058}   % cm na punkt procentowy
+        \def\gw{0.42}    % wysokosc slupka
+        % osie
+        \draw[semithick] (0,-1.75) -- (100*\sk,-1.75);
+        \foreach \x in {0,20,40,60,80,100}{
+            \draw[semithick] (\x*\sk,-1.75) -- (\x*\sk,-1.88) node[below, font=\scriptsize] {\x};
+        }
+        \node[font=\scriptsize, anchor=north] at (50*\sk,-2.3) {wartość metryki [\%]};
+
+        % mAP50
+        \node[font=\scriptsize, anchor=east] at (-0.15,0.15) {$mAP_{50}$};
+        \fill[EEBlue!45, draw=black!50] (0,0.15) rectangle (88.58*\sk,0.15+\gw);
+        \node[font=\scriptsize, anchor=west] at (88.58*\sk+0.1,0.15+\gw/2) {$88{,}58$};
+        \fill[EETangerine!60, draw=black!50] (0,0.15-\gw) rectangle (48.00*\sk,0.15);
+        \node[font=\scriptsize, anchor=west] at (48.00*\sk+0.1,0.15-\gw/2) {$48{,}00$};
+
+        % mAP50-95
+        \node[font=\scriptsize, anchor=east] at (-0.15,-1.0) {$mAP_{50\text{--}95}$};
+        \fill[EEBlue!45, draw=black!50] (0,-1.0) rectangle (84.13*\sk,-1.0+\gw);
+        \node[font=\scriptsize, anchor=west] at (84.13*\sk+0.1,-1.0+\gw/2) {$84{,}13$};
+        \fill[EETangerine!60, draw=black!50] (0,-1.0-\gw) rectangle (42.10*\sk,-1.0);
+        \node[font=\scriptsize, anchor=west] at (42.10*\sk+0.1,-1.0-\gw/2) {$42{,}10$};
+
+        % legenda
+        \fill[EEBlue!45, draw=black!50] (0,1.35) rectangle (0.42,1.62);
+        \node[font=\scriptsize, anchor=west] at (0.52,1.485) {YOLO11m (wybrany)};
+        \fill[EETangerine!60, draw=black!50] (3.4,1.35) rectangle (3.82,1.62);
+        \node[font=\scriptsize, anchor=west] at (3.92,1.485) {YOLO11n (bazowy)};
+    \end{tikzpicture}
+    \caption{Porównanie skuteczności wariantów YOLO11m i YOLO11n na zbiorze testowym $147$ gatunków. Źródło: opracowanie własne.}
+    \label{fig:ablacja_wykres}
+\end{figure}
+
+Wariant Nano, mimo ponad siedmiokrotnie mniejszej liczby parametrów i prawie siedmiokrotnie mniejszego artefaktu FP16, osiągnął zaledwie $48{,}00\%$ $mAP_{50}$ (rys.~\ref{fig:ablacja_wykres}), co oznacza spadek o $40{,}58$ punktu procentowego względem Medium, odpowiadający degradacji względnej rzędu $45{,}81\%$ ($40{,}58 / 88{,}58$). Tak duża degradacja wynika z niedostatecznej pojemności grafu obliczeniowego w zadaniu \textit{fine-grained}: rozróżnianie $147$ gatunków wymaga modelowania subtelnych cech makromorfologicznych (blaszki, pierścień, łuski, barwa trzonu), których Nano nie jest w stanie reprezentować z wystarczającą rozdzielczością semantyczną. Opóźnienie GPU wariantu Medium ($14{,}00$\,ms) pozostaje przy tym wielokrotnie poniżej budżetu czasowego aplikacji ($250$\,ms), zatem zysk prędkości Nano nie rekompensuje utraty bezpieczeństwa identyfikacji. Wynik ten stanowi bezpośredni dowód ilościowy zasadności wyboru architektury: przy zadaniu klasyfikacji drobnoziarnistej obejmującym $147$ wzajemnie podobnych taksonów wariant Nano nie osiąga akceptowalnego poziomu skuteczności niezależnie od korzystnego bilansu energetyczno-czasowego, wobec czego YOLO11m przyjęto jako obligatoryjny wariant produkcyjny.
+
+\section{Profilowanie opóźnień potoku inferencji}
+W celu rozdzielenia kosztów obliczeniowych poszczególnych etapów potoku przeprowadzono profilowanie na akceleratorze NVIDIA GeForce RTX~4070 przy wejściu $640{\times}640$ pikseli. Pomiar obejmował $100$ przebiegów i rozróżniał trzy fazy: wstępne przetwarzanie obrazu, inferencję sieci oraz postprocessing z tłumieniem niemaksymalnym (NMS). Średni czas preprocessingu wyniósł $2{,}88$\,ms (mediana $p_{50}=2{,}39$\,ms, percentyl $p_{95}=6{,}49$\,ms), średni czas inferencji --- $14{,}00$\,ms ($p_{50}=12{,}16$\,ms, $p_{95}=29{,}14$\,ms), a średni czas NMS --- $2{,}29$\,ms ($p_{50}=0{,}74$\,ms, $p_{95}=9{,}38$\,ms). Pełny rozkład statystyczny czasów poszczególnych faz zestawiono w tab.~\ref{tab:latency}.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Profilowanie opóźnień potoku inferencji na akceleratorze NVIDIA GeForce RTX~4070 ($100$ przebiegów, wejście $640\times640$). Wszystkie wartości w milisekundach. Źródło: opracowanie własne na podstawie \texttt{latency\_breakdown.json}.}
+    \label{tab:latency}
+    \begin{tabular}{|l|c|c|c|c|c|}
+        \hline
+        \textbf{Faza potoku} & \textbf{Średnia} & $\boldsymbol{\sigma}$ & $\boldsymbol{p_{50}}$ & $\boldsymbol{p_{95}}$ & \textbf{Maksimum} \\
+        \hline \hline
+        Wstępne przetwarzanie & $2{,}88$ & $1{,}38$ & $2{,}39$ & $6{,}49$ & $8{,}96$ \\
+        \hline
+        Inferencja sieci & $14{,}00$ & $5{,}37$ & $12{,}16$ & $29{,}14$ & $30{,}34$ \\
+        \hline
+        Postprocessing (NMS) & $2{,}29$ & $3{,}42$ & $0{,}74$ & $9{,}38$ & $14{,}50$ \\
+        \hline \hline
+        \textbf{Całkowity czas e2e} & $\mathbf{19{,}46}$ & $8{,}73$ & $16{,}07$ & $39{,}37$ & $49{,}16$ \\
+        \hline \hline
+        \multicolumn{6}{|l|}{Przepustowość równoważna: $1000/19{,}46 = 51{,}39$\,FPS} \\
+        \hline
+        \multicolumn{6}{|l|}{Budżet aplikacji mobilnej: $250$\,ms (throttling $4$\,FPS) --- zapas $\approx 12{,}8\times$} \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}
+        \def\sk{0.42}    % cm na milisekunde
+        \def\gw{0.62}
+        % skladowe czasu sredniego
+        \fill[EEBlue!35, draw=black!50]        (0,0) rectangle (2.88*\sk,\gw);
+        \fill[EEUltramarine!45, draw=black!50] (2.88*\sk,0) rectangle (16.88*\sk,\gw);
+        \fill[EETangerine!55, draw=black!50]   (16.88*\sk,0) rectangle (19.17*\sk,\gw);
+        \node[font=\scriptsize, anchor=east] at (-0.15,\gw/2) {czas średni};
+
+        % etykiety skladowych
+        \node[font=\scriptsize] at (1.44*\sk,\gw+0.32) {$2{,}88$};
+        \node[font=\scriptsize] at (9.88*\sk,\gw+0.32) {$14{,}00$};
+        \node[font=\scriptsize] at (18.03*\sk,\gw+0.72) {$2{,}29$};
+        \draw[gray, thin] (18.03*\sk,\gw+0.58) -- (18.03*\sk,\gw+0.08);
+
+        % os
+        \draw[semithick] (0,-0.3) -- (22*\sk,-0.3);
+        \foreach \x in {0,5,10,15,20}{
+            \draw[semithick] (\x*\sk,-0.3) -- (\x*\sk,-0.43) node[below, font=\scriptsize] {\x};
+        }
+        \node[font=\scriptsize, anchor=north] at (11*\sk,-0.88) {czas [ms]};
+
+        % legenda
+        \fill[EEBlue!35, draw=black!50] (0,-2.15) rectangle (0.4,-1.88);
+        \node[font=\scriptsize, anchor=west] at (0.5,-2.015) {wstępne przetwarzanie};
+        \fill[EEUltramarine!45, draw=black!50] (4.0,-2.15) rectangle (4.4,-1.88);
+        \node[font=\scriptsize, anchor=west] at (4.5,-2.015) {inferencja sieci};
+        \fill[EETangerine!55, draw=black!50] (7.3,-2.15) rectangle (7.7,-1.88);
+        \node[font=\scriptsize, anchor=west] at (7.8,-2.015) {NMS};
+    \end{tikzpicture}
+    \caption{Udział poszczególnych faz w średnim opóźnieniu potoku inferencji na akceleratorze NVIDIA GeForce RTX~4070. Źródło: opracowanie własne na podstawie \texttt{latency\_breakdown.json}.}
+    \label{fig:latency_wykres}
+\end{figure}
+
+Całkowite opóźnienie ściany zegara (ang. \textit{end-to-end wall clock}) wyniosło średnio $19{,}46$\,ms ($p_{50}=16{,}07$\,ms, $p_{95}=39{,}37$\,ms), co odpowiada przepustowości rzędu $51{,}39$\,FPS na stacji roboczej. Dominującym składnikiem pozostaje inferencja sieci ($\approx 72\%$ średniego czasu e2e), natomiast preprocessing i NMS wnoszą łącznie poniżej $6$\,ms w typowym przebiegu; proporcje te zilustrowano na rys.~\ref{fig:latency_wykres}. Wartości te należy interpretować jako górne ograniczenie wydajności potoku algorytmicznego; na urządzeniu mobilnym do budżetu dochodzą koszty CameraX, konwersji RGBA oraz renderowania nakładki Compose, jednak nawet z tym narzutem przyjęty interwał throttlingu $250$\,ms ($4$\,FPS) pozostaje wielokrotnie większy od zmierzonego opóźnienia $19{,}46$\,ms. Potwierdza to, że wybrana architektura YOLO11m w precyzji FP16 spełnia wymagania przetwarzania w czasie rzeczywistym bez ryzyka gubienia klatek wynikającego z przeciążenia ścieżki obliczeniowej.
+
+
+\chapter{Podsumowanie i wnioski}\label{chap:podsumowanie}
+Zaprojektowano i pomyślnie wdrożono autonomiczny system na platformę Android. Aplikacja skutecznie klasyfikuje $147$ gatunków grzybów — offline i w czasie rzeczywistym. Potok obejmował akwizycję danych, auto-anotację GroundingDINO, trening YOLO11m, konwersję TFLite FP16 oraz aplikację z warstwą bezpieczeństwa mykologicznego.
+
+\section{Wnioski z realizacji projektu}
+Cel główny — autonomiczny, offline system identyfikacji grzybów na Androidzie — został osiągnięty. Rozwiązanie łączy detekcję wieloobiektową z nakładką kamery i trwałym zapisem historii znalezisk, spełniając założenia z rozdz.~\ref{chap:projekt_systemu}.
+
+Potok półautomatycznej anotacji oparty na GroundingDINO wyeliminował ręczne znakowanie ramek przy zachowaniu formatu YOLO ($\texttt{class\_id cx cy w h}$) dla ponad stu gatunków \cite{liu2023grounding}. Bez tego mechanizmu zbudowanie zbioru uczącego o takiej skali byłoby poza zasięgiem pracy inżynierskiej.
+
+Model YOLO11m, po konwersji do formatu TFLite w precyzji FP16, osiągnął na izolowanym zbiorze testowym wartości $mAP_{50}=88{,}58\%$ oraz $mAP_{50\text{--}95}=84{,}13\%$, przy czasie inferencji poniżej $25$\,ms na nowoczesnym sprzęcie mobilnym. Wyniki te potwierdzają praktyczną wykonalność podejścia \textit{edge AI} w zadaniu identyfikacji mykologicznej, bez zależności od zasobów chmurowych \cite{ultralytics2024yolo11}.
+
+Wykazano ponadto, że maksymalizacja czułości dla klas toksycznych, w połączeniu z trzystopniowym filtrem prezentacji wyników (\texttt{MushroomRegistry.displayStatus}), skutecznie ogranicza ryzyko fałszywie dodatniej oceny jadalności w przypadkach gatunków bliźniaczych. System nie prezentuje zielonej etykiety ,,Jadalny'' przy niepewnych predykcjach z zakresu $0{,}50$--$0{,}79$, co daje dodatkową warstwę ochronną ponad samą dokładnością detektora.
+
+\section{Perspektywy rozwoju i dalsze prace}
+Kolejnym krokiem może być integracja algorytmów śledzenia obiektów wideo (np. ByteTrack lub SORT) z potokiem CameraX. Stabilizacja ramek w czasie zmniejszyłaby chwilowe wahania predykcji pomiędzy klatkami i poprawiła płynność nakładki interfejsu użytkownika.
+
+Drugim istotnym obszarem pozostaje optymalizacja rozmiaru modelu. Warto zbadać uczenie z uwzględnieniem kwantyzacji (ang. \textit{Quantization-Aware Training}, QAT) oraz skalibrowaną precyzję mieszaną (FP16/INT8), tak aby zredukować artefakt poniżej $20$\,MB bez utraty wrażliwości na subtelne cechy makromorfologiczne, krytyczne dla bezpieczeństwa.
+
+Trzecią perspektywą jest fuzja osadzeń wizyjnych z metadanymi kontekstowymi — klasyfikacją biotopu na podstawie GPS, typem lasu, sezonowością oraz lokalnymi warunkami pogodowymi. Takie wzbogacenie sygnału wejściowego mogłoby poprawić rozróżnianie gatunków o zbliżonej morfologii, lecz odmiennych wymaganiach siedliskowych.
+
+\section{Repozytorium projektu}
+Kod źródłowy aplikacji mobilnej w języku Kotlin, skrypty potoku przetwarzania danych w języku Python oraz narzędzia eksportu modeli zostały udostępnione w publicznym repozytorium pod adresem: \url{https://github.com/kirilhorobets/mushroom-recognition}.

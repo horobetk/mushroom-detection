@@ -1,0 +1,625 @@
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Typy bibliografii:
+%  - artykuł z czasopisma,
+%  - artykuł z konferencji,
+%  - materiały konferencyjne,
+%  - książka,
+%  - fragment książki,
+%  - książka z serii,
+%  - krótka broszura,
+%  - praca magisterska,
+%  - praca doktorska,
+%  - instrukcja obsługi,
+%  - raport techniczny,
+%  - materiały nieopublikowane,
+%  - inne typy materiałów źródłowych.
+% Więcej informacji na stronie https://www.bibtex.com/
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Artykuły naukowe z czasopism i konferencji
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Article - artykuł z czasopisma.
+% Wymagane pola: author, title, journal, year.
+% Opcjonalne pola: volume, number, pages, month, note.
+@Article{maxwell1865,
+    author  = {James Clerk Maxwell},
+    title   = {A Dynamical Theory of the Electromagnetic Field},
+    journal = {Philosophical Transactions of the Royal Society},
+    year    = {1865},
+    number  = {155},
+    pages   = {459-512},
+    month   = {1},
+    note    = {\href{https://royalsocietypublishing.org/doi/pdf/10.1098/rstl.1865.0008}{<https://royalsocietypublishing.org/doi/pdf/10.1098/rstl.1865.0008>}, dostęp uzyskano 2020-12-03},
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% InProceedings - artykuły z konferencji
+% Wymagane pola: author or editor, title, publisher, year.
+% Opcjonalne pola: volume or number, series, address, edition, month, note.
+@inproceedings{cichon1995,
+    author  = {D. J. {Cichon} and W. {Wiesbeck}},
+    title   = {The Heinrich Hertz wireless experiments at Karlsruhe in the view of modern communication},
+    publisher   = {Institution of Engineering and Technology},
+    year        = {1995},
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Proceedings - publikacja pokonferencyjna, zbiór artykułów z jednej konferencji
+% Wymagane pola: title, year.
+% Opcjonalne pola: editor, volume or number, series, address, publisher, note, month, organization.
+@proceedings{cpee2018,
+    title   = {19th International Conference Computational Problems of Electrical Engineering},
+    year    = {2018},
+    note    = {doi: \href{https://doi.org/10.1109/CPEE44871.2018}{10.1109/CPEE44871.2018}},
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Materiały książkowe
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Book - książka mająca wydawcę.
+% Wymagane pola: author or editor, title, publisher, year.
+% Opcjonalne pola: volume or number, series, address, edition, month, note.
+@book{fowler2009,
+    author    = {Kim Fowler},
+    title     = {Mission-Critical and Safety-Critical Systems Handbook: Design and Development for Embedded Applications},
+    publisher = {Newnes},
+    year      = {2009},
+    ISBN      = {978-0750685672},
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Inbook - część książki, na przykład rozdział i/lub zakres stron.
+% Wymagane pola: author lub editor, title, chapter i/lub pages, publisher, year.
+% Opcjonalne pola: volume or number, series, type, address, edition, month, note.
+@inbook{leksinski1995,
+  chapter   = {1-2},
+  pages     = {9-232},
+  title     = {Matematyka},
+  publisher = {Wydawnictwa Naukowo-Techniczne},
+  year      = {1995},
+  author    = {Wojciech Żakowski and Wacław Leksiński},
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Incollection - część książki mająca własny tytuł, również książka z serii.
+% Wymagane pola: author, title, booktitle, publisher, year.
+% Opcjonalne pola: editor, volume or number, series, type, chapter, pages, address, edition, month, note.
+@incollection{lncsevo,
+  author    = {Gyu Myoung Lee and Noel Crespi and Jun Kyun Choi and Matthieu Boussard},
+  title     = {Internet of Things},
+  booktitle = {Evolution of Telecommunication Services},
+  series    = {Lecture Notes in Computer Science},
+  publisher = {Springer-Verlag Berlin Heidelberg},
+  year      = {2013},
+  editor    = {Emmanuel Bertin and Noel Crespi and Thomas Magedanz},
+  volume    = {7768},
+  isbn      = {978-3642415685},
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Booklet - praca, która została wydrukowana i oprawiona ale nie mająca wydawcy lub stojącej za nią instytucji, broszurka mająca 4-48 stron
+% Wymagane pola: title.
+% Opcjonalne pola: author, howpublished, address, month, year, note.
+@booklet{giglio,
+  author = {Pierluigi Giglio},
+  title  = {Postmodernism and Plagiarism},
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% MastersThesis - praca magisterska (uwaga: masters a nie master)
+% Wymagane pola: author, title, school, year.
+% Opcjonalne pola: type, address, month, note.
+@mastersthesis{poirier2020,
+    author  = {Izabela Poirier},
+    title   = {Wykorzystanie technologii Blockchain w komunikacji urządzeń Internetu Rzeczy},
+    school  = {Politechnika Warszawska, Wydział Elektryczny, Instytut Elektrotechniki Teoretycznej i Systemów Informacyjno-Pomiarowych},
+    year    = {2020},
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% phdthesis - praca doktorska
+% Wymagane pola: author, title, school, year.
+% Opcjonalne pola: type, address, month, note.
+@phdthesis{truong2018,
+    author  = {Nguyen Binh Truong},
+    title   = {Evaluation of trust in the Internet of Things : models, mechanisms and applications},
+    school  = {Liverpool John Moores University},
+    year    = {2018},
+    note    = {doi: \href{http://doi.org/10.24377/researchonline.ljmu.ac.uk.00009241}{10.24377/researchonline.ljmu.ac.uk.00009241}}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Dokumenty techniczne
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% manual - instrukcja obługi, specyfikacja techniczna, nota katalogowa (datasheet)
+% Wymagane pola: title.
+% Opcjonalne pola: author, organization, address, edition, month, year, note.
+@manual{AN4230,
+    title           = {STM32 microcontroller random number generation validation using the NIST statistical test suite},
+    organization    = {STMicroelectronics},
+    year            = {2020},
+    month           = {8},
+    note            = {AN4230},
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% techreport - raport techniczny
+% Wymagane pola: author, title, institution, year.
+% Opcjonalne pola: type, number, address, month, note.
+@techreport{nask2020,
+    author      = {{Zespół CERT Polska}},   % Nietypowy autor - dodatkowe nawiasy powodują, że nie zostanie uznany za imię i nazwisko co byłoby komiczne (Polska Z. C.)
+    title       = {Krajobraz bezpieczeństwa polskiego Internetu w 2019 roku},
+    institution = {NASK -- Państwowy Instytut Badawczy},
+    year        = {2020},
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Dokumenty nietypowe
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% unpublished - dokument mający autora i tytuł ale nie opublikowany typowymi metodami
+% Wymagane pola: author, title, note.
+% Opcjonalne pola: month, year.
+@unpublished{wilamowski2017,
+  author    = {Maciej Wilamowski},
+  title     = {,,Daj, ać ja pobruczę, a ty poczywaj''. Pierwsze zdanie po polsku w historii},
+  note    = {\href{https://twojahistoria.pl/2017/11/21/daj-ac-ja-pobrucze-a-ty-poczywaj-co-powinienes-wiedziec-o-pierwszym-zdaniu-zapisanym-w-jezyku-polskim/}{<https://twojahistoria.pl/2017/11/21/daj-ac-ja-pobrucze-a-ty-poczywaj-co-powinienes-wiedziec-o-pierwszym-zdaniu-zapisanym-w-jezyku-polskim/>}, dostęp uzyskano 2020-12-03},
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% misc - jeśli wszystkie inne kategorie nie pasują; przynajmniej jedno z pól opcjonalnych musi być użyte
+% Wymagane pola: brak
+% Opcjonalne pola: author, title, howpublished, month, year, note.
+@misc{szablon,
+    author  = {Łukasz Makowski},
+    title   = {Szablon prac dyplomowych dla Wydziału Elektrycznego Politechniki Warszawskiej},
+    howpublished    = {\href{https://github.com/SP5LMA/EE-Dyplom}{<https://github.com/SP5LMA/EE-Dyplom>}},
+}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+@article{foulkes2001quantum,
+  title={Quantum Monte Carlo simulations of solids},
+  author={Foulkes, WMC and Mitas, L and Needs, RJ and Rajagopal, G},
+  journal={Reviews of Modern Physics},
+  volume={73},
+  number={1},
+  pages={33},
+  year={2001},
+  publisher={APS}
+}
+
+@phdthesis{Kerrouche,
+  author       = {Kerrouche, N.}, 
+  title        = {Porównanie środowisk programistycznych do sterowania robotami Lego EV3},
+  type         = {Praca dyplomowa inżynierska},
+  school       = {Wydział Elektryczny Politechniki Warszawskiej},
+  year         = 2020,
+}
+
+@manual{PTU46,
+    author = {{FLIR}},
+    title = {Miniature computer-controlled pan/tilt unit},
+    note  = {\url{https://www.flir.com/products/ptu-e46/}},
+    addendum = "data dostępu: 19.12.2020"
+}
+
+@thesis{Koprowska,
+  author       = {Koprowska,M.}, 
+  title        = {Porównanie wybranych metod segmentacji instancji w obrazach cyfrowych},
+  type         = {Praca dyplomowa inżynierska},
+  school       = {Wydział Elektryczny Politechniki Warszawskiej},
+  year         = 2020,
+}
+
+@phdthesis{Paleski,
+  author       = {Paleski, P.}, 
+  title        = {Metoda łączenia chmur punktów z wykorzystaniem czujnika Kinect i bibilioteki PCL},
+  type         = {Praca dyplomowa inżynierska},
+  school       = {Wydział Elektryczny Politechniki Warszawskiej},
+  year         = 2020,
+}
+
+@phdthesis{Poreda,
+  author       = {Poreda, M.}, 
+  title        = {System utrzymywania toru ruchu z wykorzystaniem głębokich sieci neuronowych i robota opartego na układzie NVIDIA Jetson Nano},
+  type         = {Praca dyplomowa inżynierska},
+  school       = {Wydział Elektryczny Politechniki Warszawskiej},
+  year         = 2020,
+}
+
+
+@phdthesis{Staszewski,
+  author       = {Staszewski, W.}, 
+  title        = {System rozpoznawania płci, wieku i emocji z wykorzystaniem głębokich sieci neuronowych},
+  type         = {Praca dyplomowa inżynierska},
+  school       = {Wydział Elektryczny Politechniki Warszawskiej},
+  year         = 2020,
+}
+
+@phdthesis{Kosiec,
+  author       = {Kosiec, R.}, 
+  title        = {Sposoby zrównoleglania przetwarzania chmur punktów z wykorzystaniem biblioteki PCL},
+  type         = {Praca dyplomowa inżynierska},
+  school       = {Wydział Elektryczny Politechniki Warszawskiej},
+  year         = 2020,
+}
+
+@article{7347331,
+author={M. K. K. {Leung} and A. {Delong} and B. {Alipanahi} and B. J. {Frey}},
+journal={Proceedings of the IEEE},
+title={Machine Learning in Genomic Medicine: A Review of Computational Problems and Data Sets},
+year={2016},
+volume={104},
+number={1},
+pages={176-197},
+keywords={cellular biophysics;diseases;DNA;genetics;genomics;learning (artificial intelligence);medical computing;medicine;deep learning;large-scale data sets;nucleic acids;proteins;gene splicing;gene expression;high-throughput measurement;disease risks;cell variables;DNA variations;genomic medicine;machine learning;Genomics;Bioinformatics;Big data;Diseases;Medical treatment;Machine learning;Computational biology;deep learning;genetic variants;genome analysis;genome biology;genomic medicine;machine learning;precision medicine;Computational biology;deep learning;genetic variants;genome analysis;genome biology;genomic medicine;machine learning;precision medicine},
+doi={10.1109/JPROC.2015.2494198},
+ISSN={1558-2256},
+month={1},}
+
+@ARTICLE{7339473,
+author={S. {Lowry} and N. {Sünderhauf} and P. {Newman} and J. J. {Leonard} and D. {Cox} and P. {Corke} and M. J. {Milford}},
+journal={IEEE Transactions on Robotics},
+title={Visual Place Recognition: A Survey},
+year={2016},
+volume={32},
+number={1},
+pages={1-19},
+keywords={learning (artificial intelligence);mobile robots;object recognition;robot vision;video signal processing;visual place recognition system;visual sensing capabilities;long-term mobile robot autonomy;computer vision;animal navigation;visual place recognition research landscape;animal kingdom;robotics context;deep learning;semantic scene understanding;video description;Robot sensing systems;Visualization;Navigation;Animals;Conferences;Computer vision;Visual place recognition;place recognition;Visual place recognition;place recognition},
+doi={10.1109/TRO.2015.2496823},
+ISSN={1941-0468},
+month={2},}
+
+@ARTICLE{8113128,
+author={X. X. {Zhu} and D. {Tuia} and L. {Mou} and G. {Xia} and L. {Zhang} and F. {Xu} and F. {Fraundorfer}},
+journal={IEEE Geoscience and Remote Sensing Magazine},
+title={Deep Learning in Remote Sensing: A Comprehensive Review and List of Resources},
+year={2017},
+volume={5},
+number={4},
+pages={8-36},
+keywords={remote sensing;climate change;remote-sensing data analysis;machine-learning techniques;data-intensive science;looming paradigm shift;Machine learning;Remote sensing;Feature extraction;Hyperspectral imaging;Computer vision;Tutorials;Remote sensing},
+doi={10.1109/MGRS.2017.2762307},
+ISSN={2373-7468},
+month={12},}
+
+@manual{Wikipedia,
+    author = {{Wikipedia}},
+    title = {Wikipedia: O Wikipedii},
+    note  = {\url{https://pl.wikipedia.org/wiki/Wikipedia:O_Wikipedii}},
+    addendum = "data dostępu: 14.04.2022"
+}
+
+@book{uchaikin2013fractional,
+  title={Fractional derivatives for physicists and engineers},
+  author={Uchaikin, Vladimir V},
+  year={2013},
+  publisher={Springer}
+}
+
+@manual{OptRef,
+    author = {{Cham, Jorge}},
+    title = {Optimal \# of References},
+    note  = {\url{http://phdcomics.com/comics.php?f=1821}},
+     addendum = "data dostępu: 30.11.2019"
+}
+
+@manual{Bledy_jezykowe_1,
+    author = {{Wikipedia}},
+    title= {Pomoc:Powszechne błędy językowe},
+    note  = {\url{https://pl.wikipedia.org/wiki/Pomoc:Powszechne_błędy_językowe}},
+    addendum = "data dostępu: 11.12.2019"
+}
+
+@manual{Bledy_jezykowe_2,
+    author = {{Wikipedia}},
+    title={Imiesłów przysłówkowy współczesny},
+    note  = {\url{https://pl.wikipedia.org/wiki/Imiesłów_przysłówkowy_współczesny}},
+     addendum = "data dostępu: 11.12.2019"
+}
+
+@manual{Bledy_jezykowe_3,
+    author = {{Wikipedia}},
+    title={Imiesłów przysłówkowy uprzedni},
+    note  = {\url{https://pl.wikipedia.org/wiki/Imiesłów_przysłówkowy_uprzedni}},
+    addendum = "data dostępu: 11.12.2019"
+}
+
+@manual{step_by_step_mask_rcnn,
+    author = {{Sharma, P.}},
+    title={Implementing Mask R-CNN for Image Segmentation},
+    note  = {\url{https://www.analyticsvidhya.com/blog/2019/07/computer-vision-implementing-mask-r-cnn-image-segmentation/}},
+     addendum = "data dostępu: 08.01.2020"
+}
+
+@book{podlubny1998fractional,
+  title={Fractional differential equations: an introduction to fractional derivatives, fractional differential equations, to methods of their solution and some of their applications},
+  author={Podlubny, Igor},
+  volume={198},
+  year={1998},
+  publisher={Academic press}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Źródła dotyczące pracy - rozpoznawanie grzybów, toksykologia, detekcja obiektów
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+@article{garcia2015amanita,
+  author  = {Garcia, Juliana and Costa, Vera M. and Carvalho, Alexandra and Baptista, Paula and Guedes de Pinho, Paula and Bastos, Maria de Lourdes and Carvalho, F{\'e}lix},
+  title   = {Amanita phalloides poisoning: Mechanisms of toxicity and treatment},
+  journal = {Food and Chemical Toxicology},
+  volume  = {86},
+  pages   = {41--55},
+  year    = {2015},
+  publisher = {Elsevier},
+  note    = {doi: \href{https://doi.org/10.1016/j.fct.2015.09.008}{10.1016/j.fct.2015.09.008}},
+}
+
+@article{mengs2012legalon,
+  author  = {Mengs, Ulrich and Pohl, Ralf-Torsten and Mitchell, Todd},
+  title   = {Legalon SIL: The Antidote of Choice in Patients with Acute Hepatotoxicity from Amatoxin Poisoning},
+  journal = {Current Pharmaceutical Biotechnology},
+  volume  = {13},
+  number  = {10},
+  pages   = {1964--1970},
+  year    = {2012},
+  publisher = {Bentham Science},
+  note    = {doi: \href{https://doi.org/10.2174/138920112802273353}{10.2174/138920112802273353}},
+}
+
+@inproceedings{redmon2016yolo,
+  author    = {Redmon, Joseph and Divvala, Santosh and Girshick, Ross and Farhadi, Ali},
+  title     = {You Only Look Once: Unified, Real-Time Object Detection},
+  booktitle = {2016 IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages     = {779--788},
+  year      = {2016},
+  note      = {doi: \href{https://doi.org/10.1109/CVPR.2016.91}{10.1109/CVPR.2016.91}},
+}
+
+@misc{liu2023grounding,
+  author       = {Liu, Shilong and Zeng, Zhaoyang and Ren, Tianhe and Li, Feng and Zhang, Hao and Yang, Jie and Li, Chunyuan and Yang, Jianwei and Su, Hang and Zhu, Jun and Zhang, Lei},
+  title        = {Grounding DINO: Marrying DINO with Grounded Pre-Training for Open-Set Object Detection},
+  howpublished = {arXiv preprint arXiv:2303.05499},
+  year         = {2023},
+  note         = {\url{https://arxiv.org/abs/2303.05499}, dostęp uzyskano 2026-07-08},
+}
+
+@manual{ultralytics2024yolo11,
+  author       = {Jocher, Glenn and Qiu, Jing},
+  title        = {Ultralytics YOLO11},
+  organization = {Ultralytics},
+  year         = {2024},
+  note         = {\url{https://docs.ultralytics.com/models/yolo11/}, dostęp uzyskano 2026-08-11},
+}
+
+@manual{ultralyticsdetect,
+  author       = {{Ultralytics}},
+  title        = {Object Detection Task},
+  organization = {Ultralytics},
+  year         = {2024},
+  note         = {\url{https://docs.ultralytics.com/tasks/detect}, dostęp uzyskano 2026-08-11},
+}
+
+@manual{tflite,
+  author       = {{Google}},
+  title        = {Convert TensorFlow models to LiteRT},
+  organization = {Google},
+  year         = {2024},
+  note         = {\url{https://developers.google.com/edge/litert/conversion/tensorflow/convert_tf}, dostęp uzyskano 2026-08-11},
+}
+
+@article{lecun1998gradient,
+  author  = {LeCun, Yann and Bottou, L{\'e}on and Bengio, Yoshua and Haffner, Patrick},
+  title   = {Gradient-Based Learning Applied to Document Recognition},
+  journal = {Proceedings of the IEEE},
+  volume  = {86},
+  number  = {11},
+  pages   = {2278--2324},
+  year    = {1998},
+  note    = {doi: \href{https://doi.org/10.1109/5.726791}{10.1109/5.726791}; opis architektury LeNet: \url{https://en.wikipedia.org/wiki/LeNet}},
+}
+
+@misc{labelyourdata2023,
+  author       = {{Label Your Data}},
+  title        = {Object Detection vs Image Classification},
+  year         = {2023},
+  howpublished = {\url{https://labelyourdata.com/articles/object-detection-vs-image-classification}},
+  note         = {dostęp uzyskano 2026-08-11},
+}
+
+@misc{ideacvr2024grounding,
+  author       = {{IdeaCVR}},
+  title        = {Exploring the DINO Family, Part 2: The Debut of Grounding DINO for Open-Set Object Detection},
+  year         = {2024},
+  howpublished = {\url{https://medium.com/@ideacvr2024/exploring-the-dino-family-part-2-the-debut-of-grounding-dino-for-open-set-object-detection-4d5928b9216b}},
+  note         = {dostęp uzyskano 2026-08-11},
+}
+
+@misc{yolo11archfig,
+  author       = {{ResearchGate}},
+  title        = {YOLOv11 architecture diagram (C3k2, SPPF)},
+  year         = {2024},
+  howpublished = {\url{https://www.researchgate.net/figure/YOLOv11-architecture-diagram-enhanced-backbone-with-C3k2-blocks-replacing-C2f-SPPF-for_fig6_392596103}},
+  note         = {dostęp uzyskano 2026-08-11},
+}
+
+@article{mdpi2022rs,
+  author  = {{MDPI}},
+  title   = {Remote Sensing article (MDPI Sensors / Remote Sensing)},
+  journal = {Remote Sensing},
+  volume  = {14},
+  number  = {18},
+  pages   = {4648},
+  year    = {2022},
+  note    = {\url{https://www.mdpi.com/2072-4292/14/18/4648}, dostęp uzyskano 2026-08-11},
+}
+
+@misc{mitfairness2020,
+  author       = {{MIT OpenCourseWare}},
+  title        = {Fairness Criteria --- Exploring Fairness in Machine Learning for International Development},
+  year         = {2020},
+  howpublished = {\url{https://ocw.mit.edu/courses/res-ec-001-exploring-fairness-in-machine-learning-for-international-development-spring-2020/pages/module-three-framework/fairness-criteria/}},
+  note         = {dostęp uzyskano 2026-08-11},
+}
+
+@inproceedings{he2016resnet,
+  author    = {He, Kaiming and Zhang, Xiangyu and Ren, Shaoqing and Sun, Jian},
+  title     = {Deep Residual Learning for Image Recognition},
+  booktitle = {2016 IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages     = {770--778},
+  year      = {2016},
+  note      = {doi: \href{https://doi.org/10.1109/CVPR.2016.90}{10.1109/CVPR.2016.90}},
+}
+
+@article{ren2015fasterrcnn,
+  author  = {Ren, Shaoqing and He, Kaiming and Girshick, Ross and Sun, Jian},
+  title   = {Faster R-CNN: Towards Real-Time Object Detection with Region Proposal Networks},
+  journal = {IEEE Transactions on Pattern Analysis and Machine Intelligence},
+  volume  = {39},
+  number  = {6},
+  pages   = {1137--1149},
+  year    = {2017},
+  note    = {doi: \href{https://doi.org/10.1109/TPAMI.2016.2577031}{10.1109/TPAMI.2016.2577031}},
+}
+
+@inproceedings{liu2016ssd,
+  author    = {Liu, Wei and Anguelov, Dragomir and Erhan, Dumitru and Szegedy, Christian and Reed, Scott and Fu, Cheng-Yang and Berg, Alexander C.},
+  title     = {SSD: Single Shot MultiBox Detector},
+  booktitle = {Computer Vision -- ECCV 2016},
+  series    = {Lecture Notes in Computer Science},
+  volume    = {9905},
+  pages     = {21--37},
+  publisher = {Springer},
+  year      = {2016},
+  note      = {doi: \href{https://doi.org/10.1007/978-3-319-46448-0_2}{10.1007/978-3-319-46448-0\_2}},
+}
+
+@misc{redmon2018yolov3,
+  author       = {Redmon, Joseph and Farhadi, Ali},
+  title        = {YOLOv3: An Incremental Improvement},
+  howpublished = {arXiv preprint arXiv:1804.02767},
+  year         = {2018},
+  note         = {\url{https://arxiv.org/abs/1804.02767}, dostęp uzyskano 2026-07-08},
+}
+
+@manual{ultralytics2023yolov8,
+  author       = {Jocher, Glenn and Chaurasia, Ayush and Qiu, Jing},
+  title        = {Ultralytics YOLOv8},
+  organization = {Ultralytics},
+  year         = {2023},
+  note         = {\url{https://docs.ultralytics.com/models/yolov8/}, dostęp uzyskano 2026-07-08},
+}
+
+@inproceedings{vaswani2017attention,
+  author    = {Vaswani, Ashish and Shazeer, Noam and Parmar, Niki and Uszkoreit, Jakob and Jones, Llion and Gomez, Aidan N. and Kaiser, {\L}ukasz and Polosukhin, Illia},
+  title     = {Attention Is All You Need},
+  booktitle = {Advances in Neural Information Processing Systems 30 (NIPS 2017)},
+  pages     = {5998--6008},
+  year      = {2017},
+  note      = {\url{https://arxiv.org/abs/1706.03762}, dostęp uzyskano 2026-07-08},
+}
+
+@inproceedings{dosovitskiy2021vit,
+  author    = {Dosovitskiy, Alexey and Beyer, Lucas and Kolesnikov, Alexander and Weissenborn, Dirk and Zhai, Xiaohua and Unterthiner, Thomas and Dehghani, Mostafa and Minderer, Matthias and Heigold, Georg and Gelly, Sylvain and Uszkoreit, Jakob and Houlsby, Neil},
+  title     = {An Image Is Worth 16x16 Words: Transformers for Image Recognition at Scale},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2021},
+  note      = {\url{https://arxiv.org/abs/2010.11929}, dostęp uzyskano 2026-07-08},
+}
+
+@inproceedings{jacob2018quantization,
+  author    = {Jacob, Benoit and Kligys, Skirmantas and Chen, Bo and Zhu, Menglong and Tang, Matthew and Howard, Andrew and Adam, Hartwig and Kalenichenko, Dmitry},
+  title     = {Quantization and Training of Neural Networks for Efficient Integer-Arithmetic-Only Inference},
+  booktitle = {2018 IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages     = {2704--2713},
+  year      = {2018},
+  note      = {doi: \href{https://doi.org/10.1109/CVPR.2018.00286}{10.1109/CVPR.2018.00286}},
+}
+
+@misc{onnx,
+  author       = {{ONNX}},
+  title        = {ONNX: Open Neural Network Exchange},
+  howpublished = {\url{https://onnx.ai/}},
+  note         = {dostęp uzyskano 2026-07-08},
+}
+
+@misc{inaturalist,
+  author       = {{California Academy of Sciences and National Geographic Society}},
+  title        = {iNaturalist},
+  howpublished = {\url{https://www.inaturalist.org/}},
+  note         = {dostęp uzyskano 2026-07-08},
+}
+
+@misc{picturemushroom,
+  author       = {{Glority LLC}},
+  title        = {Picture Mushroom -- Mushroom ID},
+  howpublished = {\url{https://www.picturemushroom.com/}},
+  note         = {dostęp uzyskano 2026-07-08},
+}
+
+@misc{camerax,
+  author       = {{ProAndroidDev / Google}},
+  title        = {CameraX with Jetpack Compose --- architecture and use cases},
+  year         = {2023},
+  howpublished = {\url{https://proandroiddev.com/lets-build-an-android-camera-app-camerax-compose-9ea47356aa80}},
+  note         = {oficjalna dokumentacja: \url{https://developer.android.com/training/camerax}; dostęp uzyskano 2026-08-11},
+}
+
+@misc{jetpackcompose,
+  author       = {{Google}},
+  title        = {Jetpack Compose},
+  howpublished = {\url{https://developer.android.com/jetpack/compose}},
+  note         = {dostęp uzyskano 2026-07-22},
+}
+
+@misc{pytorch,
+  author       = {{PyTorch Team}},
+  title        = {PyTorch},
+  howpublished = {\url{https://pytorch.org/}},
+  note         = {dostęp uzyskano 2026-07-22},
+}
+
+@inproceedings{lin2014coco,
+  author    = {Lin, Tsung-Yi and Maire, Michael and Belongie, Serge and Hays, James and Perona, Pietro and Ramanan, Deva and Doll{\'a}r, Piotr and Zitnick, C.~Lawrence},
+  title     = {Microsoft {COCO}: Common Objects in Context},
+  booktitle = {Computer Vision -- ECCV 2014},
+  pages     = {740--755},
+  year      = {2014},
+  publisher = {Springer},
+}
+
+@misc{androidroom,
+  author       = {{Google}},
+  title        = {Save data in a local database using Room},
+  howpublished = {\url{https://developer.android.com/training/data-storage/room}},
+  note         = {dostęp uzyskano 2026-07-22},
+}
+
+@misc{coil,
+  author       = {Coil Contributors},
+  title        = {Coil -- Image loading for Android},
+  howpublished = {\url{https://coil-kt.github.io/coil/}},
+  note         = {dostęp uzyskano 2026-07-22},
+}
+
+@misc{evidently2023,
+  author       = {{MIT OpenCourseWare / Evidently AI}},
+  title        = {Confusion matrix and fairness criteria in classification},
+  year         = {2023},
+  howpublished = {\url{https://ocw.mit.edu/courses/res-ec-001-exploring-fairness-in-machine-learning-for-international-development-spring-2020/pages/module-three-framework/fairness-criteria/}},
+  note         = {dostęp uzyskano 2026-08-11},
+}
+
+@inproceedings{alhadhrami2018transfer,
+  author    = {Al Hadhrami, Esra and Al Mufti, Maha and Taha, Bilal and Werghi, Naoufel},
+  title     = {Transfer Learning with Convolutional Neural Networks for Moving Target Classification with Micro-Doppler Radar Spectrograms},
+  booktitle = {2018 International Conference on Artificial Intelligence and Big Data (ICAIBD)},
+  year      = {2018},
+  pages     = {148--154},
+  note      = {doi: \href{https://doi.org/10.1109/ICAIBD.2018.8396184}{10.1109/ICAIBD.2018.8396184}; pokrewne omówienie transfer learning: \url{https://www.mdpi.com/2072-4292/14/18/4648}},
+}

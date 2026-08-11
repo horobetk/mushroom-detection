@@ -1,256 +1,222 @@
-# 🍄 Mushroom Recognition Mobile App
+# Mushroom Detection — mobilna identyfikacja grzybów
 
-**Praca inżynierska - Politechnika Warszawska**
+**Praca inżynierska — Politechnika Warszawska, Wydział Elektryczny**
 
-System rozpoznawania grzybów na urządzeniach mobilnych z wykorzystaniem głębokich sieci neuronowych
+Autonomiczny system detekcji i klasyfikacji **147 gatunków** grzybów na Androidzie:
+offline, w czasie rzeczywistym, z priorytetem bezpieczeństwa mykologicznego.
 
----
-
-##  Informacje o projekcie
-
-**Autor:** Kiril Horobets  
-**Promotor:** dr inż. Witold Czajewski  
-**Uczelnia:** Politechnika Warszawska, Wydział Elektryczny  
-**Rok akademicki:** 2024/2025
-
----
-
-##  Cel pracy
-
-Opracowanie aplikacji mobilnej Android wspomagającej identyfikację grzybów niejadalnych i trujących wśród zebranych grzybów rozłożonych na stole. 
-
-**Główne założenia:**
-- ✅ Detekcja wielu grzybów jednocześnie (multi-object detection)
-- ✅ Priorytet: **bezpieczeństwo** - wysoki recall dla gatunków trujących
-- ✅ Działanie **offline** na urządzeniu mobilnym
-- ✅ Real-time inference
+| | |
+|---|---|
+| **Autor** | Kiril Horobets |
+| **Promotor** | dr inż. Witold Czajewski |
+| **Kierunek** | Informatyka Stosowana |
+| **Rok** | 2025/2026 |
+| **Repo** | [github.com/kirilhorobets/mushroom-recognition](https://github.com/kirilhorobets/mushroom-recognition) |
 
 ---
 
-##  Architektura techniczna
+## Cel
 
-### Stack technologiczny
+Wspomóc zbieracza przy identyfikacji owocników rozłożonych w kadrze (stół / kosz / las),
+ze szczególnym naciskiem na **gatunki bliźniacze** (jadalne vs śmiertelnie trujące).
+
+Założenia twarde:
+
+- detekcja wieloobiektowa (ramka + klasa na każdy owocnik)
+- działanie **bez sieci** (edge AI)
+- wysoka czułość dla klas toksycznych (asymetryczne progi UI)
+- inferencja na strumieniu kamery
+
+---
+
+## Stack
+
+| Warstwa | Technologie |
+|---------|-------------|
+| Trening | Python, PyTorch, Ultralytics **YOLO11m**, CUDA |
+| Auto-anotacja | **GroundingDINO** (Autodistill), ontology `"mushroom"` |
+| Dane | iNaturalist Research Grade → lokalny zbiór YOLO |
+| Eksport | SavedModel → **TensorFlow Lite FP16** (~38,58 MB) |
+| Android | Kotlin, Jetpack Compose, CameraX, Room, TFLite Interpreter |
+
+**Model produkcyjny:** YOLO11m, `imgsz=640`, **147 klas**.  
+Wariant Nano (YOLO11n) służy wyłącznie jako baseline ablacyjny (~48% mAP₅₀).
+
+### Wyniki referencyjne (zbiór testowy)
+
+| Wariant | mAP₅₀ | mAP₅₀–₉₅ | Rozmiar |
+|---------|-------|----------|---------|
+| YOLO11m (PyTorch) | 88,6% | 84,1% | ~38,8 MB |
+| YOLO11m (TFLite FP16) | 88,5% | 84,0% | **38,58 MB** |
+| YOLO11n (baseline) | 48,0% | 42,1% | ~5,6 MB |
+
+Źródło: `docs/thesis_results/ablation_study.csv`.
+
+### Progi bezpieczeństwa (Android)
+
+| Sygnał UI | Próg | Zachowanie |
+|-----------|------|------------|
+| Ostrzeżenie toksyczne | `conf ≥ 0,18` | natychmiastowy status UNSAFE |
+| Etykieta „Jadalny” | `conf ≥ 0,60` + głosowanie klatek | zielony status SAFE |
+| Strefa niepewności | pomiędzy | NEUTRAL — bez zielonej etykiety |
+
+Implementacja: `MushroomRegistry.displayStatus` + `DetectionTracker` (vote 4/5).
+
+---
+
+## Struktura repozytorium
 
 ```
-┌─────────────────────────────────────┐
-│   Training Pipeline (Python)        │
-├─────────────────────────────────────┤
-│  • PyTorch                          │
-│  • YOLO11 Nano (Ultralytics)        │
-│  • OpenCV (preprocessing)           │
-└─────────────────────────────────────┘
-              ↓
-┌─────────────────────────────────────┐
-│   Model Conversion                  │
-├─────────────────────────────────────┤
-│  PyTorch → ONNX → TensorFlow Lite   │
-└─────────────────────────────────────┘
-              ↓
-┌─────────────────────────────────────┐
-│   Mobile App (Android)              │
-├─────────────────────────────────────┤
-│  • Kotlin                           │
-│  • TensorFlow Lite                  │
-│  • CameraX API                      │
-└─────────────────────────────────────┘
-```
-
-### Wybór modelu: YOLO11 Nano
-
-**Dlaczego YOLO11 Nano?**
--  Szybkość: ~50 FPS na urządzeniach mobilnych
--  Rozmiar: ~6MB (możliwość offline deployment)
--  Accuracy: lepsza niż YOLOv8n przy mniejszej liczbie parametrów (~2.6M)
--  Łatwość treningu i konwersji do TFLite
-
-**Alternatywy rozważane:**
-- YOLOv8n (poprzednia generacja, zastąpiona przez YOLO11n)
-- YOLO11s/m (za duże dla mobile)
-- MobileNet SSD (niższa accuracy)
-- EfficientDet (wolniejszy inference)
-
----
-
-##  Dataset
-
-### Źródła danych
-1. **Nagrania wideo** - dostarczone przez promotora
-   - Ekstrakcja klatek co N-tą
-   - Manual annotation (bounding boxes)
-   
-2. **Publiczne datasety:**
-   - iNaturalist Fungi dataset
-   - Kaggle Mushroom datasets
-
-### Preprocessing pipeline
-```python
-# Pseudo-code
-video → extract_frames(every_n=30) → 
-resize(640x640) → augmentation → 
-annotation(YOLO_format) → train/val/test split
-```
-
-**Target:** 1500-2000 annotated images
-
----
-
-##  Struktura projektu
-
-```
-mushroom-recognition/
-│
-├── data/                      # Datasets
-│   ├── raw/                   # Raw video files
-│   ├── frames/                # Extracted frames
-│   ├── annotations/           # YOLO format labels
-│   └── processed/             # Train/val/test splits
-│
-├── training/                  # Model training
-│   ├── train.py               # Training script
-│   ├── config.yaml            # YOLO11 config
-│   ├── evaluate.py            # Evaluation metrics
-│   └── convert_to_tflite.py  # Model conversion
-│
-├── android/                   # Android app
-│   ├── app/
-│   │   ├── src/
-│   │   ├── models/            # .tflite models
-│   │   └── build.gradle
-│   └── README.md
-│
-├── scripts/                   # Utility scripts
-│   ├── extract_frames.py      # Video → frames
-│   ├── augmentation.py        # Data augmentation
-│   └── visualize.py           # Visualization tools
-│
-├── docs/                      # Documentation
-│   └── thesis/                # LaTeX thesis files
-│
-├── requirements.txt           # Python dependencies
+mushroom-detection/
+├── android/                 # Aplikacja Kotlin (Compose + CameraX + Room + TFLite)
+├── scripts/
+│   ├── train.py             # Trening / fine-tune YOLO11
+│   ├── export_tflite.py     # Eksport PT → SavedModel → TFLite (FP16/FP32/INT8)
+│   ├── auto_label.py        # Auto-anotacja GroundingDINO
+│   ├── split_dataset.py     # Podział train/val/test
+│   ├── utils/               # extract_frames, NMS cleaner, dataset tools
+│   └── tests/               # Testy akademickie 1–5 → docs/thesis_results/
+├── docs/thesis_results/     # CSV / JSON / wykresy z ewaluacji
+├── dyploma/                 # Praca dyplomowa (LaTeX, XeLaTeX)
+├── data/                    # Placeholdery lokalnych danych (treść poza gitem)
+├── weights/                 # Lokalne wagi .pt (poza gitem)
+├── requirements.txt
 └── README.md
 ```
 
+Duże artefakty (wagi `.pt`, modele `.tflite`, surowe dane, build Android/LaTeX)
+są w `.gitignore` — nie trafiają do repozytorium.
+
 ---
 
-##  Quick Start
+## Potok danych (skrót)
 
-### Prerequisites
+```
+iNaturalist (research grade)
+        ↓
+auto_label.py  (GroundingDINO → YOLO labels)
+        ↓
+clean_duplicate_boxes_v2.py  (NMS / dedup)
+        ↓
+split_dataset.py  (np. 80/10/10)
+        ↓
+train.py  (YOLO11m, transfer learning)
+        ↓
+export_tflite.py  (--quant fp16)
+        ↓
+android/app/src/main/assets/*.tflite
+```
+
+---
+
+## Quick start (Python)
+
+### Wymagania
+
+- Python 3.10+ (zalecane 3.11/3.12)
+- (opcjonalnie) NVIDIA GPU + CUDA pod PyTorch
+- TensorFlow potrzebny do `export_tflite.py`
+
 ```bash
-# Python 3.8+
-python --version
+python -m venv .venv
+# Windows:
+.venv\Scripts\activate
+# Linux/macOS:
+# source .venv/bin/activate
 
-# Install dependencies
 pip install -r requirements.txt
 ```
 
-### Extract frames from video
+PyTorch z CUDA: zainstaluj build zgodny z Twoim sterownikiem z
+[pytorch.org](https://pytorch.org/get-started/locally/), potem dopiero `requirements.txt`.
+
+### Trening
+
 ```bash
-python scripts/extract_frames.py \
-    --input data/raw/video.mp4 \
-    --output data/frames/ \
-    --frame_rate 30
+python scripts/train.py \
+  --model weights/yolo11m.pt \
+  --data path/to/data.yaml \
+  --epochs 200 \
+  --imgsz 640 \
+  --batch 16 \
+  --device auto
 ```
 
-### Train YOLO11 model
+### Eksport TFLite FP16
+
 ```bash
-python scripts/train_mvp.py \
-    --data mushrooms_mvp.yaml \
-    --model weights/yolo11n.pt \
-    --epochs 30 \
-    --imgsz 640
+python scripts/export_tflite.py \
+  --weights path/to/best.pt \
+  --quant fp16 \
+  --imgsz 640
 ```
 
-### Convert to TensorFlow Lite
+Skopiuj wynikowy `.tflite` do `android/app/src/main/assets/`
+(nazwa musi zgadzać się z ścieżką w `MushroomDetector`).
+
+### Testy akademickie
+
 ```bash
-python training/convert_to_tflite.py \
-    --weights runs/train/exp/weights/best.pt \
-    --output models/mushroom_detector.tflite
+cd scripts/tests
+python test1.py   # macierz bezpieczeństwa (asymetryczne progi)
+python test2.py   # odporność na szum
+python test3.py   # threshold sweep / F1
+python test4.py   # latency breakdown
+python test5.py   # podsumowanie ablacji
+```
+
+Domyślne ścieżki modelu/danych: `scripts/tests/_paths.py`.  
+Wyniki: `docs/thesis_results/`.
+
+### Auto-anotacja
+
+```bash
+python scripts/auto_label.py
+```
+
+Ścieżki bazowe ustawione są w skrypcie (lokalny dysk z danymi).
+
+---
+
+## Android
+
+```bash
+cd android
+./gradlew assembleDebug
+# Windows: gradlew.bat assembleDebug
+```
+
+- `minSdk 26`, `targetSdk 34`, Kotlin + Compose
+- CameraX `ImageAnalysis` → center crop 640 → TFLite → NMS → tracker → overlay
+- Historia znalezisk: Room + Coil
+
+Wymagane lokalnie: plik modelu `.tflite` w `app/src/main/assets/`
+oraz poprawny `local.properties` (SDK path; plik jest w `.gitignore`).
+
+---
+
+## Praca dyplomowa (LaTeX)
+
+Źródła w `dyploma/`. Kompilacja:
+
+```bash
+cd dyploma
+xelatex EE-dyplom.tex
+biber EE-dyplom
+xelatex EE-dyplom.tex
+xelatex EE-dyplom.tex
 ```
 
 ---
 
-##  Metryki i ewaluacja
+## Disclaimer
 
-**Kluczowe metryki:**
-- **Recall** (dla gatunków trujących) - **PRIORYTET**
-- Precision
-- mAP@0.5
-- Inference time (ms)
-- Model size (MB)
-
-**Safety-first approach:**  
-Lepiej oznaczyć jadalny grzyb jako niebezpieczny (false positive) niż pominąć trujący grzyb (false negative).
+Aplikacja ma charakter **edukacyjny / badawczy**.
+**Nie zastępuje** ekspertyzy mykologa. Nie spożywaj grzybów wyłącznie na podstawie wyniku modelu.
 
 ---
 
-##  Przegląd literatury
+## Licencja
 
-Kluczowe publikacje wykorzystane w projekcie:
-
-1. **YOLO Series:**
-   - Redmon et al. - YOLOv3 (2018)
-   - Jocher - YOLOv5, YOLOv8, YOLO11 (Ultralytics)
-
-2. **Mobile ML:**
-   - Howard et al. - MobileNets (2017)
-   - Sandler et al. - MobileNetV2 (2018)
-
-3. **Object Detection:**
-   - Lin et al. - Focal Loss, RetinaNet (2017)
-   - Tan & Le - EfficientDet (2020)
-
-4. **Datasets:**
-   - Van Horn et al. - iNaturalist Dataset (2018)
-
-*Pełna bibliografia dostępna w pracy dyplomowej.*
-
----
-
-## 🛠️ Technologies Used
-
-**Training:**
-- ![Python](https://img.shields.io/badge/Python-3.8+-blue)
-- ![PyTorch](https://img.shields.io/badge/PyTorch-2.0-red)
-- ![YOLO11](https://img.shields.io/badge/YOLO11-Ultralytics-green)
-- ![OpenCV](https://img.shields.io/badge/OpenCV-4.x-blue)
-
-**Mobile:**
-- ![Kotlin](https://img.shields.io/badge/Kotlin-1.9-purple)
-- ![TFLite](https://img.shields.io/badge/TensorFlow_Lite-2.x-orange)
-- ![Android](https://img.shields.io/badge/Android-API_24+-green)
-
----
-
-##  Harmonogram prac
-
-- ✅ **Styczeń 2026:** Koncepcja, architektura, przegląd literatury
-- 🔄 **Luty 2026:** Ekstrakcja danych, anotacja, baseline model
-- ⏳ **Marzec 2026:** Trening modelu, optymalizacja hyperparameters
-- ⏳ **Kwiecień 2026:** Implementacja aplikacji Android
-- ⏳ **Maj 2026:** Testy, ewaluacja, analiza wyników
-- ⏳ **Czerwiec 2026:** Finalizacja pracy dyplomowej
-
----
-
-##  Disclaimer
-
-**Uwaga:** Aplikacja ma charakter edukacyjny i nie zastępuje konsultacji z ekspertem mykoologicznym. Nie należy spożywać grzybów wyłącznie na podstawie automatycznej identyfikacji.
-
----
-
-##  Kontakt
-
-**Kiril Horobets**  
-Politechnika Warszawska  
-Email: kiril.horobets@pw.edu.pl  
-
-**Promotor:**  
-dr inż. Witold Czajewski  
-Politechnika Warszawska, Wydział Elektryczny
-
----
-
-## 📄 Licencja
-
-Projekt wykonany w ramach pracy inżynierskiej na Politechnice Warszawskiej.  
+Projekt w ramach pracy inżynierskiej na Politechnice Warszawskiej.  
 © 2026 Kiril Horobets

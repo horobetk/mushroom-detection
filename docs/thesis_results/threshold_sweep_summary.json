@@ -1,0 +1,14 @@
+{
+  "best_f1_conf": 0.05,
+  "best_f1": 0.8286315937133114,
+  "android_conf": 0.304,
+  "android_nearest_row": {
+    "conf": 0.3,
+    "precision": 0.8468185604597089,
+    "recall": 0.8054261144842518,
+    "f1": 0.8256038505281841,
+    "map50": 0.781513675693559
+  },
+  "csv": "E:\\Kiril_Horobets\\mushroom-detection\\mushroom-detection\\docs\\thesis_results\\threshold_sweep.csv",
+  "figure": "E:\\Kiril_Horobets\\mushroom-detection\\mushroom-detection\\docs\\thesis_results\\threshold_sweep_f1.png"
+}

@@ -1,10 +1,20 @@
 {
   "num_classes": 147,
-  "critical_false_positive_rate": 0.0401394422310757,
-  "map50": 0.8857989559829017,
-  "map50_95": 0.8412872241259598,
-  "precision": 0.8506727474133444,
-  "recall": 0.807703777284081,
+  "conf_edible": 0.6,
+  "conf_toxic": 0.18,
+  "conf_neutral_min": 0.2,
+  "conf_neutral_max": 0.55,
+  "critical_false_positive_rate": 0.024986802745029034,
+  "false_alarm_rate_safe_to_unsafe": 0.013019739605207897,
+  "match_counts": {
+    "matched": 61520,
+    "unmatched_gt": 11752,
+    "preds_used": 61520
+  },
+  "map50": 0.7447231285844942,
+  "map50_95": 0.7060601698954971,
+  "precision": 0.8089605909650356,
+  "recall": 0.7532449077359402,
   "matrix_csv": "E:\\Kiril_Horobets\\mushroom-detection\\mushroom-detection\\docs\\thesis_results\\safety_matrix.csv",
   "heatmap": "E:\\Kiril_Horobets\\mushroom-detection\\mushroom-detection\\docs\\thesis_results\\safety_matrix_heatmap.png"
 }

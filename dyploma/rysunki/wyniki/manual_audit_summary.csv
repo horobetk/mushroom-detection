@@ -1,0 +1,6 @@
+metric,value
+total_audited,1065
+valid_count,1011
+invalid_count,54
+accuracy_percentage,94.93%
+error_percentage,5.07%

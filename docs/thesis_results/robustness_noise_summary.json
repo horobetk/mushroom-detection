@@ -1,8 +1,8 @@
 {
-  "clean_map50": 0.8825046915433445,
-  "noisy_map50": 0.659220933526577,
-  "absolute_degradation": 0.2232837580167676,
-  "relative_degradation_percent": 25.301141190114674,
+  "clean_map50": 0.827477224415883,
+  "noisy_map50": 0.6144628062768144,
+  "absolute_degradation": 0.21301441813906863,
+  "relative_degradation_percent": 25.742632166031605,
   "brightness_factor": 0.6,
   "blur_kernel": 5,
   "noise_sigma": 8.0

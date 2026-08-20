@@ -1,30 +1,42 @@
 \begin{easyappendix}{Specyfikacja środowiska sprzętowo-programowego}
 
+Zestawienie stacji roboczej oraz platformy testów mobilnych przedstawiono w tab.~\ref{tab:zal1_srodowisko}. Wartości pokrywają się z tab.~\ref{tab:sprzet} i tab.~\ref{tab:stos_programowy}; tutaj zebrano je w jednym miejscu.
+
+\begin{table}[H]
+\centering
+\caption{Specyfikacja środowiska sprzętowo-programowego wykorzystanego do treningu i testów. Źródło: opracowanie własne.}
+\label{tab:zal1_srodowisko}
 \begin{tabular}{ |p{4.5cm}||p{8.5cm}| }
  \hline
- \multicolumn{2}{|c|}{\textbf{Stacja robocza (Trening i ewaluacja GPU)}} \\
+ \multicolumn{2}{|c|}{\textbf{Stacja robocza (trening i ewaluacja GPU)}} \\
  \hline
- Procesor (CPU) & AMD Ryzen 5 3600 (6 rdzeni, 12 wątków, 3,60 GHz) \\
- Pamięć RAM & 32 GB DDR4 3200 MHz \\
- Karta graficzna (GPU) & NVIDIA GeForce RTX 4070 (12 GB VRAM CUDA) \\
- Pamięć masowa & 1 TB NVMe PCIe Gen4 SSD \\
- System operacyjny & Windows 11 / PyTorch 2.x CUDA 12.x \\
+ Procesor (CPU) & AMD Ryzen 5 3600 (6 rdzeni, 12 wątków, $3{,}60$\,GHz) \\
+ Pamięć RAM & $32$\,GB DDR4 $3200$\,MHz \\
+ Karta graficzna (GPU) & NVIDIA GeForce RTX 4070 ($12$\,GB VRAM CUDA) \\
+ Pamięć masowa & $1$\,TB NVMe PCIe Gen4 SSD \\
+ System operacyjny & Windows 11 / PyTorch $2.x$ CUDA $12.x$ \\
  \hline
- \multicolumn{2}{|c|}{\textbf{Środowisko testów mobilnych (Inferencja krawędziowa)}} \\
+ \multicolumn{2}{|c|}{\textbf{Środowisko testów mobilnych (inferencja krawędziowa)}} \\
  \hline
- Smartfon testowy & Samsung Galaxy S23 Ultra (Android 14) \\
- Mobilna stacja robocza & Lenovo ThinkPad (Intel Core i7, 16 GB RAM, Quadro T2000 4GB) \\
- Framework TFLite & TensorFlow Lite FP16 (38,58 MB) / LiteRT \\
+ Smartfon testowy & Samsung Galaxy S23 Ultra (Android 16) \\
+ Mobilna stacja robocza & Lenovo ThinkPad (Intel Core i7, $16$\,GB RAM, Quadro T2000 $4$\,GB) \\
+ Framework TFLite & TensorFlow Lite FP16 ($38{,}58$\,MB) / LiteRT \\
  \hline
 \end{tabular}
+\end{table}
 
 \end{easyappendix}
 
 \begin{easyappendix}{Wykaz 147 gatunków grzybów objętych systemem}
 
-W tabeli przedstawiono kompletny wykaz $147$ gatunków grzybów objętych systemem detekcji i klasyfikacji, z uwzględnieniem nazwy łacińskiej, polskiej oraz kategorii toksykologicznej.
+W tab.~\ref{tab:zal2_gatunki} przedstawiono kompletny wykaz $147$ gatunków grzybów objętych systemem detekcji i klasyfikacji, z uwzględnieniem nazwy łacińskiej, polskiej oraz kategorii toksykologicznej.
 
 \begin{longtable}{|r|l|l|l|}
+\caption{Wykaz $147$ gatunków objętych systemem wraz z kategorią toksykologiczną. Źródło: opracowanie własne.\label{tab:zal2_gatunki}} \\
+\hline
+\textbf{Lp.} & \textbf{Nazwa łacińska} & \textbf{Nazwa polska} & \textbf{Kategoria} \\
+\hline
+\endfirsthead
 \hline
 \textbf{Lp.} & \textbf{Nazwa łacińska} & \textbf{Nazwa polska} & \textbf{Kategoria} \\
 \hline

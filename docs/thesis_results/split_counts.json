@@ -1,0 +1,7 @@
+{
+  "source": "mushroom_final images/ and labels/ counted file-by-file",
+  "train": {"images": 287423, "boxes": 602251},
+  "val": {"images": 31223, "boxes": 64648},
+  "test": {"images": 32727, "boxes": 73272},
+  "total": {"images": 351373, "boxes": 740171}
+}

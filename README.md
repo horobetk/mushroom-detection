@@ -101,7 +101,8 @@ auto_label.py  (GroundingDINO → YOLO labels)
         ↓
 clean_duplicate_boxes_v2.py  (NMS / dedup)
         ↓
-split_dataset.py  (np. 80/10/10)
+split_dataset.py  (train/val)
+harvest_clean_test.py + label_clean_test.py  (test izolowany po obs_id)
         ↓
 train.py  (YOLO11m, transfer learning)
         ↓

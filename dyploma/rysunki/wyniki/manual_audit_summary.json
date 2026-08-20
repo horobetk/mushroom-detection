@@ -1,0 +1,10 @@
+{
+  "timestamp": "2026-08-18T20:17:31.647819",
+  "total_audited": 1065,
+  "valid_count": 1011,
+  "invalid_count": 54,
+  "accuracy_percentage": 94.93,
+  "error_percentage": 5.07,
+  "deadly_classes_checked": 175,
+  "toxic_classes_checked": 285
+}

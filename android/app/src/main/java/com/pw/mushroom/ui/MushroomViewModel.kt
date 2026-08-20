@@ -11,6 +11,7 @@ import com.pw.mushroom.R
 import com.pw.mushroom.camera.FrameCropper
 import com.pw.mushroom.data.FindsRepository
 import com.pw.mushroom.ml.DetectionTracker
+import com.pw.mushroom.ml.InferenceProfiler
 import com.pw.mushroom.ml.MushroomDetector
 import com.pw.mushroom.ml.TrackedDetection
 import com.pw.mushroom.model.MushroomRegistry
@@ -94,7 +95,12 @@ class MushroomViewModel(application: Application) : AndroidViewModel(application
         }
 
         val now = SystemClock.elapsedRealtime()
-        val interval = if (tracker.isSceneLocked()) LOCK_HEARTBEAT_MS else INFERENCE_INTERVAL_MS
+        val sceneLocked = tracker.isSceneLocked()
+        val interval = if (sceneLocked && !InferenceProfiler.bypassSceneLock) {
+            LOCK_HEARTBEAT_MS
+        } else {
+            INFERENCE_INTERVAL_MS
+        }
         if (now - lastInferenceAt < interval) {
             upright.recycle()
             return
@@ -113,7 +119,16 @@ class MushroomViewModel(application: Application) : AndroidViewModel(application
                 // run inference, then strip the padding so boxes are normalised to the
                 // visible region (they map 1:1 onto the full-screen preview).
                 val lb = FrameCropper.letterbox(upright, aspect, activeDetector.inputResolution)
-                val detections = activeDetector.detect(lb.bitmap)
+                val t0 = SystemClock.elapsedRealtimeNanos()
+                val rawDetections = activeDetector.detect(lb.bitmap)
+                val detectMs = (SystemClock.elapsedRealtimeNanos() - t0) / 1_000_000.0
+                InferenceProfiler.record(
+                    context = getApplication(),
+                    detectMs = detectMs,
+                    nDetections = rawDetections.size,
+                    sceneLocked = sceneLocked
+                )
+                val detections = rawDetections
                     .map { it.copy(boundingBox = FrameCropper.toVisibleNormalized(it.boundingBox, lb)) }
                     // Asymmetric floor: toxic @ 0.18, other classes @ 0.20.
                     .filter { it.confidence >= MushroomRegistry.displayThresholdFor(it.species.classId) }

@@ -40,6 +40,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     // Do not compress the TFLite model; it must be memory-mapped at runtime.

@@ -11,7 +11,7 @@ offline, w czasie rzeczywistym, z priorytetem bezpieczeństwa mykologicznego.
 | **Promotor** | dr inż. Witold Czajewski |
 | **Kierunek** | Informatyka Stosowana |
 | **Rok** | 2025/2026 |
-| **Repo** | [github.com/kirilhorobets/mushroom-recognition](https://github.com/kirilhorobets/mushroom-recognition) |
+| **Repo** | [github.com/kirilhorobets/mushroom-detection](https://github.com/kirilhorobets/mushroom-detection) |
 
 ---
 

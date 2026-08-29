@@ -1,0 +1,3 @@
+policy,tau_toxic_or_global,tau_edible,n_gt_toxic,cfp_jadaly_given_toxic,cfpr,n_gt_edible,warnings_given_edible,far_edible
+asymmetric,0.18,0.6,11558,173,0.014967987541097075,35684,451,0.012638717632552405
+global,0.3,0.3,11558,359,0.03106073715175636,35684,365,0.010228673915480328

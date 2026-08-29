@@ -186,14 +186,15 @@ private fun FindCard(
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
                 )
                 Spacer(Modifier.height(6.dp))
-                // History has no live vote window; use confidence-only policy
-                // (voteConfirmed=true). Edible below SAFE_THRESHOLD stays neutral.
+                // Use the persisted vote state: if the tracker's 4/5 consensus
+                // was not reached at save time, displayStatus will not show the
+                // green "Jadalny" badge even when confidence >= SAFE_THRESHOLD.
                 val toxicity = Toxicity.fromLabelPl(find.toxicityLabel)
                 val status = if (toxicity != null) {
                     MushroomRegistry.displayStatus(
                         toxicity,
                         find.confidence,
-                        voteConfirmed = true
+                        voteConfirmed = find.voteConfirmed
                     )
                 } else {
                     DisplayStatus(find.toxicityLabel, Color(0xFF9E9E9E))

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Shared default paths and Android safety thresholds for thesis eval scripts.
+
 
 from pathlib import Path
 

@@ -1,17 +1,5 @@
 #!/usr/bin/env python3
-# Test 2 – Robustness to forest imaging noise.
-#
-# Simulates field conditions typical for mushroom foraging:
-#   - dark dense-forest lighting (brightness reduction),
-#   - hand tremor / motion blur (Gaussian blur),
-#   - digital camera noise (additive Gaussian noise).
-#
-# Compares mAP50 on the clean test split versus a corrupted copy of the same
-# images and reports relative degradation.
-#
-# Author: Kiril Horobets
-# Warsaw University of Technology, 2026
-
+# Test 2 – Robustness to forest imaging noise
 from __future__ import annotations
 
 import argparse

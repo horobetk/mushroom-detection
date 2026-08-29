@@ -1,18 +1,5 @@
 #!/usr/bin/env python3
-# Test 1 - Edibility safety matrix with asymmetric Android thresholds.
-#
-# Simulates the app display policy:
-#   conf_toxic  = 0.18 -> UNSAFE warning
-#   conf_edible = 0.60 -> SAFE (green) assertion
-#   mid / gap             -> NEUTRAL
-#
-# Outputs:
-#   - safety_matrix.csv
-#   - safety_matrix_heatmap.png
-#   - safety_summary.json
-#
-# Author: Kiril Horobets, WUT 2026
-
+# Test 1 - Edibility safety matrix with asymmetric Android thresholds
 from __future__ import annotations
 
 import argparse

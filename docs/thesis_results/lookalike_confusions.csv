@@ -1,0 +1,13 @@
+gt_species,pred_species,gt_instances_matched_or_unmatched,confusions,rate
+Amanita phalloides,Agaricus campestris,780,0,0.0
+Agaricus campestris,Amanita phalloides,840,0,0.0
+Amanita phalloides,Amanita citrina,780,7,0.008974358974358974
+Amanita citrina,Amanita phalloides,305,4,0.013114754098360656
+Amanita virosa,Agaricus campestris,127,1,0.007874015748031496
+Agaricus campestris,Amanita virosa,840,0,0.0
+Omphalotus olearius,Cantharellus cibarius,482,0,0.0
+Cantharellus cibarius,Omphalotus olearius,1054,2,0.0018975332068311196
+Hygrophoropsis aurantiaca,Cantharellus cibarius,464,0,0.0
+Cantharellus cibarius,Hygrophoropsis aurantiaca,1054,0,0.0
+Galerina marginata,Kuehneromyces mutabilis,808,13,0.01608910891089109
+Kuehneromyces mutabilis,Galerina marginata,1018,42,0.0412573673870334

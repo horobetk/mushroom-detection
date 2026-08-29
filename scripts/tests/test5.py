@@ -1,11 +1,5 @@
 #!/usr/bin/env python3
-# Test 5 – Ablation / architecture comparison summary table.
-#
-# Builds the academic comparison table used in Chapter 4 / Chapter 5 of the
-# thesis (YOLO11m PyTorch vs TFLite FP16 vs YOLO11n baseline).
-#
-# Author: Kiril Horobets
-# Warsaw University of Technology, 2026
+# Test 5 – Ablation / architecture comparison summary table
 
 from __future__ import annotations
 

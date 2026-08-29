@@ -35,6 +35,7 @@ class FindsRepository(context: Context) {
         speciesName: String,
         toxicityLabel: String,
         confidence: Float,
+        voteConfirmed: Boolean,
         crop: Bitmap
     ): MushroomFind = withContext(Dispatchers.IO) {
         val dir = File(appContext.filesDir, FINDS_DIR).apply { mkdirs() }
@@ -48,6 +49,7 @@ class FindsRepository(context: Context) {
             speciesName = speciesName,
             toxicityLabel = toxicityLabel,
             confidence = confidence,
+            voteConfirmed = voteConfirmed,
             timestamp = System.currentTimeMillis(),
             imagePath = file.absolutePath
         )

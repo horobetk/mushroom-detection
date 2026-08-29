@@ -1,0 +1,15 @@
+FN audit of GroundingDINO boxes on the isolated TEST split.
+Sample size: 250 (seed=42).
+
+Easiest: on the university PC (images on E:)
+  python scripts/tests/fn_audit_gui.py
+Photo opens with red YOLO boxes already drawn. Type 4 integers, Enter = save + next.
+
+Without GUI, fill fn_audit_sheet.csv:
+  n_visible_fruitbodies = how many mushrooms you see
+  n_boxes_ok            = YOLO txt boxes that sit on a mushroom
+  n_fn_missed           = mushrooms with no box
+  n_fp_extra            = boxes with no mushroom
+Check: n_fn_missed + n_boxes_ok should be close to n_visible.
+
+When finished, send fn_audit_sheet.csv back.

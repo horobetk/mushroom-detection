@@ -1,0 +1,142 @@
+{
+  "n_test_images": 32727,
+  "n_gt_instances": 73272,
+  "global_tau": 0.3,
+  "conf_toxic": 0.18,
+  "conf_edible": 0.6,
+  "cfpr_asymmetric": 0.014967987541097075,
+  "cfpr_global": 0.03106073715175636,
+  "far_edible_asymmetric": 0.012638717632552405,
+  "far_edible_global": 0.010228673915480328,
+  "matrix_asymmetric": [
+    [
+      22780.0,
+      12453.0,
+      451.0
+    ],
+    [
+      284.0,
+      25547.0,
+      199.0
+    ],
+    [
+      173.0,
+      2365.0,
+      9020.0
+    ]
+  ],
+  "matrix_global": [
+    [
+      27598.0,
+      7721.0,
+      365.0
+    ],
+    [
+      493.0,
+      25367.0,
+      170.0
+    ],
+    [
+      359.0,
+      2724.0,
+      8475.0
+    ]
+  ],
+  "gt_labels": [
+    "EDIBLE",
+    "INEDIBLE",
+    "TOXIC"
+  ],
+  "pred_labels": [
+    "JADALNY",
+    "NEUTRAL",
+    "OSTRZEZENIE"
+  ],
+  "lookalikes": [
+    {
+      "gt": "Amanita phalloides",
+      "pred": "Agaricus campestris",
+      "n_gt": 780,
+      "n_confuse": 0,
+      "rate": 0.0
+    },
+    {
+      "gt": "Agaricus campestris",
+      "pred": "Amanita phalloides",
+      "n_gt": 840,
+      "n_confuse": 0,
+      "rate": 0.0
+    },
+    {
+      "gt": "Amanita phalloides",
+      "pred": "Amanita citrina",
+      "n_gt": 780,
+      "n_confuse": 7,
+      "rate": 0.008974358974358974
+    },
+    {
+      "gt": "Amanita citrina",
+      "pred": "Amanita phalloides",
+      "n_gt": 305,
+      "n_confuse": 4,
+      "rate": 0.013114754098360656
+    },
+    {
+      "gt": "Amanita virosa",
+      "pred": "Agaricus campestris",
+      "n_gt": 127,
+      "n_confuse": 1,
+      "rate": 0.007874015748031496
+    },
+    {
+      "gt": "Agaricus campestris",
+      "pred": "Amanita virosa",
+      "n_gt": 840,
+      "n_confuse": 0,
+      "rate": 0.0
+    },
+    {
+      "gt": "Omphalotus olearius",
+      "pred": "Cantharellus cibarius",
+      "n_gt": 482,
+      "n_confuse": 0,
+      "rate": 0.0
+    },
+    {
+      "gt": "Cantharellus cibarius",
+      "pred": "Omphalotus olearius",
+      "n_gt": 1054,
+      "n_confuse": 2,
+      "rate": 0.0018975332068311196
+    },
+    {
+      "gt": "Hygrophoropsis aurantiaca",
+      "pred": "Cantharellus cibarius",
+      "n_gt": 464,
+      "n_confuse": 0,
+      "rate": 0.0
+    },
+    {
+      "gt": "Cantharellus cibarius",
+      "pred": "Hygrophoropsis aurantiaca",
+      "n_gt": 1054,
+      "n_confuse": 0,
+      "rate": 0.0
+    },
+    {
+      "gt": "Galerina marginata",
+      "pred": "Kuehneromyces mutabilis",
+      "n_gt": 808,
+      "n_confuse": 13,
+      "rate": 0.01608910891089109
+    },
+    {
+      "gt": "Kuehneromyces mutabilis",
+      "pred": "Galerina marginata",
+      "n_gt": 1018,
+      "n_confuse": 42,
+      "rate": 0.0412573673870334
+    }
+  ],
+  "h2_holds": true
+}

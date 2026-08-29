@@ -1,0 +1,42 @@
+Copy TO the university PC first (into the clone root, keep folders):
+  scripts\run_supervisor_fixes.bat
+  scripts\tests\_export_toxicity_csv.py
+  scripts\tests\_paths.py
+  scripts\tests\toxicity_registry.csv
+  scripts\tests\test_h2_baseline.py
+  scripts\tests\test_tflite_parity.py
+  scripts\tests\fn_audit_gui.py
+  scripts\tests\sample_fn_audit.py
+Do NOT copy the dataset or best.pt (already on E:).
+Do NOT copy MushroomRegistry.kt (PC clone is 105 classes; the CSV is 147).
+TFLite: if val fails, pass --tflite to the existing .tflite under mushroom_data.
+
+Then run:  .\scripts\run_supervisor_fixes.bat
+
+Send these files after the E: run (do not invent numbers):
+
+REQUIRED (from test_h2_baseline.py):
+  docs/thesis_results/h2_cfpr_lookalikes.json
+  docs/thesis_results/safety_cfpr_comparison.csv
+  docs/thesis_results/safety_matrix_asymmetric.csv
+  docs/thesis_results/safety_matrix_asymmetric.png
+  docs/thesis_results/safety_matrix_global.csv
+  docs/thesis_results/safety_matrix_global.png
+  docs/thesis_results/lookalike_confusions.csv
+
+REQUIRED (from test_tflite_parity.py):
+  docs/thesis_results/tflite_parity.json
+  Open the file: tflite.mAP50 must be > 0 and backend must contain "android-style".
+  If mAP is still 0, the old LiteRT val ran — do not paste those zeros into the thesis.
+  If the script could not find the .tflite, pass --tflite to best_saved_model_fp16.tflite.
+
+FN GUI (copy this too, then restart):
+  python scripts\tests\fn_audit_gui.py
+  Fields are on the RIGHT of the photo. Enter = save+next. F2 = next empty.
+
+REQUIRED (manual, after filling the sheet):
+  docs/thesis_results/fn_audit_sheet.csv
+  (columns n_visible_fruitbodies, n_boxes_ok, n_fn_missed, n_fp_extra filled)
+
+Optional:
+  docs/thesis_results/supervisor_fixes.log

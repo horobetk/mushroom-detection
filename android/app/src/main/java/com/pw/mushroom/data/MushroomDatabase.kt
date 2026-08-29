@@ -6,7 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 
 /** App-wide Room database holding logged mushroom finds. */
-@Database(entities = [MushroomFind::class], version = 1, exportSchema = false)
+@Database(entities = [MushroomFind::class], version = 2, exportSchema = false)
 abstract class MushroomDatabase : RoomDatabase() {
 
     abstract fun findDao(): MushroomFindDao
@@ -22,7 +22,8 @@ abstract class MushroomDatabase : RoomDatabase() {
                     context.applicationContext,
                     MushroomDatabase::class.java,
                     "mushroom_finds.db"
-                ).build().also { instance = it }
+                ).fallbackToDestructiveMigration().build().also { instance = it }
             }
     }
 }
+

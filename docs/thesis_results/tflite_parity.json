@@ -1,0 +1,41 @@
+{
+  "imgsz": 640,
+  "source_data": "E:\\Kiril_Horobets\\mushroom_data\\mushroom_final\\data.yaml",
+  "subset_yaml": "E:\\Kiril_Horobets\\mushroom-detection\\mushroom-detection\\docs\\thesis_results\\tflite_parity_subset_n2500_seed42\\data.yaml",
+  "n_images": 2500,
+  "seed": 42,
+  "split": "test",
+  "protocol": "same 2500-image subset; PyTorch ultralytics.val; TFLite Android-style decoder",
+  "pytorch": {
+    "weights": "E:\\Kiril_Horobets\\mushroom_data\\runs\\fine_147classes_v2\\weights\\best.pt",
+    "mAP50": 0.8467341615649322,
+    "mAP50_95": 0.8042412603763744,
+    "precision": 0.8138647326044178,
+    "recall": 0.7670809124114103,
+    "device": "0",
+    "note": "reused from previous json (--skip-pt)"
+  },
+  "tflite": {
+    "weights": "E:\\Kiril_Horobets\\mushroom_data\\runs\\fine_147classes_v2\\weights\\best_saved_model_fp16.tflite",
+    "mAP50": 0.7913970210175415,
+    "mAP50_95": 0.7559308128167063,
+    "precision": 0.8168711681390985,
+    "recall": 0.7454330898283605,
+    "device": "tflite-interpreter",
+    "backend": "android-style decode [C,A] + letterbox + NMS + ultralytics ap_per_class",
+    "n_images": 2500,
+    "n_gt": 5568,
+    "n_pred": 16917,
+    "max_score_seen": 0.9888031482696533,
+    "ms_per_image": 177.22107295999302,
+    "conf_floor": 0.001,
+    "nms_iou": 0.7,
+    "n_classes_with_gt": 144
+  },
+  "delta": {
+    "mAP50": -0.055337140547390695,
+    "mAP50_95": -0.04831044755966818,
+    "precision": 0.003006435534680718,
+    "recall": -0.02164782258304976
+  }
+}

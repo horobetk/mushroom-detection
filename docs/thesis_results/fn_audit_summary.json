@@ -1,0 +1,61 @@
+{
+    "source_csv": "docs/thesis_results/fn_audit_sheet.csv",
+  "n_csv_rows": 250,
+  "n_empty": 0,
+  "n_notes": 0,
+  "n_inconsistent_ok_fn_vs_visible_gt2": 4,
+  "total": {
+    "n_images": 250,
+    "n_visible": 441,
+    "n_boxes_ok": 471,
+    "n_fn": 34,
+    "n_fp": 17,
+    "images_with_fn": 22,
+    "images_with_fp": 16,
+    "fn_rate_fruitbodies": 0.07709750566893424,
+    "coverage_boxes_ok_over_visible": 1.0680272108843538,
+    "images_with_fn_frac": 0.088,
+    "images_with_fp_frac": 0.064
+  },
+  "by_bucket": {
+    "EDIBLE": {
+      "n_images": 80,
+      "n_visible": 117,
+      "n_boxes_ok": 135,
+      "n_fn": 6,
+      "n_fp": 7,
+      "images_with_fn": 5,
+      "images_with_fp": 7,
+      "fn_rate_fruitbodies": 0.05128205128205128,
+      "coverage_boxes_ok_over_visible": 1.1538461538461537,
+      "images_with_fn_frac": 0.0625,
+      "images_with_fp_frac": 0.0875
+    },
+    "INEDIBLE": {
+      "n_images": 70,
+      "n_visible": 124,
+      "n_boxes_ok": 136,
+      "n_fn": 9,
+      "n_fp": 5,
+      "images_with_fn": 7,
+      "images_with_fp": 4,
+      "fn_rate_fruitbodies": 0.07258064516129033,
+      "coverage_boxes_ok_over_visible": 1.096774193548387,
+      "images_with_fn_frac": 0.1,
+      "images_with_fp_frac": 0.05714285714285714
+    },
+    "TOXIC": {
+      "n_images": 100,
+      "n_visible": 200,
+      "n_boxes_ok": 200,
+      "n_fn": 19,
+      "n_fp": 5,
+      "images_with_fn": 10,
+      "images_with_fp": 5,
+      "fn_rate_fruitbodies": 0.095,
+      "coverage_boxes_ok_over_visible": 1.0,
+      "images_with_fn_frac": 0.1,
+      "images_with_fp_frac": 0.05
+    }
+  }
+}

@@ -170,6 +170,7 @@ class MushroomViewModel(application: Application) : AndroidViewModel(application
                     speciesName = detection.species.name,
                     toxicityLabel = detection.species.toxicity.labelPl,
                     confidence = detection.confidence,
+                    voteConfirmed = detection.voteConfirmed,
                     crop = crop
                 )
                 emitSave(true, R.string.save_success)

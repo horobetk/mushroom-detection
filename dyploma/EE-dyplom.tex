@@ -46,9 +46,9 @@
 \streszczeniepracy{
 Przedmiotem pracy jest autonomiczny system detekcji i klasyfikacji $147$ gatunków grzybów, działający w czasie rzeczywistym i offline na platformie Android. Celem było wsparcie zbieracza przy identyfikacji owocników, z priorytetem czułości dla klas toksycznych i redukcją ryzyka błędnego uznania gatunku trującego za jadalny.
 
-Zaprojektowano i wdrożono pełny potok danych. Ręczną anotację zastąpiono półautomatycznym etykietowaniem przez GroundingDINO, generującym ramki w formacie YOLO. Model bazowy YOLO11 Medium (\texttt{YOLO11m}, Ultralytics) wytrenowano metodą uczenia transferowego, a następnie skompilowano dwuetapowo do TensorFlow Lite (TFLite) w precyzji FP16. Dzięki temu inferencja działa lokalnie na telefonie, bez utraty subtelnych cech makromorfologicznych owocników.
+Zaprojektowano i wdrożono pełny potok danych. Ręczną anotację zastąpiono półautomatycznym etykietowaniem przez GroundingDINO, generującym ramki w formacie YOLO. Model bazowy YOLO11 Medium (\texttt{YOLO11m}, Ultralytics) wytrenowano metodą uczenia transferowego, a następnie skompilowano dwuetapowo do TensorFlow Lite (TFLite) w precyzji FP16. Dzięki temu inferencja działa lokalnie na telefonie, przy akceptowalnym spadku precyzji ($6{,}5\%$ $mAP_{50}$) względem wag PyTorch, zachowując kluczowe cechy makromorfologiczne owocników.
 
-Priorytetem pozostaje wysoka czułość względem klas trujących, która redukuje ryzyko błędnego uznania gatunku toksycznego za jadalny. Badania, w tym porównanie ablacyjne z wariantem Nano, pokazują, że YOLO11m w FP16 osiąga wysoką skuteczność rozpoznawania bez chmury i może wspierać identyfikację w terenie bez sieci.
+Priorytetem jest ograniczenie błędnego uznania gatunku toksycznego za jadalny. W aplikacji realizuje to para progów $0{,}18$/$0{,}60$ (\texttt{displayStatus}), a nie sama głowica detektora. Badania, w tym ablacja z wariantem Nano, pokazują, że YOLO11m w FP16 osiąga wysoką skuteczność rozpoznawania bez chmury i może wspierać identyfikację w terenie bez sieci.
 } % koniec streszczenia
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \slowakluczowe{wykrywanie obiektów, YOLO11m, TensorFlow Lite, FP16, Android, głębokie uczenie} 
@@ -58,7 +58,7 @@ The subject of this thesis is an autonomous system for detecting and classifying
 
 A full data pipeline was designed and built. Manual box labelling was replaced by a GroundingDINO-based auto-labeller that emits YOLO-format bounding boxes. YOLO11 Medium (\texttt{YOLO11m}, Ultralytics) was trained with transfer learning and then converted in two stages to TensorFlow Lite (TFLite) FP16, so inference runs on the phone while fine macromorphological cues are preserved.
 
-High recall on toxic classes is the priority, reducing the risk of treating a poisonous species as edible. Experiments, including an ablation against the Nano variant, show that YOLO11m in FP16 reaches strong recognition accuracy without cloud backends and can support identification in the field without network access.
+The priority is to limit treating a toxic species as edible. In the app this is done by the $0.18$/$0.60$ threshold pair (\texttt{displayStatus}), not by the detector head alone. Experiments, including an ablation against the Nano variant, show that YOLO11m in FP16 reaches strong recognition accuracy without cloud backends and can support identification in the field without network access.
 } % end of abstract
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \thesiskeywords{object detection, YOLO11m, TensorFlow Lite, FP16, Android, deep learning}  

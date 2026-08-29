@@ -1,13 +1,5 @@
 #!/usr/bin/env python3
-# Test 3 – Confidence threshold sweep (F1 justification).
-#
-# Scans confidence thresholds on the isolated test split and plots Precision,
-# Recall, F1-Score and mAP50. Used to justify the Android runtime threshold
-# Conf = 0.304 (see MushroomDetector / display policy).
-#
-# Author: Kiril Horobets
-# Warsaw University of Technology, 2026
-
+# Test 3 – Confidence threshold sweep (F1 justification)
 from __future__ import annotations
 
 import argparse

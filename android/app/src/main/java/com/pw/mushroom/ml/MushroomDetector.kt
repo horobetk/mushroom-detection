@@ -357,8 +357,8 @@ class MushroomDetector(context: Context) {
     companion object {
         private const val TAG = "MushroomDetector"
 
-        /** Float32 model bundled under app/src/main/assets. */
-        const val MODEL_ASSET = "best_float32.tflite"
+        /** FP16 model bundled under app/src/main/assets. */
+        const val MODEL_ASSET = "best_float16.tflite"
 
         private const val CHANNELS = 3
         private const val BOX_COORDS = 4

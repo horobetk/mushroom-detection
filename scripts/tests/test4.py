@@ -1,13 +1,5 @@
 #!/usr/bin/env python3
-# Test 4 – Per-frame latency breakdown (preprocess / inference / postprocess).
-#
-# Measures millisecond-level timings on GPU (default) using Ultralytics speed
-# statistics, after a short warm-up. Results support the performance tables in
-# Chapter 5 of the thesis.
-#
-# Author: Kiril Horobets
-# Warsaw University of Technology, 2026
-
+# Test 4 – Per-frame latency breakdown (preprocess / inference / postprocess)
 from __future__ import annotations
 
 import argparse

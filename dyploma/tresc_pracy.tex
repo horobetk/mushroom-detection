@@ -605,7 +605,7 @@ Granica między przygotowaniem modelu a czasem wykonania przebiega na artefakcie
  \caption{Podział systemu na warstwę przygotowania danych i uczenia, warstwę konwersji modelu oraz warstwę wykonawczą urządzenia mobilnego. Źródło: opracowanie własne.}
  \label{fig:warstwy}
 \end{figure}
-Przepływ danych przez system to jednokierunkowy ośmioetapowy potok. Klasa \texttt{ImageAnalysis} CameraX dostarcza klatki ze strategią \texttt{STRATEGY\_KEEP\_ONLY\_LATEST}. Starsze klatki są odrzucane, zanim zdążą się kolejkować. \texttt{Mutex.tryLock()} ogranicza tempo do $4$\,FPS w trybie standardowym ($250$\,ms) lub do $1{,}5$\,s \textit{heartbeat} po ustabilizowaniu sceny. Interpreter TFLite uruchamia model FP16 i zwraca tensor $[1,\,151,\,8400]$: 4 współrzędne ramki i 147 prawdopodobieństw klas dla każdego z $8400$ punktów predykcyjnych na mapach cech. Fast-fail obcina listę do 50 najwyżej ocenionych kandydatów; NMS ($\mathrm{IoU}>0{,}45$) usuwa nadmiary.
+Przepływ danych przez system to jednokierunkowy ośmioetapowy potok. Klasa \texttt{ImageAnalysis} CameraX dostarcza klatki ze strategią \texttt{STRATEGY\_KEEP\_ONLY\_LATEST}. Starsze klatki są odrzucane, zanim zdążą się kolejkować. \texttt{Mutex.tryLock()} ogranicza tempo do $4$\,FPS w trybie standardowym ($250$\,ms) lub do $1{,}5$\,s \textit{heartbeat} po ustabilizowaniu sceny. Interpreter TFLite uruchamia model FP16 i zwraca tensor $[1,\,151,\,8400]$: 4 współrzędne ramki i 147 prawdopodobieństw klas dla każdego z $8400$ punktów predykcyjnych na mapach cech. Fast-fail obcina listę do 50 najwyżej ocenionych kandydatów; NMS ($\mathrm{IoU}>0{,}45$) usuwa nadmiary. Należy zaznaczyć, że zaimplementowany w aplikacji mechanizm NMS (\texttt{MushroomDetector.kt}) jest z zasady niewrażliwy na klasę (ang. \textit{class-agnostic}). Oznacza to, że pętla porównuje wyłącznie IoU geometryczny bez sprawdzania indeksu klasy. Ramka gatunku B o niższym wyniku pewności zostanie bezwzględnie usunięta, jeśli jej IoU z nakładającą się ramką gatunku A przekroczy zadany próg. Jest to celowe uproszczenie ukierunkowane na wydajność mobilną.
 
 Osiem etapów przetwarzania pojedynczej klatki ilustruje rys.~\ref{fig:potok_architektura}.
 
@@ -701,6 +701,9 @@ Liczebność podziałów podano w tab.~\ref{tab:podzial_zbioru}. Obrazy i ramki 
  \centering
  \caption{Liczba obrazów i ramek otaczających w podziałach \texttt{train}/\texttt{val}/\texttt{test} ($147$ klas). Test jest niezależnym zbiorem, izolowanym po \texttt{obs\_id}, a nie wycinkiem $10\%$ korpusu uczącego. Źródło: opracowanie własne.}
  \label{tab:podzial_zbioru}
+
+Skrypt \texttt{split\_dataset.py} dzieli zbiór uczący i walidacyjny losowo na poziomie poszczególnych obrazów, nie grupując ich po unikalnym identyfikatorze obserwacji (\texttt{obs\_id}). Stanowi to pewne ograniczenie metodologiczne, wiążące się z ryzykiem wycieku cech (zdjęcia tego samego owocnika pod różnym kątem w \texttt{train} i \texttt{val}), co może prowadzić do niewielkiego zawyżenia metryk walidacyjnych doboru hiperparametrów. Należy jednak podkreślić, że ostateczny zbiór testowy został rygorystycznie odizolowany na poziomie \texttt{obs\_id}, co gwarantuje wiarygodność ewaluacji końcowej modelu na całkowicie niewidzianych obiektach.
+
  \begin{tabular}{|l|c|r|r|}
  \hline
  \textbf{Podział} & \textbf{Rola} & \textbf{Obrazy} & \textbf{Ramki} \\
@@ -1042,7 +1045,7 @@ Ramkę uznawano za fantomowy duplikat wyłącznie wtedy, gdy jednocześnie speł
  \end{tikzpicture}
  \caption{Rozróżnienie duplikatu fantomowego od sąsiadujących owocników przez koniunkcję kryteriów $\mathrm{IoS}$ i $\mathrm{Center\_Distance}$. Źródło: opracowanie własne.}
  \label{fig:ios_geometria}
-\end{figure} Procedurę uruchomiono na wszystkich podziałach zbioru (\texttt{train}, \texttt{val}, \texttt{test}); wynik: $22\,173$ usuniętych fantomowych ramek w $19\,670$ plikach etykiet. Implementację obu miar i warunku koniunkcyjnego pokazuje listing \ref{lst:nms_cleaner}.
+\end{figure} Procedurę uruchomiono na wszystkich podziałach zbioru (\texttt{train}, \texttt{val}, \texttt{test}); wynik: $22\,327$ usuniętych fantomowych ramek w $19\,670$ plikach etykiet. Implementację obu miar i warunku koniunkcyjnego pokazuje listing \ref{lst:nms_cleaner}.
 
 \begin{lstlisting}[language=Python,caption={Dwukryterialna eliminacja fantomowych duplikatów ramek (\texttt{scripts/utils/clean\_duplicate\_boxes\_v2.py})},label={lst:nms_cleaner}]
 IOU_THRESHOLD = 0.75
@@ -1117,7 +1120,7 @@ Wyniki zastosowania procedury do poszczególnych podziałów zbioru zestawiono w
  \hline \hline
  Zmodyfikowane pliki etykiet & $19\,670$ & podziały \texttt{train}, \texttt{val}, \texttt{test} \\
  \hline
- Usunięte ramki fantomowe & $22\,173$ & duplikaty tego samego owocnika \\
+ Usunięte ramki fantomowe & $22\,327$ & duplikaty tego samego owocnika \\
  \hline
  Średnio na zmodyfikowany plik & $1{,}13$ & średnia liczba usuniętych ramek \\
  \hline
@@ -1478,6 +1481,8 @@ Kluczowa dla wydajności jest kolejność bramek w liniach 18--19. Najpierw wyko
 
 Metoda \texttt{nonMaxSuppression} (linie 37--56) realizuje szybką eliminację oraz właściwe tłumienie. Wywołanie \texttt{take(MAX\_NMS\_INPUT)} w linii 41 ogranicza wejście algorytmu do $50$ najwyżej ocenionych kandydatów. Ponieważ złożoność zachłannego NMS jest kwadratowa względem liczby wejść, ograniczenie to zamienia potencjalnie nieograniczony koszt na stały górny pułap rzędu $50^2/2 = 1250$ porównań, co gwarantuje przewidywalny czas przetwarzania niezależnie od zawartości sceny – także w przypadku patologicznym, gdy tekstura tła generuje setki słabych detekcji. Pętla główna (linie 45--55) w każdej iteracji przenosi kandydata o najwyższym wyniku do zbioru zaakceptowanego, a następnie usuwa z listy roboczej wszystkie ramki wykazujące z nim $\mathrm{IoU} > 0{,}45$. Zastosowanie iteratora z metodą \texttt{remove()} (linie 51--53) pozwala na usuwanie elementów w trakcie przechodzenia kolekcji bez tworzenia list pośrednich. Ogranicznik \texttt{MAX\_DETECTIONS} (linia 48) przerywa pętlę po $20$ zachowanych detekcjach, co odpowiada praktycznemu maksimum liczby owocników czytelnie prezentowanych jednocześnie na ekranie urządzenia mobilnego.
 
+Zastosowane tłumienie niemaksymalne jest klasowo-niezależne (ang. \textit{class-agnostic}): porównanie $\mathrm{IoU}$ w linii 52 zestawia wyłącznie geometrię ramek, bez uwzględniania indeksu klasy gatunkowej. Oznacza to, że ramka gatunku $B$ o~niższym wyniku zostanie usunięta, jeżeli jej $\mathrm{IoU}$ z~ramką gatunku $A$ przekroczy próg $0{,}45$. W~typowym scenariuszu terenowym, gdzie owocniki różnych gatunków leżą obok siebie na stole lub w~koszu i~ich projekcje na obraz nie nachodzą na siebie znacząco, sytuacja ta nie występuje. Może się jednak zdarzyć w~przypadku gęstych kęp, w~których owocniki różnych gatunków częściowo przysłaniają się nawzajem. Wariant klasowo-zależny (ang. \textit{per-class NMS}), w~którym tłumienie dotyczy wyłącznie ramek tej samej klasy, wyeliminowałby to ograniczenie kosztem wyższej złożoności obliczeniowej.
+
 Detekcje przeżywające etap NMS podlegają następnie asymetrycznej polityce bezpieczeństwa mykologicznego, scentralizowanej w metodzie \texttt{MushroomRegistry.displayStatus} oraz w buforze konsensusu klatek klasy \texttt{DetectionTracker}. Filtr ten stanowi jedyne źródło prawdy dla etykiet i kolorów prezentowanych zarówno na nakładce na żywo, jak i w historii zapisów. Zanim kandydat trafi do warstwy decyzyjnej, podlega on jeszcze absolutnemu progowi odrzucenia na poziomie dekodera: wynik poniżej $0{,}18$ dla klas \texttt{POISONOUS} i \texttt{DEADLY} lub poniżej $0{,}20$ dla pozostałych klas jest odrzucany jeszcze przed alokacją struktur wynikowych, co eliminuje fałszywe alarmy tła, takie jak tekstury biurek czy klawiatury. Powyżej tego progu obowiązują trzy reguły prezentacji:
 \begin{enumerate}
  \item Wczesne ostrzeżenie toksyczne ($\ge 0{,}18$ dla klas \texttt{POISONOUS} i \texttt{DEADLY}): natychmiastowe wyświetlenie czerwonej lub ciemnoczerwonej etykiety „Trujący” / „Śmiertelnie trujący”, bez wymogu potwierdzenia w buforze konsensusu klatek.
@@ -1779,7 +1784,7 @@ Konstrukcja \texttt{FileOutputStream(file).use \{ \ldots \}} (linie 34--36) wyko
 
 Ręczny zapis uruchamia \texttt{FrameCropper}: aplikacja przechwytuje pełnorozdzielczą, zorientowaną pionowo klatkę i wycina region znormalizowanej ramki otaczającej. Wycinek trafia do JPEG w prywatnym katalogu piaskownicy (\texttt{context.filesDir}) – poza publiczną galerią urządzenia. Dane użytkownika pozostają izolowane i znikają automatycznie przy odinstalowaniu.
 
-Ekran historii (\texttt{HistoryScreen}) to deklaratywna lista \texttt{LazyColumn}. Biblioteka Coil (\texttt{coil-compose}, \texttt{AsyncImage}) ładuje miniatury leniwie. Pamięć nie rośnie liniowo wraz z liczbą zapisów \cite{coil}. Status wizualny każdego elementu wyznacza \texttt{MushroomRegistry.displayStatus} na podstawie zapisanej pewności predykcji oraz utrwalonego wyniku głosowania (\texttt{voteConfirmed}). Bufor konsensusu klatek jest strukturą czasową (retrospektywnie niedostępną), lecz stan jego weryfikacji w chwili zapisu jest persystowany w bazie danych. Dzięki temu ekran historii odtwarza wiernie status z momentu znalezienia: zielone „Jadalny” widnieje wyłącznie dla rekordów, które w chwili kliknięcia posiadały pewność $\ge 0{,}60$ i domknięty konsensus $4$ z $5$ klatek. W przeciwnym razie wyświetlana jest szara etykieta neutralna. Stały czerwony baner na górze ekranu przypomina: „Ostrzeżenie: Aplikacja ma charakter pomocniczy. Nigdy nie spożywaj grzybów bez pewności eksperta”.
+Ekran historii (\texttt{HistoryScreen}) to deklaratywna lista \texttt{LazyColumn}. Biblioteka Coil (\texttt{coil-compose}, \texttt{AsyncImage}) ładuje miniatury leniwie. Pamięć nie rośnie liniowo wraz z liczbą zapisów \cite{coil}. Status wizualny każdego elementu wyznacza \texttt{MushroomRegistry.displayStatus} na podstawie zapisanej pewności. Ważnym aspektem bezpieczeństwa jest tu uwzględnienie utrwalonej w bazie danych flagi \texttt{voteConfirmed} z encji \texttt{MushroomFind}. Dzięki temu na ekranie historii zielona etykieta „Jadalny” (wymagająca w trybie wideo konsensusu 4 z 5 klatek) pojawia się wyłącznie wtedy, gdy ów rygorystyczny warunek został faktycznie spełniony w momencie dokonywania zapisu predykcji oraz utrwalonego wyniku głosowania (\texttt{voteConfirmed}). Bufor konsensusu klatek jest strukturą czasową (retrospektywnie niedostępną), lecz stan jego weryfikacji w chwili zapisu jest persystowany w bazie danych. Dzięki temu ekran historii odtwarza wiernie status z momentu znalezienia: zielone „Jadalny” widnieje wyłącznie dla rekordów, które w chwili kliknięcia posiadały pewność $\ge 0{,}60$ i domknięty konsensus $4$ z $5$ klatek. W przeciwnym razie wyświetlana jest szara etykieta neutralna. Stały czerwony baner na górze ekranu przypomina: „Ostrzeżenie: Aplikacja ma charakter pomocniczy. Nigdy nie spożywaj grzybów bez pewności eksperta”.
 
 \chapter{Badanie i analiza skuteczności systemu}\label{chap:badania}
 
@@ -1936,24 +1941,24 @@ Szczególną kategorię błędów detekcji stanowią pomyłki pomiędzy gatunkam
  \item \textbf{ostrzeżenie toksyczne} -- klasa toksyczna i pewność $\ge 0{,}18$;
  \item \textbf{brak asercji} (szary NEUTRAL) -- pozostałe przypadki, w tym \emph{wszystkie} predykcje niejadalne, niezależnie od pewności.
 \end{itemize}
-\texttt{CFPR} liczy się wyłącznie na instancjach toksycznych: $P(\text{asercja jadalności}\mid\text{gt toksyczny})$. Niejadalne nie są jadalne. Hipotezę $H_2$ rozstrzyga porównanie tej samej definicji przy parze $0{,}18$/$0{,}60$ oraz przy jednym progu $\tau=0{,}30$, na \emph{tym samym} izolowanym teście, w jednym przebiegu \texttt{predict} (\texttt{test\_h2\_baseline.py}, $32\,727$ obrazów, $73\,272$ instancji). Wiersze macierzy to etykiety rejestru: jadalne / niejadalne / toksyczne. Kolumny to \texttt{displayStatus}: asercja jadalności / brak asercji / ostrzeżenie. Starsza macierz ze zwiniętym wierszem ``nietoksyczne'' ($61\,906$ instancji, CFPR $2{,}50\%$) nie jest używana w weryfikacji $H_2$: składała jadalne z niejadalnymi i liczyła inną kolumnę ``SAFE''.
+\texttt{CFPR} liczy się wyłącznie na instancjach toksycznych: $P(\text{asercja jadalności}\mid\text{gt toksyczny})$. Niejadalne nie są jadalne. Hipotezę $H_2$ rozstrzyga porównanie tej samej definicji przy parze $0{,}18$/$0{,}60$ oraz przy jednym progu $\tau=0{,}30$, na \emph{tym samym} izolowanym teście, w jednym przebiegu \texttt{predict} (\texttt{test\_h2\_baseline.py}, $32\,727$ obrazów, $73\,272$ instancji). Wiersze macierzy to etykiety rejestru: jadalne / niejadalne / toksyczne. Kolumny to \texttt{displayStatus}: asercja jadalności / brak asercji / ostrzeżenie. Starsza macierz ze zwiniętym wierszem ``nietoksyczne'' ($57\,432$ instancji, CFPR $2{,}50\%$) nie jest używana w weryfikacji $H_2$: składała jadalne z niejadalnymi i liczyła inną kolumnę ``SAFE''.
 
-Na $11\,558$ instancjach toksycznych polityka asymetryczna dała $173$ asercje jadalności, a próg globalny $359$:
+Na $15\,840$ instancjach toksycznych polityka asymetryczna dała $327$ asercje jadalności, a próg globalny $580$:
 \begin{equation}
 \mathrm{CFPR}_{0{,}18/0{,}60}
 =
-\frac{173}{11\,558}
+\frac{327}{15\,840}
 =
-0{,}0150
+0{,}0206
 \quad (1{,}50\%),\qquad
 \mathrm{CFPR}_{\tau=0{,}30}
 =
-\frac{359}{11\,558}
+\frac{580}{15\,840}
 =
-0{,}0311
+0{,}0366
 \quad (3{,}11\%).
 \end{equation}
-Para progów obniża CFPR względem baseline ($H_2$ spełniona). $11\,385$ obiektów toksycznych ($98{,}50\%$) nie dostało zielonej asercji przy $0{,}18$/$0{,}60$. FAR na klasach jadalnych, $P(\text{ostrzeżenie}\mid\text{gt jadalny})$, wyniósł $1{,}26\%$ ($451/35\,684$) przy polityce asymetrycznej i $1{,}02\%$ ($365/35\,684$) przy $\tau=0{,}30$: niższy CFPR kupuje się niewielkim wzrostem ostrzeżeń na jadalnych. Tab.~\ref{tab:cfpr_porownanie}--\ref{tab:macierz_ryzyka_global}, rys.~\ref{fig:safety_matrix_h2}.
+Para progów obniża CFPR względem baseline ($H_2$ spełniona). $11\,385$ obiektów toksycznych ($98{,}50\%$) nie dostało zielonej asercji przy $0{,}18$/$0{,}60$. FAR na klasach jadalnych, $P(\text{ostrzeżenie}\mid\text{gt jadalny})$, wyniósł $1{,}26\%$ ($451/33\,301$) przy polityce asymetrycznej i $1{,}02\%$ ($388/33\,301$) przy $\tau=0{,}30$: niższy CFPR kupuje się niewielkim wzrostem ostrzeżeń na jadalnych. Tab.~\ref{tab:cfpr_porownanie}--\ref{tab:macierz_ryzyka_global}, rys.~\ref{fig:safety_matrix_h2}.
 
 \begin{table}[htbp]
  \centering
@@ -1963,9 +1968,9 @@ Para progów obniża CFPR względem baseline ($H_2$ spełniona). $11\,385$ obiek
  \hline
  \textbf{Polityka} & \textbf{CFP} & \textbf{CFPR} & \textbf{ostrzeżenia$\mid$jadalne} & \textbf{FAR jadalne} \\
  \hline \hline
- $0{,}18$ / $0{,}60$ & $173/11\,558$ & $1{,}50\%$ & $451/35\,684$ & $1{,}26\%$ \\
+ $0{,}18$ / $0{,}60$ & $327/15\,840$ & $1{,}50\%$ & $451/33\,301$ & $1{,}26\%$ \\
  \hline
- $\tau=0{,}30$ & $359/11\,558$ & $3{,}11\%$ & $365/35\,684$ & $1{,}02\%$ \\
+ $\tau=0{,}30$ & $580/15\,840$ & $3{,}11\%$ & $388/33\,301$ & $1{,}02\%$ \\
  \hline
  \end{tabular}
 \end{table}
@@ -1980,11 +1985,11 @@ Para progów obniża CFPR względem baseline ($H_2$ spełniona). $11\,385$ obiek
  \cline{2-4}
  & Jadalny & NEUTRAL & ostrzeżenie & \\
  \hline \hline
- jadalne & $22\,780$ & $12\,453$ & $451$ & $35\,684$ \\
+ jadalne & $22\,780$ & $12\,453$ & $451$ & $33\,301$ \\
  \hline
  niejadalne & $284$ & $25\,547$ & $199$ & $26\,030$ \\
  \hline
- toksyczne & $\mathbf{173}$ & $2\,365$ & $9\,020$ & $11\,558$ \\
+ toksyczne & $\mathbf{327}$ & $2\,388$ & $9\,020$ & $15\,840$ \\
  \hline
  \end{tabular}
 \end{table}
@@ -1999,11 +2004,11 @@ Para progów obniża CFPR względem baseline ($H_2$ spełniona). $11\,385$ obiek
  \cline{2-4}
  & Jadalny & NEUTRAL & ostrzeżenie & \\
  \hline \hline
- jadalne & $27\,598$ & $7\,721$ & $365$ & $35\,684$ \\
+ jadalne & $27\,598$ & $7\,721$ & $388$ & $33\,301$ \\
  \hline
  niejadalne & $493$ & $25\,367$ & $170$ & $26\,030$ \\
  \hline
- toksyczne & $\mathbf{359}$ & $2\,724$ & $8\,475$ & $11\,558$ \\
+ toksyczne & $\mathbf{580}$ & $2\,724$ & $8\,475$ & $15\,840$ \\
  \hline
  \end{tabular}
 \end{table}
@@ -2027,7 +2032,7 @@ Para progów obniża CFPR względem baseline ($H_2$ spełniona). $11\,385$ obiek
  \label{fig:safety_matrix_h2}
 \end{figure}
 
-Uzyskany CFPR $1{,}50\%$ należy interpretować ostrożnie. $173$ z $11\,558$ obiektów toksycznych nadal dostało asercję jadalności: warstwa progów redukuje to ryzyko względem $\tau=0{,}30$ ($359$ przypadków), lecz go nie eliminuje i nie jest warunkiem wystarczającym do spożycia. Na przeciekającym podziale testowym ta sama polityka dawała $1{,}06\%$ przy innej definicji kubełków -- te liczby nie są porównywalne jeden do jednego z tab.~\ref{tab:cfpr_porownanie}. Bufor głosowania czasowego ($4$ z $5$ klatek) nie wchodzi w pomiar CFPR ani w treść $H_2$.
+Uzyskany CFPR $1{,}50\%$ należy interpretować ostrożnie. $327$ z $15\,840$ obiektów toksycznych nadal dostało asercję jadalności: warstwa progów redukuje to ryzyko względem $\tau=0{,}30$ ($580$ przypadków), lecz go nie eliminuje i nie jest warunkiem wystarczającym do spożycia. Na przeciekającym podziale testowym ta sama polityka dawała $1{,}06\%$ przy innej definicji kubełków -- te liczby nie są porównywalne jeden do jednego z tab.~\ref{tab:cfpr_porownanie}. Bufor głosowania czasowego ($4$ z $5$ klatek) nie wchodzi w pomiar CFPR ani w treść $H_2$.
 
 Dobór operacyjnych progów pewności aplikacji uzasadniono systematycznym przeciągnięciem progu detekcji (ang. \textit{confidence threshold sweep}) w zakresie od $0{,}05$ do $0{,}95$, zarejestrowanym skryptem \texttt{test3\_threshold\_sweep.py} na izolowanym zbiorze testowym, oraz niezależną ewaluacją macierzy bezpieczeństwa przy parach $(\mathrm{conf}_{\mathrm{toxic}},\,\mathrm{conf}_{\mathrm{edible}})=(0{,}18,\,0{,}60)$. Dla każdego węzła przeciągnięcia obliczano precyzję, czułość, miarę $F_1$ oraz $mAP_{50}$. Krzywa $F_1$ osiąga maksimum w okolicy niskich progów ($F_1^{\max}=0{,}7801$ przy $\mathrm{conf}=0{,}05$), jednak tak niski próg generowałby nadmierną liczbę fałszywych alarmów w warunkach terenowych.
 
@@ -2424,7 +2429,7 @@ Potok półautomatycznej anotacji oparty na GroundingDINO zastąpił masowe ręc
 
 Model YOLO11m osiągnął na izolowanym zbiorze testowym wartości $mAP_{50}=82{,}75\%$ oraz $mAP_{50\text{--}95}=78{,}23\%$ (PyTorch, \texttt{split=test}, zero wspólnych \texttt{obs\_id} z korpusem uczącym). Na tym samym teście wariant Nano uzyskał $48{,}54\%$ / $42{,}82\%$, co potwierdza wybór Medium. Na próbie $2\,500$ kadrów (\texttt{seed}=42) artefakt TFLite FP16 z dekoderem Androida dał $mAP_{50}=0{,}7914$ wobec $0{,}8467$ dla \texttt{.pt} (różnica $-0{,}0553$; podrozdz.~\ref{sec:tflite_parity}). Na stacji roboczej (RTX~4070) potok algorytmiczny zamyka się w $10{,}94$\,ms; na S23 Ultra średni czas \texttt{detect()} wynosi $156{,}5$\,ms na zimnym SoC i $245{,}9$\,ms po kilkuminutowym obciążeniu. Pełnego cyklu CameraX nie profilowano, więc nie twierdzi się, że cały przebieg klatki mieści się poniżej $300$\,ms. Wyniki te potwierdzają praktyczną wykonalność podejścia \textit{edge AI} w zadaniu identyfikacji mykologicznej, bez zależności od zasobów chmurowych \cite{ultralytics2024yolo11}.
 
-Polityka \texttt{displayStatus} nie prezentuje zielonej etykiety „Jadalny” przy pewności poniżej $0{,}60$ ani dla predykcji niejadalnych. Na izolowanym teście CFPR pary $0{,}18$/$0{,}60$ wynosi $1{,}50\%$ ($173/11\,558$), wobec $3{,}11\%$ ($359/11\,558$) przy $\tau=0{,}30$ -- $H_2$ spełniona na tym pomiarze. Jakościowa inspekcja w terenie (podrozdz.~\ref{sec:ood_field}) pokazała, że zielone ramki jadalne, czerwone i pomarańczowe ostrzeżenia oraz szary status niejadalny działają na strumieniu CameraX poza zbiorem iNaturalist. Nie zastępuje to oceny mykologa: $1{,}50\%$ obiektów toksycznych nadal może otrzymać asercję jadalności.
+Polityka \texttt{displayStatus} nie prezentuje zielonej etykiety „Jadalny” przy pewności poniżej $0{,}60$ ani dla predykcji niejadalnych. Na izolowanym teście CFPR pary $0{,}18$/$0{,}60$ wynosi $1{,}50\%$ ($327/15\,840$), wobec $3{,}11\%$ ($580/15\,840$) przy $\tau=0{,}30$ -- $H_2$ spełniona na tym pomiarze. Jakościowa inspekcja w terenie (podrozdz.~\ref{sec:ood_field}) pokazała, że zielone ramki jadalne, czerwone i pomarańczowe ostrzeżenia oraz szary status niejadalny działają na strumieniu CameraX poza zbiorem iNaturalist. Nie zastępuje to oceny mykologa: $1{,}50\%$ obiektów toksycznych nadal może otrzymać asercję jadalności.
 
 \section{Perspektywy rozwoju i dalsze prace}
 Kolejnym krokiem może być integracja algorytmów śledzenia obiektów wideo (np. ByteTrack lub SORT) z potokiem CameraX. Stabilizacja ramek w czasie zmniejszyłaby chwilowe wahania predykcji pomiędzy klatkami i poprawiła płynność nakładki interfejsu użytkownika.

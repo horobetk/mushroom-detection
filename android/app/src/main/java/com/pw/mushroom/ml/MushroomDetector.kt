@@ -15,16 +15,25 @@ import kotlin.math.max
 import kotlin.math.min
 
 /**
+ * A single class score used for top-N diagnostics in Research Mode.
+ */
+data class ClassScore(val classId: Int, val score: Float)
+
+/**
  * A single species prediction produced by [MushroomDetector].
  *
  * @property species     Catalogue entry describing the detected species.
  * @property confidence  Detection score in the range 0.0 .. 1.0.
  * @property boundingBox Normalised box in model input space.
+ * @property topScores   Top-N class scores for this anchor. Empty unless
+ *                       Research Mode is active.
  */
 data class DetectionResult(
     val species: MushroomSpecies,
     val confidence: Float,
-    val boundingBox: NormalizedBox
+    val boundingBox: NormalizedBox,
+    /** Top-N class scores for this anchor. Empty unless Research Mode is active. */
+    val topScores: List<ClassScore> = emptyList()
 )
 
 /**
@@ -50,6 +59,9 @@ class MushroomDetector(context: Context) {
 
     // Held as a field so it can be released in close(); null when running on CPU.
     private var gpuDelegate: GpuDelegate? = null
+
+    /** True when inference runs on the GPU delegate (false = CPU fallback). */
+    val isGpuEnabled: Boolean get() = gpuDelegate != null
 
     // Geometry read from the model at load time (supports variable sizes/classes).
     val inputResolution: Int
@@ -173,7 +185,8 @@ class MushroomDetector(context: Context) {
             DetectionResult(
                 species = species,
                 confidence = raw.score,
-                boundingBox = normalizeBox(raw.x1, raw.y1, raw.x2, raw.y2)
+                boundingBox = normalizeBox(raw.x1, raw.y1, raw.x2, raw.y2),
+                topScores = raw.topScores
             )
         }
     }
@@ -225,6 +238,7 @@ class MushroomDetector(context: Context) {
     private fun decode(data: FloatArray): List<RawDetection> {
         val detections = ArrayList<RawDetection>()
         val globalMin = MushroomRegistry.minSafetyThreshold
+        val wantTopN = collectTopN
 
         for (anchor in 0 until numAnchors) {
             var bestClass = -1
@@ -242,6 +256,16 @@ class MushroomDetector(context: Context) {
             if (bestClass < 0 || bestScore < globalMin) continue
             if (bestScore < MushroomRegistry.thresholdFor(bestClass)) continue
 
+            // Collect top-N scores for Research Mode diagnostics.
+            val topScores: List<ClassScore> = if (wantTopN) {
+                (0 until numClasses)
+                    .map { c -> ClassScore(c, data[(BOX_COORDS + c) * numAnchors + anchor]) }
+                    .sortedByDescending { it.score }
+                    .take(TOP_N)
+            } else {
+                emptyList()
+            }
+
             val cx = data[0 * numAnchors + anchor]
             val cy = data[1 * numAnchors + anchor]
             val w = data[2 * numAnchors + anchor]
@@ -255,7 +279,8 @@ class MushroomDetector(context: Context) {
                     x2 = cx + w * half,
                     y2 = cy + h * half,
                     score = bestScore,
-                    classIndex = bestClass
+                    classIndex = bestClass,
+                    topScores = topScores
                 )
             )
         }
@@ -338,7 +363,8 @@ class MushroomDetector(context: Context) {
         val x2: Float,
         val y2: Float,
         val score: Float,
-        val classIndex: Int
+        val classIndex: Int,
+        val topScores: List<ClassScore> = emptyList()
     )
 
     /** Memory-map the .tflite model directly from the app assets. */
@@ -373,5 +399,17 @@ class MushroomDetector(context: Context) {
 
         /** Upper bound on detections kept per frame. */
         private const val MAX_DETECTIONS = 20
+
+        /** Number of top class scores to collect per detection in Research Mode. */
+        private const val TOP_N = 5
+
+        /**
+         * When true, [decode] collects top-N class scores for every surviving
+         * anchor. Set by [MushroomViewModel] when Research Mode is active.
+         * Kept as a simple volatile flag to avoid threading issues and DI.
+         */
+        @Volatile
+        @JvmStatic
+        var collectTopN: Boolean = false
     }
 }

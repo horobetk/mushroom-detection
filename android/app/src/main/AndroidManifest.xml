@@ -6,6 +6,11 @@
         android:required="true" />
 
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Research Mode: haptic feedback on capture. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Research Mode: write capture bundles to Documents/MushroomResearch/ -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
 
     <application
         android:allowBackup="true"

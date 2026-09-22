@@ -214,7 +214,6 @@ object MushroomRegistry {
 
     // Mid band: detection exists but app asserts neither SAFE nor UNSAFE.
     const val NEUTRAL_MIN_CONFIDENCE = 0.20f
-    const val NEUTRAL_MAX_CONFIDENCE = 0.55f
 
     // SAFE badge: species must win 4 of the last 5 frames.
     const val VOTE_REQUIRED = 4

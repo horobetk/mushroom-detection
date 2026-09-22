@@ -2,8 +2,12 @@ package com.pw.mushroom.ui
 
 import android.app.Application
 import android.graphics.Bitmap
+import android.os.Handler
+import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
+import android.view.PixelCopy
+import android.view.Window
 import androidx.annotation.StringRes
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -15,6 +19,8 @@ import com.pw.mushroom.ml.InferenceProfiler
 import com.pw.mushroom.ml.MushroomDetector
 import com.pw.mushroom.ml.TrackedDetection
 import com.pw.mushroom.model.MushroomRegistry
+import com.pw.mushroom.research.ResearchLogger
+import com.pw.mushroom.research.ResearchPrefs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,6 +30,8 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 
 /**
  * Owns the detection pipeline for the camera screen:
@@ -31,6 +39,9 @@ import kotlinx.coroutines.sync.Mutex
  *  - folds detections through a [DetectionTracker] for the 5-second freeze,
  *  - drops to a slow heartbeat once the scene is locked,
  *  - crops and persists a find via [FindsRepository] on demand.
+ *
+ * When Research Mode is enabled, also manages capture sessions and coordinates
+ * full-frame + PixelCopy + metadata saves via [ResearchLogger].
  */
 class MushroomViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -60,6 +71,29 @@ class MushroomViewModel(application: Application) : AndroidViewModel(application
     @Volatile
     private var viewAspectRatio: Float = 1f
 
+    // -------------------------------------------------------------------------
+    // Research Mode state
+    // -------------------------------------------------------------------------
+
+    val researchPrefs = ResearchPrefs(application)
+
+    private val _researchEnabled = MutableStateFlow(researchPrefs.isEnabled)
+    /** Observable research mode toggle for the UI. */
+    val researchEnabled: StateFlow<Boolean> = _researchEnabled.asStateFlow()
+
+    private val _captureCount = MutableStateFlow(researchPrefs.captureCounter)
+    /** Number of captures taken in the current session (for the badge). */
+    val captureCount: StateFlow<Int> = _captureCount.asStateFlow()
+
+    /** Last inference latency in ms (for telemetry). */
+    @Volatile
+    private var lastDetectMs: Double = 0.0
+
+    /** Simple FPS estimator: exponential moving average of frame intervals. */
+    @Volatile
+    private var smoothedFps: Double = 4.0
+    private var prevFrameTimestamp: Long = 0L
+
     /** Report the preview's aspect ratio (width / height) from the UI layer. */
     fun setViewAspectRatio(ratio: Float) {
         if (ratio > 0f) viewAspectRatio = ratio
@@ -67,6 +101,42 @@ class MushroomViewModel(application: Application) : AndroidViewModel(application
 
     init {
         initialiseDetector()
+        syncResearchFlag()
+    }
+
+    /** Sync the detector's collectTopN flag with the current research mode state. */
+    private fun syncResearchFlag() {
+        val enabled = _researchEnabled.value
+        MushroomDetector.collectTopN = enabled
+        if (enabled && !ResearchLogger.isSessionActive) {
+            val sessionId = ResearchLogger.startSession()
+            if (sessionId != null) {
+                researchPrefs.startNewSession(sessionId)
+            }
+        }
+    }
+
+    /** Toggle Research Mode on/off. */
+    fun toggleResearchMode() {
+        val newState = !_researchEnabled.value
+        researchPrefs.isEnabled = newState
+        _researchEnabled.value = newState
+        MushroomDetector.collectTopN = newState
+
+        if (newState) {
+            // Start a new session if none is active.
+            if (!ResearchLogger.isSessionActive) {
+                val sessionId = ResearchLogger.startSession()
+                if (sessionId != null) {
+                    researchPrefs.startNewSession(sessionId)
+                    _captureCount.value = 0
+                }
+            }
+        } else {
+            ResearchLogger.endSession()
+            researchPrefs.endSession()
+            _captureCount.value = 0
+        }
     }
 
     private fun initialiseDetector() {
@@ -95,6 +165,17 @@ class MushroomViewModel(application: Application) : AndroidViewModel(application
         }
 
         val now = SystemClock.elapsedRealtime()
+
+        // FPS estimation.
+        if (prevFrameTimestamp > 0L) {
+            val dtMs = now - prevFrameTimestamp
+            if (dtMs > 0) {
+                val instantFps = 1000.0 / dtMs
+                smoothedFps = smoothedFps * 0.8 + instantFps * 0.2
+            }
+        }
+        prevFrameTimestamp = now
+
         val sceneLocked = tracker.isSceneLocked()
         val interval = if (sceneLocked && !InferenceProfiler.bypassSceneLock) {
             LOCK_HEARTBEAT_MS
@@ -122,6 +203,7 @@ class MushroomViewModel(application: Application) : AndroidViewModel(application
                 val t0 = SystemClock.elapsedRealtimeNanos()
                 val rawDetections = activeDetector.detect(lb.bitmap)
                 val detectMs = (SystemClock.elapsedRealtimeNanos() - t0) / 1_000_000.0
+                lastDetectMs = detectMs
                 InferenceProfiler.record(
                     context = getApplication(),
                     detectMs = detectMs,
@@ -199,6 +281,103 @@ class MushroomViewModel(application: Application) : AndroidViewModel(application
         saveDetection(best)
     }
 
+    // -------------------------------------------------------------------------
+    // Research Mode capture
+    // -------------------------------------------------------------------------
+
+    /**
+     * Capture a full research data bundle: full-frame image, PixelCopy screen
+     * screenshot, and detailed detection metadata with top-N predictions.
+     *
+     * @param window        The Activity window for PixelCopy. Pass from the UI layer.
+     * @param fullResFrame  Optional full-resolution sensor photo from ImageCapture. Ownership
+     *                      transfers here (recycled after the capture completes).
+     */
+    fun researchCapture(window: Window?, fullResFrame: Bitmap? = null) {
+        if (!_researchEnabled.value || !ResearchLogger.isSessionActive) {
+            fullResFrame?.recycle()
+            return
+        }
+
+        val detections = currentDetections
+        val frame: Bitmap? = synchronized(frameLock) {
+            latestFrame?.copy(latestFrame!!.config ?: Bitmap.Config.ARGB_8888, false)
+        }
+        if (frame == null) {
+            fullResFrame?.recycle()
+            _saveEvents.tryEmit(SaveEvent("Research capture: no frame", false))
+            return
+        }
+
+        val captureId = _captureCount.value + 1
+        _captureCount.value = captureId
+        researchPrefs.captureCounter = captureId
+
+        val inferenceMs = lastDetectMs
+        val fps = smoothedFps
+        val gpuDelegate = detector?.isGpuEnabled ?: false
+
+        viewModelScope.launch(Dispatchers.IO) {
+            // Try PixelCopy screenshot (async, on main thread handler).
+            val screenBitmap = if (window != null) {
+                try {
+                    captureScreen(window)
+                } catch (t: Throwable) {
+                    Log.w(TAG, "PixelCopy failed, proceeding without screenshot", t)
+                    null
+                }
+            } else null
+
+            val path = ResearchLogger.capture(
+                captureId = captureId,
+                fullFrame = frame,
+                fullResFrame = fullResFrame,
+                screenBitmap = screenBitmap,
+                detections = detections,
+                inferenceMs = inferenceMs,
+                fps = fps,
+                gpuDelegate = gpuDelegate,
+                context = getApplication()
+            )
+
+            frame.recycle()
+            fullResFrame?.recycle()
+            screenBitmap?.recycle()
+
+            if (path != null) {
+                _saveEvents.tryEmit(SaveEvent("📷 #$captureId saved", true))
+            } else {
+                _saveEvents.tryEmit(SaveEvent("Capture #$captureId failed", false))
+            }
+        }
+    }
+
+    /**
+     * Capture the full window content via [PixelCopy] (API 26+).
+     * Returns a Bitmap of the screen, or null on failure.
+     */
+    private suspend fun captureScreen(window: Window): Bitmap? =
+        suspendCancellableCoroutine { cont ->
+            val view = window.decorView
+            val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+            val handler = Handler(Looper.getMainLooper())
+
+            try {
+                PixelCopy.request(window, bitmap, { result ->
+                    if (result == PixelCopy.SUCCESS) {
+                        cont.resume(bitmap)
+                    } else {
+                        Log.w(TAG, "PixelCopy returned result=$result")
+                        bitmap.recycle()
+                        cont.resume(null)
+                    }
+                }, handler)
+            } catch (t: Throwable) {
+                bitmap.recycle()
+                cont.resume(null)
+            }
+        }
+
     fun retry() {
         if (detector == null) {
             initialiseDetector()
@@ -214,6 +393,7 @@ class MushroomViewModel(application: Application) : AndroidViewModel(application
 
     override fun onCleared() {
         super.onCleared()
+        MushroomDetector.collectTopN = false
         detector?.close()
         detector = null
         synchronized(frameLock) {

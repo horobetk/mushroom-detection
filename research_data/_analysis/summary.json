@@ -1,0 +1,206 @@
+{
+  "captures_total": 67,
+  "captures_labeled": 67,
+  "captures_unlabeled": 0,
+  "top1_accuracy": 0.6716,
+  "top5_accuracy": 0.7313,
+  "mean_confidence": 0.7356,
+  "mean_latencyMs": 154.7,
+  "per_species": [
+    {
+      "true_species": "Amanita citrina",
+      "n": 5,
+      "correct": 3,
+      "accuracy": 0.6
+    },
+    {
+      "true_species": "Amanita excelsa",
+      "n": 1,
+      "correct": 1,
+      "accuracy": 1.0
+    },
+    {
+      "true_species": "Amanita fulva",
+      "n": 4,
+      "correct": 3,
+      "accuracy": 0.75
+    },
+    {
+      "true_species": "Amanita muscaria",
+      "n": 1,
+      "correct": 1,
+      "accuracy": 1.0
+    },
+    {
+      "true_species": "Boletus edulis",
+      "n": 6,
+      "correct": 5,
+      "accuracy": 0.833
+    },
+    {
+      "true_species": "Cantharellus cibarius",
+      "n": 1,
+      "correct": 1,
+      "accuracy": 1.0
+    },
+    {
+      "true_species": "Chalciporus piperatus",
+      "n": 2,
+      "correct": 0,
+      "accuracy": 0.0
+    },
+    {
+      "true_species": "Clitocybe costata",
+      "n": 1,
+      "correct": 0,
+      "accuracy": 0.0
+    },
+    {
+      "true_species": "Flammulina populicola",
+      "n": 1,
+      "correct": 0,
+      "accuracy": 0.0
+    },
+    {
+      "true_species": "Hypholoma fasciculare",
+      "n": 2,
+      "correct": 2,
+      "accuracy": 1.0
+    },
+    {
+      "true_species": "Imleria badia",
+      "n": 6,
+      "correct": 6,
+      "accuracy": 1.0
+    },
+    {
+      "true_species": "Lactarius helvus",
+      "n": 3,
+      "correct": 3,
+      "accuracy": 1.0
+    },
+    {
+      "true_species": "Lactarius quietus",
+      "n": 1,
+      "correct": 1,
+      "accuracy": 1.0
+    },
+    {
+      "true_species": "Lactarius rufus",
+      "n": 2,
+      "correct": 1,
+      "accuracy": 0.5
+    },
+    {
+      "true_species": "Lactarius vellereus",
+      "n": 1,
+      "correct": 1,
+      "accuracy": 1.0
+    },
+    {
+      "true_species": "Leccinum scabrum",
+      "n": 3,
+      "correct": 2,
+      "accuracy": 0.667
+    },
+    {
+      "true_species": "Phaeolus schweinitzii",
+      "n": 1,
+      "correct": 0,
+      "accuracy": 0.0
+    },
+    {
+      "true_species": "Phaeotremella foliacea",
+      "n": 2,
+      "correct": 0,
+      "accuracy": 0.0
+    },
+    {
+      "true_species": "Pluteus cervinus",
+      "n": 1,
+      "correct": 1,
+      "accuracy": 1.0
+    },
+    {
+      "true_species": "Psathyrella spadiceogrisea",
+      "n": 1,
+      "correct": 0,
+      "accuracy": 0.0
+    },
+    {
+      "true_species": "Russula decolorans",
+      "n": 1,
+      "correct": 0,
+      "accuracy": 0.0
+    },
+    {
+      "true_species": "Russula foetens",
+      "n": 1,
+      "correct": 1,
+      "accuracy": 1.0
+    },
+    {
+      "true_species": "Russula ochroleuca",
+      "n": 1,
+      "correct": 1,
+      "accuracy": 1.0
+    },
+    {
+      "true_species": "Russula paludosa",
+      "n": 2,
+      "correct": 2,
+      "accuracy": 1.0
+    },
+    {
+      "true_species": "Suillus bovinus",
+      "n": 2,
+      "correct": 2,
+      "accuracy": 1.0
+    },
+    {
+      "true_species": "Suillus luteus",
+      "n": 2,
+      "correct": 1,
+      "accuracy": 0.5
+    },
+    {
+      "true_species": "Suillus variegatus",
+      "n": 9,
+      "correct": 4,
+      "accuracy": 0.444
+    },
+    {
+      "true_species": "Tylopilus felleus",
+      "n": 2,
+      "correct": 2,
+      "accuracy": 1.0
+    },
+    {
+      "true_species": "Xerocomus chrysenteron",
+      "n": 1,
+      "correct": 1,
+      "accuracy": 1.0
+    },
+    {
+      "true_species": "unknown",
+      "n": 1,
+      "correct": 0,
+      "accuracy": 0.0
+    }
+  ],
+  "safety": {
+    "evaluated_captures": 57,
+    "true_dangerous": 7,
+    "true_safe": 50,
+    "matrix": {
+      "danger_caught (TP)": 7,
+      "false_safe (FN)": 0,
+      "false_alarm (FP)": 0,
+      "safe_ok (TN)": 50
+    },
+    "false_safe_rate": 0.0,
+    "danger_recall": 1.0,
+    "false_alarm_rate": 0.0,
+    "dangerous_reported_edible": 0
+  }
+}

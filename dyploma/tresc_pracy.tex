@@ -64,7 +64,7 @@ Osiągnięcie celu głównego wymagało zrealizowania następujących zadań szc
  \item \textbf{Przeprowadzenie ilościowej oceny skuteczności} rozwiązania na izolowanym zbiorze testowym, z naciskiem na wykrywalność gatunków trujących oraz macierz ryzyka bezpieczeństwa mykologicznego.
 \end{enumerate}
 
-Zakres pracy obejmuje stworzenie kompletnego potoku przetwarzania danych (ang. \textit{machine learning pipeline}), automatyzację procesu anotacji zbioru danych z wykorzystaniem modelu GroundingDINO \cite{liu2023grounding}, trening głębokiej sieci neuronowej YOLO11 Medium (\texttt{YOLO11m}), jej konwersję do formatów ONNX oraz TensorFlow Lite, a także integrację zoptymalizowanego modelu z aplikacją mobilną wykorzystującą interfejs CameraX. Poza zakresem pracy pozostają zagadnienia mykologiczne wykraczające poza identyfikację wizualną, takie jak analiza chemiczna czy mikroskopowa cech diagnostycznych owocników.
+Zakres pracy obejmuje stworzenie kompletnego potoku przetwarzania danych (ang. \textit{machine learning pipeline}), automatyzację procesu anotacji zbioru danych z wykorzystaniem modelu GroundingDINO \cite{liu2023grounding}, trening głębokiej sieci neuronowej YOLO11 Medium (\texttt{YOLO11m}), jej konwersję do formatu TensorFlow Lite (ścieżką PyTorch $\to$ TensorFlow SavedModel $\to$ TFLite), a także integrację zoptymalizowanego modelu z aplikacją mobilną wykorzystującą interfejs CameraX. Poza zakresem pracy pozostają zagadnienia mykologiczne wykraczające poza identyfikację wizualną, takie jak analiza chemiczna czy mikroskopowa cech diagnostycznych owocników.
 
 \section{Hipotezy badawcze}
 Realizację celu głównego oparto na dwóch hipotezach badawczych, weryfikowanych ilościowo w rozdziale \ref{chap:badania}:
@@ -183,12 +183,12 @@ Jeden owocnik, jedna ramka i etykieta, co ilustruje rys.~\ref{fig:class_vs_det_w
  \label{fig:class_vs_det_web}
 \end{figure}
 
-Trening od zera na $147$ gatunkach przekroczyłby budżet czasu i pamięci VRAM. Dlatego wagi startują z COCO, a dostrajanie obejmuje głowicę i wyższe warstwy szkieletu \cite{alhadhrami2018transfer, lin2014coco}. Na rys.~\ref{fig:transfer_learning_web} pokazano tę logikę: niskopoziomowe filtry krawędzi zostają, głowica uczy się mykologii. W pracy zastosowano \texttt{yolo11m.pt} (rozdz.~\ref{chap:implementacja}).
+Trening od zera na $147$ gatunkach przekroczyłby budżet czasu i pamięci VRAM. Dlatego wagi startują z COCO, a następnie model jest dostrajany w~całości, bez zamrażania warstw (\texttt{freeze=0}; rozdz.~\ref{chap:implementacja}) \cite{alhadhrami2018transfer, lin2014coco}. Inicjalizacja z~COCO dostarcza gotowych niskopoziomowych filtrów krawędzi i~tekstur, które w~praktyce zmieniają się najmniej, podczas gdy wyższe warstwy i~głowica adaptują się do cech mykologicznych. Rys.~\ref{fig:transfer_learning_web} ilustruje ogólną ideę uczenia transferowego (w wariancie z~zamrożonym szkieletem); w~niniejszej pracy szkieletu nie zamrażano. Zastosowano wagi \texttt{yolo11m.pt} (rozdz.~\ref{chap:implementacja}).
 
 \begin{figure}[htbp]
  \centering
  \includegraphics[width=0.85\textwidth]{transfer_learning_official}
- \caption{Schemat uczenia transferowego z zamrożonym szkieletem. Źródło: \cite{alhadhrami2018transfer}.}
+ \caption{Ogólna idea uczenia transferowego w wariancie z zamrożonym szkieletem. W niniejszej pracy nie zamrażano warstw (\texttt{freeze=0}); schemat ilustruje jedynie koncepcję. Źródło: \cite{alhadhrami2018transfer}.}
  \label{fig:transfer_learning_web}
 \end{figure}
 
@@ -409,7 +409,7 @@ Ilościowe zestawienie właściwości numerycznych trzech rozważanych reprezent
 \end{table}
 
 \subsection{Formaty pośrednie i docelowe modelu}
-PyTorch nie trafia na telefon wprost. Graf obliczeniowy przechodzi przez dwa etapy konwersji. ONNX działa jak uniwersalny pośrednik, oddziela środowisko treningowe od docelowego i pozwala przełączać się między frameworkami \cite{onnx}. Z ONNX albo bezpośrednio z SavedModel konwerter \texttt{tf.lite.TFLiteConverter} kompiluje binarny artefakt TFLite, który Interpreter ładuje w czasie wykonania na urządzeniu \cite{tflite}. Tu stosuje się kwantyzację FP16. Schemat ścieżki SavedModel do TFLite FP16 pokazuje rys.~\ref{fig:tflite_flow_web}; wynikowy artefakt \texttt{.tflite} trafia bezpośrednio do aktywów aplikacji Android (rozdz.~\ref{chap:implementacja}).
+PyTorch nie trafia na telefon wprost. Graf obliczeniowy wymaga konwersji do formatu krawędziowego. Powszechnym formatem pośrednim wymiany modeli jest ONNX, który oddziela środowisko treningowe od docelowego i pozwala przełączać się między frameworkami \cite{onnx}; w~niniejszej pracy nie wykorzystano go jednak w~finalnym potoku. Zastosowano prostszą, dwuetapową ścieżkę: Ultralytics eksportuje model do TensorFlow SavedModel, a~następnie konwerter \texttt{tf.lite.TFLiteConverter} kompiluje binarny artefakt TFLite, który Interpreter ładuje w czasie wykonania na urządzeniu \cite{tflite}. Tu stosuje się kwantyzację FP16. Schemat ścieżki SavedModel do TFLite FP16 pokazuje rys.~\ref{fig:tflite_flow_web}; wynikowy artefakt \texttt{.tflite} trafia bezpośrednio do aktywów aplikacji Android (rozdz.~\ref{chap:implementacja}).
 
 \begin{figure}[htbp]
  \centering
@@ -485,7 +485,7 @@ Telefon w lesie, bez zasięgu, bateria w połowie. Cztery ograniczenia twarde:
 
 Cztery ograniczenia, trzy budżety inżynierskie.
 
-\textbf{Budżet opóźnienia}: interwał throttlingu kamery wynosi $250$\,ms ($4$\,FPS). Do tego w projekcie doliczono rezerwę $50$\,ms na przygotowanie klatki CameraX (RGBA, letterbox $640\times640$), co daje projektowy limit $300$\,ms na \emph{cały} cykl. Zmierzono jednak wyłącznie \texttt{detect()} (rozdz.~\ref{chap:badania}): na S23 Ultra średnia to $156{,}5$\,ms na zimnym SoC i $245{,}9$\,ms po obciążeniu, a $p_{95}$ serii gorącej wynosi $278{,}3$\,ms. Czas pobrania i letterboxingu nie wchodzi w te liczby, więc z pomiaru nie wynika, że pełny cykl zawsze mieści się poniżej $300$\,ms.
+\textbf{Budżet opóźnienia}: interwał throttlingu kamery wynosi $250$\,ms ($4$\,FPS). Aby utrzymać te $4$\,FPS, \emph{cały} cykl przetwarzania klatki -- pobranie i letterboxing CameraX (RGBA, $640\times640$) oraz \texttt{detect()} -- musi zmieścić się w tym oknie $250$\,ms; dłuższy cykl obniża chwilową kadencję poniżej $4$\,FPS. Zmierzono jednak wyłącznie \texttt{detect()} (rozdz.~\ref{chap:badania}): na S23 Ultra średnia to $156{,}5$\,ms na zimnym SoC, co pozostawia zapas na przygotowanie klatki, oraz $245{,}9$\,ms po obciążeniu, a $p_{95}$ serii gorącej wynosi $278{,}3$\,ms -- wówczas okno $250$\,ms bywa przekraczane. Czasu pobrania i letterboxingu nie zmierzono osobno, więc z pomiaru nie wynika, że pełny cykl zawsze mieści się w oknie $250$\,ms.
 
 \textbf{Budżet binarny modelu}: poniżej $40$\,MB. Artefakt TFLite FP16 YOLO11m zajmuje $38{,}58$\,MB. Margines $1{,}42$\,MB chroni przed limitami Android App Bundle i zmniejsza obciążenie transferu przy instalacji w terenie.
 
@@ -1143,7 +1143,7 @@ Zbiór gotowy. Pora uruchomić trening. Wagi YOLO11m wychodzą ze środowiska Py
 \subsection{Środowisko uczenia i parametry treningu YOLO11m}
 Stacja robocza: AMD Ryzen~5~3600, $32$\,GB DDR4, NVIDIA RTX~4070 ($12$\,GB VRAM), CUDA. Stos programowy: Python $3.11+$, PyTorch $2.x$, CUDA~$12.x$, Ultralytics \cite{pytorch, ultralytics2024yolo11}. Skrypt \texttt{train.py} inicjalizuje model, wczytuje \texttt{data.yaml} i uruchamia trening na GPU bez ręcznej interwencji. Dwa etapy uczenia różnią się rozmiarem wsadu i liczbą procesów ładujących dane – powód: po rozszerzeniu głowicy do 147 klas $12$\,GB VRAM przestaje wystarczać dla \texttt{batch=16}.
 
-Architektura bazowa: YOLO11 Medium, $20\,143\,369$ parametrów, złożoność $68{,}3$\,GFLOPs \cite{ultralytics2024yolo11}. Wariant Nano nie radzi sobie z 147 gatunkami bliźniaczymi; Large przekracza budżet RAM. Medium mieści się w obu ograniczeniach. Wagi startują z COCO (\texttt{yolo11m.pt}) – uczenie transferowe \cite{lin2014coco}. Niskopoziomowe filtry krawędzi i tekstur wyuczone na ogólnym zbiorze COCO stanowią punkt startowy; model dostosowuje wyższe warstwy i głowicę do mykologii.
+Architektura bazowa: YOLO11 Medium, $20\,143\,369$ parametrów, złożoność $68{,}3$\,GFLOPs \cite{ultralytics2024yolo11}. Wariant Nano nie radzi sobie z 147 gatunkami bliźniaczymi; Large przekracza budżet RAM. Medium mieści się w obu ograniczeniach. Wagi startują z COCO (\texttt{yolo11m.pt}) – uczenie transferowe \cite{lin2014coco}. Niskopoziomowe filtry krawędzi i tekstur wyuczone na ogólnym zbiorze COCO stanowią punkt startowy. Nie stosowano zamrażania warstw (\texttt{freeze=0}): dostrajane są wszystkie warstwy, przy czym najniższe filtry zmieniają się najmniej, a wyższe warstwy i głowica najsilniej adaptują się do cech mykologicznych.
 
 Rozdzielczość wejściowa: $640\times640$ pikseli w obu etapach. Biblioteka Ultralytics domyślnie aktywuje mieszaną precyzję (AMP/FP16), co na rdzeniach Tensor Core układu RTX~4070 skraca czas epoki bez destabilizacji gradientów. Domyślny harmonogram uczenia dba o stopniowe wygaszanie współczynnika w końcowej fazie zbieżności.
 
@@ -1151,11 +1151,11 @@ Trening podzielono na dwa etapy odpowiadające przyrostowej budowie rejestru kla
 
 Etap podstawowy: wcześniejszy, mniejszy zestaw gatunków, \texttt{batch=16}, wczesne zatrzymanie z \texttt{patience=40} na mAP walidacyjnym. Brak poprawy w ciągu 40 epok kończy etap i zachowuje najlepsze wagi.
 
-Etap dostrajania: pełny zestaw 147 klas, wagi z etapu podstawowego. Rozszerzona głowica klasyfikacyjna kosztuje VRAM – \texttt{batch=16} nie mieści się, więc ucięto do \texttt{batch=8} i \texttt{workers=2}. Adaptacja koncentruje się na wyższych warstwach i głowicy detekcyjnej. Czas trwania: 15 epok (\texttt{epochs=15}), bez wczesnego zatrzymania. Pełny horyzont gwarantuje powtarzalną adaptację głowicy do rozszerzonego zestawu.
+Etap dostrajania: pełny zestaw 147 klas, wagi z etapu podstawowego. Rozszerzona głowica klasyfikacyjna kosztuje VRAM – \texttt{batch=16} nie mieści się, więc ucięto do \texttt{batch=8} i \texttt{workers=2}. Wszystkie warstwy pozostają odmrożone (\texttt{freeze=0}); adaptacja najsilniej dotyczy wyższych warstw i głowicy detekcyjnej. Czas trwania: 15 epok (\texttt{epochs=15}), bez wczesnego zatrzymania. Pełny horyzont gwarantuje powtarzalną adaptację głowicy do rozszerzonego zestawu.
 
 Konfigurację wywołania treningu dostrajającego, wraz z rozstrzyganiem urządzenia obliczeniowego, przedstawiono na listingu \ref{lst:train}.
 
-\begin{lstlisting}[language=Python,caption={Konfiguracja dostrajania modelu YOLO11m na $147$ klasach (\texttt{scripts/train.py})},label={lst:train}]
+\begin{lstlisting}[language=Python,caption={Wspólny skrypt treningowy \texttt{scripts/train.py}; etapy podstawowy i dostrajania różnią się jedynie argumentami \texttt{-{}-model}, \texttt{-{}-batch} i \texttt{-{}-epochs}},label={lst:train}]
 DEFAULT_MODEL = "weights/yolo11m.pt"
 
 def resolve_device(requested: str) -> str:
@@ -1197,7 +1197,7 @@ def train(args) -> str:
 
 \texttt{resolve\_device} (linie 3--14) mapuje argument CLI na identyfikator Ultralytics. Tryb \texttt{auto} bez CUDA degraduje do CPU zamiast rzucać wyjątkiem – ten sam skrypt działa na stacji treningowej i na maszynie bez akceleratora do testów poprawności potoku.
 
-Linia 20 ładuje wagi COCO (\texttt{yolo11m.pt}) \cite{lin2014coco}. \texttt{model.train} (linie 22--38) uruchamia uczenie transferowe. Kluczowe hiperparametry:
+Wczytanie wag realizuje \texttt{model = YOLO(args.model)}; stała \texttt{DEFAULT\_MODEL = weights/yolo11m.pt} jest jedynie wartością domyślną argumentu, wykorzystywaną w etapie podstawowym. W etapie dostrajania argument \texttt{-{}-model} wskazuje na \texttt{best.pt} z etapu podstawowego (zgodnie z tab.~\ref{tab:parametry_treningu}), a nie na wagi COCO \cite{lin2014coco}. \texttt{model.train} uruchamia uczenie transferowe. Kluczowe hiperparametry:
 
 \texttt{epochs=15} (linia 24). Stała długość etapu dostrajania bez wczesnego zatrzymania; pełny horyzont gwarantuje powtarzalność adaptacji głowicy. \texttt{batch=8} (linia 26) – rozszerzona głowica 147 klas wyczerpuje $12$\,GB VRAM przy \texttt{batch=16}. \texttt{workers=2} (linia 27) – przy NVMe wąskim gardłem jest GPU, nie dysk.
 
@@ -1857,7 +1857,7 @@ W praktyce raportowano dwa warianty tej miary, zgodne ze standardem protokołu C
 \end{enumerate}
 Pierwsza miara jest bardziej odporna na drobne przesunięcia geometrii, druga natomiast surowiej karze niedokładne dopasowanie przestrzenne.
 
-W kontekście identyfikacji grzybów profil ryzyka ma charakter asymetryczny. Fałszywie dodatnia detekcja ($FP$) (np. błędne wskazanie gatunku jadalnego) skutkuje co najwyżej irytacją użytkownika. Fałszywie ujemny wynik ($FN$), polegający na przeoczeniu gatunku trującego lub jego zaklasyfikowaniu jako jadalnego, niesie natomiast poważne konsekwencje zdrowotne. Z tego względu maksymalizacja czułości ($R$) dla klas toksycznych jest nadrzędnym kryterium projektowym, nawet kosztem pewnego spadku precyzji. Asymetria ta uzasadnia również polityki progów pewności wdrożone w aplikacji mobilnej, opisane w rozdziale \ref{chap:implementacja}.
+W kontekście identyfikacji grzybów profil ryzyka jest silnie asymetryczny, przy czym należy rozróżnić dwa poziomy błędu. Na poziomie detekcji fałszywie dodatni wynik ($FP$) to zbędna lub źle zlokalizowana ramka (np.\ detekcja na kamieniu albo pomyłka między dwoma gatunkami jadalnymi) -- w~izolacji jest to głównie niedogodność użytkowa. Fałszywie ujemny wynik ($FN$) to przeoczenie owocnika obecnego w~kadrze. Z~perspektywy bezpieczeństwa konsumenta najpoważniejszy jest natomiast błąd innego rodzaju: przypisanie gatunkowi \emph{rzeczywiście toksycznemu} asercji „Jadalny”. Nie jest to detekcyjny $FN$, lecz krytyczny wynik „fałszywie bezpieczny”, mierzony osobno wskaźnikiem CFPR i~macierzą ryzyka (rozdz.~\ref{sec:safety_matrix}). To właśnie minimalizacja tego błędu -- nawet kosztem precyzji i~liczby fałszywych alarmów na gatunkach nietoksycznych -- jest nadrzędnym kryterium projektowym, realizowanym przez asymetryczną parę progów opisaną w~rozdziale \ref{chap:implementacja}. W~konsekwencji dla klas toksycznych priorytetem pozostaje wysoka czułość ($R$).
 
 \section{Analiza wyników detekcji na zbiorze testowym}
 Model wytrenowany na architekturze YOLO11m poddano ewaluacji na izolowanym zbiorze testowym (tab.~\ref{tab:podzial_zbioru}). Obserwacje tego podzbioru nie brały udziału w uczeniu ani w strojeniu hiperparametrów: nazwy plików zachowują konwencję \texttt{\{obs\_id\}\_\{photo\_id\}.jpg}, a zbiór odrzucono i odbudowano tak, by żaden \texttt{obs\_id} z \texttt{train}/\texttt{val} nie wrócił do testu. Pomiarów dokonano standardowym potokiem walidacyjnym biblioteki Ultralytics, zapewniającym porównywalność wyników z protokołem raportowania mAP w detekcji obiektów \cite{ultralytics2024yolo11, lin2014coco}.
@@ -2042,7 +2042,7 @@ Para progów obniża CFPR względem baseline ($H_2$ spełniona). $15\,513$ obiek
 
 Uzyskany CFPR $2{,}06\%$ należy interpretować ostrożnie. $327$ z $15\,840$ obiektów toksycznych nadal dostało asercję jadalności: warstwa progów redukuje to ryzyko względem $\tau=0{,}30$ ($580$ przypadków), lecz go nie eliminuje i nie jest warunkiem wystarczającym do spożycia. Na przeciekającym podziale testowym ta sama polityka dawała $1{,}06\%$ przy innej definicji kubełków -- te liczby nie są porównywalne jeden do jednego z tab.~\ref{tab:cfpr_porownanie}. Bufor głosowania czasowego ($4$ z $5$ klatek) nie wchodzi w pomiar CFPR ani w treść $H_2$.
 
-Dobór operacyjnych progów pewności aplikacji uzasadniono systematycznym przeciągnięciem progu detekcji (ang. \textit{confidence threshold sweep}) w zakresie od $0{,}05$ do $0{,}95$, zarejestrowanym skryptem \texttt{test3\_threshold\_sweep.py} na izolowanym zbiorze testowym, oraz niezależną ewaluacją macierzy bezpieczeństwa przy parach $(\mathrm{conf}_{\mathrm{toxic}},\,\mathrm{conf}_{\mathrm{edible}})=(0{,}18,\,0{,}60)$. Dla każdego węzła przeciągnięcia obliczano precyzję, czułość, miarę $F_1$ oraz $mAP_{50}$. Krzywa $F_1$ osiąga maksimum w okolicy niskich progów ($F_1^{\max}=0{,}7801$ przy $\mathrm{conf}=0{,}05$), jednak tak niski próg generowałby nadmierną liczbę fałszywych alarmów w warunkach terenowych.
+Operacyjne progi pewności aplikacji $(\mathrm{conf}_{\mathrm{toxic}},\,\mathrm{conf}_{\mathrm{edible}})=(0{,}18,\,0{,}60)$ nie zostały dobrane przez optymalizację metryki na zbiorze testowym, lecz wynikają z~asymetrycznej przesłanki bezpieczeństwa: możliwie wczesne ostrzeganie o~gatunkach toksycznych (niski próg $0{,}18$) i~konserwatywna asercja jadalności (wysoki próg $0{,}60$). Potwierdza to charakter przeciągnięcia progu (ang. \textit{confidence threshold sweep}) w~zakresie $0{,}05$--$0{,}95$ (skrypt \texttt{test3\_threshold\_sweep.py}): wybrana para jest celowo \emph{nieoptymalna} względem $F_1$ (maksimum $F_1^{\max}=0{,}7801$ wypada przy $\mathrm{conf}=0{,}05$), co wyklucza dostrojenie progów pod metrykę testu -- optymalizacja $F_1$ prowadziłaby do zupełnie innego progu. Przeciągnięcie, obliczone dla każdego węzła w~kategoriach precyzji, czułości, $F_1$ i~$mAP_{50}$, posłużyło zatem wyłącznie do scharakteryzowania kompromisu precyzja--czułość, a~nie do selekcji progów; próg $0{,}05$ odrzucono, gdyż generowałby nadmierną liczbę fałszywych alarmów w~terenie.
 
 We wcześniejszej iteracji polityki progów, poprzedzającej wprowadzenie podziału asymetrycznego, aplikacja korzystała z pojedynczego, globalnego progu operacyjnego $\mathrm{conf}=0{,}304$. Najbliższy zarejestrowany węzeł przeciągnięcia na izolowanym teście ($\mathrm{conf}=0{,}30$) daje: precyzja $P=80{,}41\%$, czułość $R=75{,}18\%$, miara $F_1=77{,}71\%$ oraz $mAP_{50}=71{,}01\%$. Pojedynczy próg globalny tego rzędu równoważy $P$ i $R$ w ujęciu zagregowanym, nie różnicuje jednak ryzyka konsumpcyjnego pomiędzy gatunkami jadalnymi a trującymi. Dlatego zastąpiono go parą $(\mathrm{conf}_{\mathrm{toxic}},\,\mathrm{conf}_{\mathrm{edible}})=(0{,}18,\,0{,}60)$. Jako docelowy punkt asercji jadalności przyjęto $\mathrm{conf}_{\mathrm{edible}}=0{,}60$, natomiast próg ostrzeżeń toksycznych ustalono na $\mathrm{conf}_{\mathrm{toxic}}=0{,}18$. Wybrane węzły przeciągnięcia zestawiono w tab.~\ref{tab:threshold_sweep}. Przebieg $F_1$ przedstawia rys.~\ref{fig:threshold_sweep_f1}.
 
@@ -2084,7 +2084,7 @@ Zestawienie ujawnia zasadniczą własność wykorzystaną przy doborze progu ase
  \label{fig:threshold_sweep_f1}
 \end{figure}
 
-Skuteczność w przypadkach bliźniaczych nie sprowadza się wyłącznie do zdolności sieci do rozróżniania klas: zależy od sprzężenia detektora z polityką progów. Tab.~\ref{tab:cfpr_porownanie} pokazuje, że para $0{,}18$/$0{,}60$ obniża CFPR z $3{,}66\%$ do $2{,}06\%$ względem $\tau=0{,}30$ na tym samym teście. $H_2$ w tym ujęciu jest spełniona. Pozostałe $2{,}06\%$ przypomina, że system wspomaga identyfikację, a nie zapewnia bezpieczeństwa konsumpcyjnego.
+Skuteczność w przypadkach bliźniaczych nie sprowadza się wyłącznie do zdolności sieci do rozróżniania klas: zależy od sprzężenia detektora z polityką progów. Tab.~\ref{tab:cfpr_porownanie} pokazuje, że para $0{,}18$/$0{,}60$ obniża CFPR z $3{,}66\%$ do $2{,}06\%$ względem $\tau=0{,}30$ na tym samym teście. $H_2$ w tym ujęciu jest spełniona. Pozostałe $2{,}06\%$ przypomina, że system wspomaga identyfikację, a nie zapewnia bezpieczeństwa konsumpcyjnego. Metodologicznym ograniczeniem jest przy tym fakt, że zarówno charakterystykę progów, jak i~porównanie $H_2$ wyznaczono na tym samym izolowanym teście; ponieważ progów nie dobierano pod metrykę (są $F_1$-nieoptymalne), nie zachodzi tu klasyczny wyciek przez selekcję, jednak czystszym rozwiązaniem byłby osobny zbiór walidacyjny dedykowany kalibracji warstwy decyzyjnej.
 
 \subsection{Pary gatunków bliźniaczych}\label{sec:lookalikes}
 We wstępie wymieniono pary o wysokim koszcie pomyłki. Na izolowanym teście \texttt{test\_h2\_baseline.py} zliczał oba kierunki przy $\mathrm{IoU}\ge 0{,}50$ (tab.~\ref{tab:lookalike_pary}). Licznik nie jest CFPR: tu chodzi o konkretną parę taksonów, nie o asercję jadalności na wszystkich klasach toksycznych.
@@ -2350,7 +2350,7 @@ Dlatego powtórzono profilowanie na urządzeniu produkcyjnym: Samsung Galaxy S23
  \end{tabular}
 \end{table}
 
-Na zimnym SoC średnie $156{,}5$\,ms ($p_{95}=171{,}5$\,ms) mieści się w interwale throttlingu $250$\,ms: żadna z $150$ klatek nie przekroczyła tego progu. Po kilkuminutowym obciążeniu średnia rośnie do $245{,}9$\,ms, a $p_{95}$ do $278{,}3$\,ms; $64\%$ klatek gorącej serii przekracza $250$\,ms. Te liczby dotyczą wyłącznie \texttt{detect()}. Pobranie klatki CameraX i letterboxing $640\times640$ nie wchodzą w pomiar, więc z tab.~\ref{tab:latency_s23} nie wynika, że pełny cykl kamery zawsze zamyka się poniżej projektowych $300$\,ms. Przyrost o ok.\ $90$\,ms i wzrost temperatury baterii o $5{,}1$\,K to thermal throttling Snapdragona bez aktywnego chłodzenia (rozdz.~\ref{chap:przeglad_rozwiazan}). W produkcji heartbeat $1{,}5$\,s po zablokowaniu sceny ogranicza ten reżim: ciągłe $4$\,FPS przez ok.\ $8$--$9$\,min jest scenariuszem obciążeniowym, nie typową sesją zbieracza. Warstwa czasowa $H_1$ opiera się na zmierzonym \texttt{detect()} ($0{,}16$--$0{,}25$\,s średnio) i pracy offline; pełnego cyklu CameraX nie profilowano.
+Na zimnym SoC średnie $156{,}5$\,ms ($p_{95}=171{,}5$\,ms) mieści się w interwale throttlingu $250$\,ms: żadna z $150$ klatek nie przekroczyła tego progu. Po kilkuminutowym obciążeniu średnia rośnie do $245{,}9$\,ms, a $p_{95}$ do $278{,}3$\,ms; $64\%$ klatek gorącej serii przekracza $250$\,ms. Te liczby dotyczą wyłącznie \texttt{detect()}. Pobranie klatki CameraX i letterboxing $640\times640$ nie wchodzą w pomiar, więc z tab.~\ref{tab:latency_s23} nie wynika, że pełny cykl kamery zawsze zamyka się w oknie $250$\,ms. Przyrost o ok.\ $90$\,ms i wzrost temperatury baterii o $5{,}1$\,K to thermal throttling Snapdragona bez aktywnego chłodzenia (rozdz.~\ref{chap:przeglad_rozwiazan}). W produkcji heartbeat $1{,}5$\,s po zablokowaniu sceny ogranicza ten reżim: ciągłe $4$\,FPS przez ok.\ $8$--$9$\,min jest scenariuszem obciążeniowym, nie typową sesją zbieracza. Warstwa czasowa $H_1$ opiera się na zmierzonym \texttt{detect()} ($0{,}16$--$0{,}25$\,s średnio) i pracy offline; pełnego cyklu CameraX nie profilowano.
 
 \section{Jakościowa analiza detekcji w warunkach rzeczywistych (dane zewnętrzne)}\label{sec:ood_field}
 Metryki z poprzednich podrozdziałów pochodzą z izolowanego zbioru testowego iNaturalist. To ewaluacja wewnątrz rozkładu (ang. \textit{in-distribution}): to samo źródło, podobna optyka i ten sam protokół anotacji co w uczeniu. Aplikacja ma jednak działać w lesie, na strumieniu CameraX, przy oświetleniu podszytu i na matrycy konkretnego smartfonu. Taki reżim jest z definicji poza rozkładem uczącym (ang. \textit{out-of-distribution}, OOD). Dlatego uzupełniono ocenę ilościową jakościową inspekcją w terenie.
@@ -2434,33 +2434,31 @@ Prawdę podstawową (ang. \textit{ground truth}) ustalono hybrydowo: dla każdeg
 
 Kluczową obserwacją metodyczną jest rozdzielenie dwóch źródeł błędu, których nie wolno mieszać w jednej liczbie: pominięcia na etapie \textbf{detekcji} (owocnik jest w kadrze, lecz model nie zwraca żadnej ramki) oraz pomyłki na etapie \textbf{klasyfikacji} (ramka jest, lecz przypisany gatunek jest błędny). Zestawienie trzech poziomów skuteczności przedstawia tab.~\ref{tab:field_accuracy}.
 
+Jednostką analizy jest pojedynczy kadr (jedno naciśnięcie przycisku przechwytywania), a~nie pojedynczy owocnik. Każdemu kadrowi przypisano jeden docelowy gatunek -- owocnik w~centrum zainteresowania zbieracza; detekcję uznawano za udaną, gdy model zwrócił co najmniej jedną ramkę, a~trafienie top-1 -- gdy ramka o~najwyższej pewności wskazywała właściwy gatunek. Podawane wartości są więc odsetkami \emph{na kadr}, a~nie ścisłym recall na poziomie pojedynczego obiektu; w~kadrach z~wieloma owocnikami (oznaczonych w~danych jako $\times n$) oceniano owocnik dominujący. Ponadto co najmniej trzy pary kadrów to serie tego samego egzemplarza wykonane w~odstępie sekund ($24$/$25$, $45$/$46$, $66$/$67$; prawdopodobnie też $42$/$43$), zatem $67$ kadrów odpowiada ok.\ $63$ odrębnym owocnikom. Liczby należy traktować jako charakterystykę jakościową próby okazjonalnej, a~nie precyzyjny estymator populacyjny. Średnia pewność predykcji w~próbie wyniosła $0{,}736$, a~średni czas \texttt{detect()} -- $154{,}7$\,ms, spójnie z~profilowaniem opóźnień na zimnym SoC (tab.~\ref{tab:latency_s23}). Średnia pewność predykcji w~próbie wyniosła $0{,}736$, a~średnie opóźnienie \texttt{detect()} $154{,}7$\,ms -- spójnie z~pomiarem wydajności na S23 Ultra.
+
 \begin{table}[htbp]
  \centering
  \small
- \caption{Trójpoziomowa skuteczność na $67$ kadrach terenowych (Tryb Badawczy, S23 Ultra). Źródło: opracowanie własne.}
+ \caption{Trójpoziomowa skuteczność na kadrach terenowych: wszystkie $67$ kadrów oraz podzbiór $57$ kadrów z~gatunkami należącymi do rejestru $147$ klas (closed-set). Źródło: opracowanie własne.}
  \label{tab:field_accuracy}
- \begin{tabular}{|p{6.2cm}|c|p{4.2cm}|}
+ \begin{tabular}{|p{6.0cm}|c|c|}
  \hline
- \textbf{Miara} & \textbf{Wartość} & \textbf{Podstawa} \\
+ \textbf{Miara} & \textbf{Wszystkie ($67$)} & \textbf{Closed-set ($57$)} \\
  \hline \hline
- Pominięcia detekcji (\textit{miss-rate}) & $17{,}9\%$ & $12/67$ kadrów \\
+ Pominięcia detekcji (\textit{miss-rate}) & $17{,}9\%$ ($12/67$) & $12{,}3\%$ ($7/57$) \\
  \hline
- Klasyfikacja top-1 (gdy jest detekcja) & $81{,}8\%$ & $45/55$ \\
+ Klasyfikacja top-1 (gdy jest detekcja) & $81{,}8\%$ ($45/55$) & $90{,}0\%$ ($45/50$) \\
  \hline
- Klasyfikacja top-5 (gdy jest detekcja) & $89{,}1\%$ & $49/55$ \\
+ Klasyfikacja top-5 (gdy jest detekcja) & $89{,}1\%$ ($49/55$) & $98{,}0\%$ ($49/50$) \\
  \hline
- Skuteczność \textit{end-to-end} top-1 & $67{,}2\%$ & $45/67$ \\
+ Skuteczność \textit{end-to-end} top-1 & $67{,}2\%$ ($45/67$) & $78{,}9\%$ ($45/57$) \\
  \hline
- Skuteczność \textit{end-to-end} top-5 & $73{,}1\%$ & $49/67$ \\
- \hline
- Średnia pewność predykcji & $0{,}736$ & $55$ detekcji \\
- \hline
- Średnie opóźnienie \texttt{detect()} & $154{,}7$\,ms & $67$ kadrów \\
+ Skuteczność \textit{end-to-end} top-5 & $73{,}1\%$ ($49/67$) & $86{,}0\%$ ($49/57$) \\
  \hline
  \end{tabular}
 \end{table}
 
-Wynik wskazuje, że wąskim gardłem w terenie nie jest klasyfikator -- osiąga on $81{,}8\%$ top-1, gdy owocnik zostanie zlokalizowany -- lecz \textbf{recall detektora}, tracący blisko co szósty owocnik. Wszystkie $12$ kadrów „bez detekcji” zawierało rzeczywisty owocnik (potwierdzone wizualnie), są to więc fałszywe negatywy, a nie puste sceny. Ich klasyfikację według przyczyny zestawia tab.~\ref{tab:field_fn}.
+Wynik należy czytać dwutorowo. Po pierwsze, $10$ z~$67$ kadrów przedstawia gatunki spoza rejestru $147$ klas (OOD), których model z~definicji nie może wskazać poprawnie; dlatego w~tab.~\ref{tab:field_accuracy} podano osobno wariant \emph{closed-set} ($57$ kadrów z~gatunkami należącymi do rejestru). Po drugie, w~wariancie closed-set oba etapy potoku ograniczają skuteczność w~zbliżonym stopniu: detektor lokalizuje owocnik w~$87{,}7\%$ kadrów ($50/57$), a~klasyfikator trafia w~$90{,}0\%$ zlokalizowanych przypadków ($45/50$). Nie można więc wskazać jednego dominującego wąskiego gardła -- obie składowe wnoszą porównywalny wkład do błędu \textit{end-to-end}, przy czym błędy detekcji koncentrują się na ujęciach nietypowych i~przesłoniętych, a~błędy klasyfikacji -- na gatunkach bliźniaczych (głównie borowikokształtnych). Wszystkie $12$ kadrów „bez detekcji” zawierało rzeczywisty owocnik (potwierdzone wizualnie), są to więc fałszywe negatywy, a~nie puste sceny. Przyczyny pominięć zestawia tab.~\ref{tab:field_fn}.
 
 \begin{table}[htbp]
  \centering
@@ -2486,7 +2484,7 @@ Charakter tych pominięć jest spójny: model uczono na „katalogowych” zdję
 
 Na $10$ z $55$ zlokalizowanych kadrów klasyfikacja była błędna. Cztery pomyłki mieściły się w obrębie grzybów rurkowych (borowik$\leftrightarrow$borowik, wewnątrz rodzaju \textit{Suillus}) -- morfologicznie zbliżonych i, co istotne, żadna z nich nie przekroczyła granicy między gatunkiem niebezpiecznym a jadalnym, pozostając neutralną z perspektywy bezpieczeństwa. W czterech przypadkach pomyłka była grubsza (mylenie odległych rodzajów), a w dwóch pozostałych (kadry z \textit{Phaeotremella foliacea}) model błędnie zgłosił śmiertelnie trującą \textit{Gyromitra esculenta} -- był to jednak fałszywy alarm (kierunek bezpieczny), a nie zaniżenie zagrożenia. W żadnym z $10$ błędów gatunek rzeczywiście niebezpieczny nie został przedstawiony jako jadalny.
 
-W wymiarze bezpieczeństwa spośród $57$ kadrów o znanej kategorii toksykologicznej $7$ owocników należało do kategorii niebezpiecznej (wszystkie klasy POISONOUS; w tej próbie nie wystąpił gatunek śmiertelnie trujący jako prawda podstawowa) i \textbf{wszystkie $7$ oznaczono jako niebezpieczne} (współczynnik fałszywego bezpieczeństwa $0\%$, czułość na zagrożenie $100\%$); w żadnym przypadku gatunek niebezpieczny nie otrzymał asercji „Jadalny”. Wynik ten należy jednak interpretować ostrożnie z dwóch powodów. Po pierwsze, próba jest mała. Po drugie, miara fałszywych alarmów jest zaniżona: skrypt pomija kadry, których gatunek prawdziwy nie występuje w tablicy toksyczności -- dlatego wspomniane fałszywe ostrzeżenie „\textit{Gyromitra esculenta}” na nieszkodliwym trzęsaku zostało wykluczone z bilansu, gdyż \textit{Phaeotremella foliacea} nie należy do $147$ klas modelu. W ogóle $10$ z $67$ kadrów przedstawiało gatunki spoza katalogu modelu (m.in. \textit{Phaeotremella foliacea}, \textit{Chalciporus piperatus}, \textit{Phaeolus schweinitzii}), co unaocznia zasadnicze ograniczenie: w rzeczywistym lesie występuje znacznie więcej gatunków, niż obejmuje $147$ klas modelu.
+W wymiarze bezpieczeństwa spośród $57$ kadrów o znanej kategorii toksykologicznej $7$ kadrów (odpowiadających $4$ gatunkom: \textit{Lactarius helvus}, \textit{Hypholoma fasciculare}, \textit{Russula foetens}, \textit{Amanita muscaria}; wszystkie klasy POISONOUS, bez gatunku śmiertelnie trującego w~tej próbie) należało do kategorii niebezpiecznej i \textbf{wszystkie $7$ oznaczono jako niebezpieczne} (współczynnik fałszywego bezpieczeństwa $0\%$, czułość na zagrożenie $100\%$); w żadnym przypadku gatunek niebezpieczny nie otrzymał asercji „Jadalny”. Wynik ten należy jednak interpretować ostrożnie z dwóch powodów. Po pierwsze, próba jest mała. Po drugie, miara fałszywych alarmów jest zaniżona: skrypt pomija kadry, których gatunek prawdziwy nie występuje w tablicy toksyczności -- dlatego wspomniane fałszywe ostrzeżenie „\textit{Gyromitra esculenta}” na nieszkodliwym trzęsaku zostało wykluczone z bilansu, gdyż \textit{Phaeotremella foliacea} nie należy do $147$ klas modelu. W ogóle $10$ z $67$ kadrów przedstawiało gatunki spoza katalogu modelu (m.in. \textit{Phaeotremella foliacea}, \textit{Chalciporus piperatus}, \textit{Phaeolus schweinitzii}), co unaocznia zasadnicze ograniczenie: w rzeczywistym lesie występuje znacznie więcej gatunków, niż obejmuje $147$ klas modelu.
 
 \chapter{Podsumowanie i wnioski}\label{chap:podsumowanie}
 Zaprojektowano i wdrożono autonomiczny system na platformę Android. Aplikacja detekuje i klasyfikuje $147$ gatunków grzybów offline, przy kadencji do $4$\,FPS na S23 Ultra. Potok obejmował akwizycję danych, auto-anotację GroundingDINO, trening YOLO11m, konwersję TFLite FP16 oraz aplikację z asymetryczną warstwą progów, która priorytetyzuje czułość dla klas toksycznych.
@@ -2500,7 +2498,7 @@ Model YOLO11m osiągnął na izolowanym zbiorze testowym wartości $mAP_{50}=82{
 
 Polityka \texttt{displayStatus} nie prezentuje zielonej etykiety „Jadalny” przy pewności poniżej $0{,}60$ ani dla predykcji niejadalnych. Na izolowanym teście CFPR pary $0{,}18$/$0{,}60$ wynosi $2{,}06\%$ ($327/15\,840$), wobec $3{,}66\%$ ($580/15\,840$) przy $\tau=0{,}30$ -- $H_2$ spełniona na tym pomiarze. Jakościowa inspekcja w terenie (podrozdz.~\ref{sec:ood_field}) pokazała, że zielone ramki jadalne, czerwone i pomarańczowe ostrzeżenia oraz szary status niejadalny działają na strumieniu CameraX poza zbiorem iNaturalist. Nie zastępuje to oceny mykologa: $2{,}06\%$ obiektów toksycznych nadal może otrzymać asercję jadalności.
 
-Ilościowa ewaluacja terenowa na $67$ kadrach (podrozdz.~\ref{sec:field_quant}) potwierdziła te obserwacje liczbowo. Klasyfikator osiągnął $81{,}8\%$ top-1 dla zlokalizowanych owocników, przy czym wszystkie $7$ gatunków niebezpiecznych w próbie oznaczono ostrzeżeniem, a żaden nie otrzymał statusu „Jadalny”. Zarazem ujawniła ona, że rzeczywistym ograniczeniem w warunkach polowych jest recall detektora ($17{,}9\%$ pominięć na nietypowych ujęciach i przy przesłonięciu), a nie sama zdolność rozróżniania gatunków -- co wyznacza priorytet dalszych prac.
+Ilościowa ewaluacja terenowa na $67$ kadrach (podrozdz.~\ref{sec:field_quant}) potwierdziła te obserwacje liczbowo. Klasyfikator osiągnął $81{,}8\%$ top-1 dla zlokalizowanych owocników ($90{,}0\%$ w wariancie closed-set), przy czym wszystkie $7$ przypadków gatunków niebezpiecznych w~próbie oznaczono ostrzeżeniem, a żaden nie otrzymał statusu „Jadalny”. Zarazem ujawniła ona, że detekcja i~klasyfikacja ograniczają skuteczność terenową w~porównywalnym stopniu (ok.\ $18\%$ pominięć detekcji na ujęciach nietypowych oraz $10\%$ pomyłek klasyfikacji na gatunkach bliźniaczych), co wyznacza dwa równoległe kierunki dalszych prac.
 
 \section{Perspektywy rozwoju i dalsze prace}
 Kolejnym krokiem może być integracja algorytmów śledzenia obiektów wideo (np. ByteTrack lub SORT) z potokiem CameraX. Stabilizacja ramek w czasie zmniejszyłaby chwilowe wahania predykcji pomiędzy klatkami i poprawiła płynność nakładki interfejsu użytkownika.
@@ -2509,7 +2507,7 @@ Drugim istotnym obszarem pozostaje optymalizacja rozmiaru modelu. Warto zbadać 
 
 Trzecią perspektywą jest fuzja osadzeń wizyjnych z metadanymi kontekstowymi: klasyfikacją biotopu na podstawie GPS, typem lasu, sezonowością oraz lokalnymi warunkami pogodowymi. Takie wzbogacenie sygnału wejściowego mogłoby poprawić rozróżnianie gatunków o zbliżonej morfologii, lecz odmiennych wymaganiach siedliskowych.
 
-Ewaluacja terenowa (podrozdz.~\ref{sec:field_quant}) wskazała trzy kolejne, praktyczne kierunki rozwoju. Pierwszym jest \textbf{rozszerzenie katalogu gatunków}. Aż $10$ z $67$ owocników napotkanych w terenie należało do gatunków spoza $147$ klas modelu, co powodowało wymuszone błędne przypisania do klasy najbliższej wizualnie (w tym pojedyncze fałszywe ostrzeżenia toksyczne). Zwiększenie liczby klas -- ze szczególnym uwzględnieniem gatunków pospolitych w docelowym biotopie -- bezpośrednio ograniczyłoby tę kategorię błędu.
+Ewaluacja terenowa (podrozdz.~\ref{sec:field_quant}) wskazała trzy kolejne, praktyczne kierunki rozwoju. Pierwszym jest \textbf{rozszerzenie katalogu gatunków}. Aż $10$ z $67$ owocników napotkanych w terenie należało do gatunków spoza $147$ klas modelu, co powodowało wymuszone błędne przypisania do klasy najbliższej wizualnie (w tym pojedyncze fałszywe ostrzeżenia toksyczne). Zwiększenie liczby klas -- ze szczególnym uwzględnieniem gatunków pospolitych w docelowym biotopie -- bezpośrednio ograniczyłoby tę kategorię błędu. Przy okazji rewizji rejestru należy scalić klasy będące synonimami taksonomicznymi (\textit{Macrolepiota procera}/\textit{Lepiota procera} oraz \textit{Collybia dryophila}/\textit{Gymnopus dryophilus}), odziedziczone po etykietach iNaturalist (zob.\ tab.~\ref{tab:zal2_gatunki}).
 
 Drugim kierunkiem jest \textbf{poprawa jakości i różnorodności zbioru uczącego}. Analiza pominięć detekcji wykazała, że model radzi sobie z „katalogowymi” ujęciami z góry, lecz zawodzi na zdjęciach nietypowych: od spodu (widoczne pory lub blaszki), w dłoni, przy silnym przesłonięciu ściółką oraz na owocnikach starych i zniekształconych. Uzupełnienie korpusu uczącego o takie właśnie ujęcia -- pozyskane w terenie lub wygenerowane przez ukierunkowaną augmentację (przesłonięcia, obroty, symulacja zmiennego oświetlenia podszytu) -- powinno zredukować lukę dziedzinową między danymi iNaturalist a strumieniem kamery.
 

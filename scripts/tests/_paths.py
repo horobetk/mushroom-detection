@@ -16,7 +16,6 @@ DEFAULT_OUTPUT = REPO_ROOT / "docs" / "thesis_results"
 CONF_TOXIC = 0.18
 CONF_EDIBLE = 0.60
 CONF_NEUTRAL_MIN = 0.20
-CONF_NEUTRAL_MAX = 0.55
 
 # Legacy single-value alias used by threshold_sweep highlight.
 ANDROID_CONF_THRESHOLD = CONF_EDIBLE

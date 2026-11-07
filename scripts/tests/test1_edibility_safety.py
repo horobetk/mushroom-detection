@@ -33,7 +33,6 @@ if str(_TESTS_DIR) not in sys.path:
 
 from _paths import (  # noqa: E402
     CONF_EDIBLE,
-    CONF_NEUTRAL_MAX,
     CONF_NEUTRAL_MIN,
     CONF_TOXIC,
     DEFAULT_DATA,
@@ -295,7 +294,7 @@ def main() -> None:
     print(f"[INFO] Unsafe:       {sum(1 for v in tox.values() if v == UNSAFE)}")
     print(f"[INFO] conf_edible:  {CONF_EDIBLE}")
     print(f"[INFO] conf_toxic:   {CONF_TOXIC}")
-    print(f"[INFO] neutral band: [{CONF_NEUTRAL_MIN}, {CONF_NEUTRAL_MAX}]")
+    print(f"[INFO] neutral min:  {CONF_NEUTRAL_MIN}")
 
     model = YOLO(str(args.model))
 
@@ -339,7 +338,6 @@ def main() -> None:
         "conf_edible": CONF_EDIBLE,
         "conf_toxic": CONF_TOXIC,
         "conf_neutral_min": CONF_NEUTRAL_MIN,
-        "conf_neutral_max": CONF_NEUTRAL_MAX,
         "critical_false_positive_rate": cfpr,
         "false_alarm_rate_safe_to_unsafe": far,
         "match_counts": counts,

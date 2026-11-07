@@ -102,7 +102,7 @@ auto_label.py  (GroundingDINO → YOLO labels)
 clean_duplicate_boxes_v2.py  (NMS / dedup)
         ↓
 split_dataset.py  (train/val)
-harvest_clean_test.py + label_clean_test.py  (test izolowany po obs_id)
+harvest_clean_test.py + label_clean_test.py + clean_test_split.py  (test izolowany po obs_id)
         ↓
 train.py  (YOLO11m, transfer learning)
         ↓
@@ -162,11 +162,15 @@ Skopiuj wynikowy `.tflite` do `android/app/src/main/assets/`
 
 ```bash
 cd scripts/tests
-python test1.py   # macierz bezpieczeństwa (asymetryczne progi)
-python test2.py   # odporność na szum
-python test3.py   # threshold sweep / F1
-python test4.py   # latency breakdown
-python test5.py   # podsumowanie ablacji
+python test1_edibility_safety.py   # macierz bezpieczeństwa (asymetryczne progi)
+python test2_robustness_noise.py   # odporność na szum
+python test3_threshold_sweep.py    # threshold sweep / F1
+python test4_latency_breakdown.py  # latency breakdown
+python test5_ablation_summary.py   # podsumowanie ablacji
+python test_h2_baseline.py         # CFPR H2 (PyTorch)
+python test_tflite_parity.py       # mAP .pt vs TFLite FP16
+python test_tflite_cfpr.py         # CFPR H2 na TFLite FP16 (dekoder jak w aplikacji)
+python test_category_map.py        # mAP / P / R po kategoriach toksykologicznych
 ```
 
 Domyślne ścieżki modelu/danych: `scripts/tests/_paths.py`.  

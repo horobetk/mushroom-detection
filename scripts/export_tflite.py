@@ -23,8 +23,8 @@ os.environ.setdefault("MPLBACKEND", "Agg")
 
 from ultralytics import YOLO  # noqa: E402
 
-DEFAULT_WEIGHTS = "C:/mushroom_data/runs/train-4/weights/best.pt"
-DEFAULT_DATA = "mushrooms.yaml"
+DEFAULT_WEIGHTS = "E:/Kiril_Horobets/mushroom_data/runs/fine_147classes_v2/weights/best.pt"
+DEFAULT_DATA = "E:/Kiril_Horobets/mushroom_data/mushroom_final/data.yaml"
 
 
 def _run_export(weights: Path, quant: str, imgsz: int, data: str) -> Path:
@@ -105,7 +105,7 @@ def main():
         help=f".pt weights (default: {DEFAULT_WEIGHTS})",
     )
     parser.add_argument(
-        "--quant", "-q", default="int8", choices=["int8", "fp16", "fp32"],
+        "--quant", "-q", default="fp16", choices=["int8", "fp16", "fp32"],
     )
     parser.add_argument("--data", "-d", default=DEFAULT_DATA)
     parser.add_argument("--imgsz", type=int, default=640)

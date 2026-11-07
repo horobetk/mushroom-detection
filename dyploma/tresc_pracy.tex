@@ -223,7 +223,7 @@ W tab.~\ref{tab:detektory} zestawiono obie rodziny. Na urządzeniu z procesorem 
 \subsection{Ewolucja architektury YOLO}
 Redmon i wsp. w 2016 roku postawili jedną tezę: detekcja to regresja na siatce: jeden przebieg wystarczy \cite{redmon2016yolo}. Teza słuszna. Przez osiem lat kolejne generacje zmniejszały lukę wobec detektorów dwuetapowych bez rezygnacji z tej zasady: YOLOv3 dołożył predykcję wieloskalową \cite{redmon2018yolov3}, YOLOv8 usunął kotwice i ujednolicił API Ultralytics \cite{ultralytics2023yolov8}, YOLO11 przeprojektował szkielet i szyję \cite{ultralytics2024yolo11}.
 
-Historia wersji jest tu mniej istotna niż jeden konkretny wniosek inżynierski: YOLO11m z $\approx20{,}1$~mln parametrów mieści się w budżecie TFLite FP16 ($38{,}58$~MB) i jest wystarczająco głęboki, by odróżniać $147$ klas, w tym gatunki bliźniacze – łącznie z parami takimi jak \textit{Amanita phalloides}/\textit{Amanita citrina} czy \textit{Galerina marginata}/\textit{Kuehneromyces mutabilis}. Nano jest za płytki: ablacja to dokumentuje (rozdz.~\ref{chap:badania}). Wariantu Large nie trenowano i nie mierzono na telefonie; odrzucono go na podstawie większej liczby parametrów względem budżetu artefaktu, bez osobnego eksperymentu.
+Historia wersji jest tu mniej istotna niż jeden konkretny wniosek inżynierski: YOLO11m z $\approx20{,}1$~mln parametrów mieści się w budżecie TFLite FP16 ($38{,}58$~MiB) i jest wystarczająco głęboki, by odróżniać $147$ klas, w tym gatunki bliźniacze – łącznie z parami takimi jak \textit{Amanita phalloides}/\textit{Amanita citrina} czy \textit{Galerina marginata}/\textit{Kuehneromyces mutabilis}. Nano jest za płytki: ablacja to dokumentuje (rozdz.~\ref{chap:badania}). Wariantu Large nie trenowano i nie mierzono na telefonie; odrzucono go na podstawie większej liczby parametrów względem budżetu artefaktu, bez osobnego eksperymentu.
 
 Współczesne architektury YOLO dzielą się funkcjonalnie na trzy zasadnicze części:
 \begin{enumerate}
@@ -337,7 +337,7 @@ gdzie $s$ oznacza bit znaku, $e$ pole wykładnika, $m$ pole mantysy o precyzji $
 
 Nie jest to wyłącznie kwestia akademicka. Gradienty jasności na blaszkach (\textit{lamellae}), pierścieniu i łuskach kapelusza to właśnie te „małe” sygnały. One oddzielają jadalną czubajkę od trującej czubajeczki i młodego muchomora od pieczarki. INT8 spłaszcza je do stałego kwantu $S$ warstwy. FP16 zachowuje skalowanie wykładnicze, więc te detale nie giną w siatce całkowitoliczbowej.
 
-Dlatego zrezygnowano z pełnej kwantyzacji INT8. Decyzja jest projektowa, nie empiryczna: w pracy nie raportowano $mAP$ ani opóźnienia wariantu INT8. Szacunkowy rozmiar artefaktu INT8 ($\approx20$\,MB) i zysk na NPU wynikają z szerokości reprezentacji, nie z pomiaru na telefonie. FP16 dla YOLO11m daje $38{,}58$\,MB – połowa FP32 – przy zachowaniu drobnych cech teksturalnych potrzebnych do par bliźniaczych. Stąd decyzja produkcyjna: tylko FP16.
+Dlatego zrezygnowano z pełnej kwantyzacji INT8. Decyzja jest projektowa, nie empiryczna: w pracy nie raportowano $mAP$ ani opóźnienia wariantu INT8. Szacunkowy rozmiar artefaktu INT8 ($\approx20$\,MiB) i zysk na NPU wynikają z szerokości reprezentacji, nie z pomiaru na telefonie. FP16 dla YOLO11m daje $38{,}58$\,MiB – połowa FP32 – przy zachowaniu drobnych cech teksturalnych potrzebnych do par bliźniaczych. Stąd decyzja produkcyjna: tylko FP16.
 
 Różnicę w podziale przestrzeni bitowej pomiędzy trzema rozważanymi reprezentacjami zilustrowano na rys.~\ref{fig:bity_formatow}. Redukcja FP32~$\rightarrow$~FP16 zachowuje strukturę zmiennoprzecinkową i skraca zarówno pole wykładnika, jak i mantysy, natomiast przejście do INT8 całkowicie eliminuje pole wykładnika, zastępując skalowanie wykładnicze pojedynczym, stałym dla całej warstwy współczynnikiem $S$.
 
@@ -399,7 +399,7 @@ Ilościowe zestawienie właściwości numerycznych trzech rozważanych reprezent
  \hline
  Skalowanie błędu & proporcjonalne & proporcjonalne & absolutne \\
  \hline
- Rozmiar TFLite (YOLO11m) & ok.\ $77$\,MB & $38{,}58$\,MB & ok.\ $20$\,MB \\
+ Rozmiar TFLite (YOLO11m) & ok.\ $77$\,MiB & $38{,}58$\,MiB & ok.\ $20$\,MiB \\
  \hline
  Wymaga kalibracji & nie & nie & tak \\
  \hline
@@ -478,7 +478,7 @@ Reguła nadrzędna: priorytet czułości dla klas toksycznych. Ostrzeżenie o ga
 Telefon w lesie, bez zasięgu, bateria w połowie. Cztery ograniczenia twarde:
 \begin{enumerate}
  \item Praca offline jest bezwzględna: zero odwołań sieciowych; aplikacja działa w martwej strefie GSM/LTE bez degradacji funkcji.
- \item Rozmiar artefaktu pozostaje poniżej $40$\,MB, tak aby model mieścił się w pamięci flash i nie groził wyrzutem procesu przez Android Low-Memory Killer.
+ \item Rozmiar artefaktu pozostaje poniżej $40$\,MiB, tak aby model mieścił się w pamięci flash i nie groził wyrzutem procesu przez Android Low-Memory Killer.
  \item Minimalny poziom API to 26 (Android 8.0), co obejmuje zdecydowaną większość urządzeń w obiegu.
  \item Projektowy niski pobór energii: ograniczenie tempa inferencji do $4$\,FPS ma na celu redukcję nagrzewania i ochronę baterii podczas pracy w terenie. Bezpośredni pomiar poboru mocy nie wchodził w zakres pracy.
 \end{enumerate}
@@ -489,9 +489,9 @@ Cztery ograniczenia i definicja czasu reakcji dają trzy budżety inżynierskie.
 
 \textbf{Budżet opóźnienia}: czas reakcji poniżej $1$\,s przy kadencji analizy $250$\,ms ($4$\,FPS). Kadencja jest docelową częstotliwością analizy klatek, wynikającą z kompromisu między płynnością nakładki a nagrzewaniem SoC i zużyciem baterii; nie jest definicją czasu rzeczywistego. Jeżeli pełny cykl klatki -- konwersja klatki CameraX do bitmapy, letterboxing $640\times640$, \texttt{detect()}, filtr progów i \texttt{DetectionTracker} -- trwa dłużej niż $250$\,ms, \texttt{Mutex.tryLock()} odrzuca kolejne klatki i chwilowa kadencja spada poniżej $4$\,FPS. Nie narusza to kryterium interaktywności, dopóki opóźnienie end-to-end i czas reakcji pozostają poniżej $1$\,s. Na S23 Ultra zmierzono zarówno sam \texttt{detect()} -- średnio $156{,}5$\,ms na zimnym SoC i $245{,}9$\,ms ($p_{95}=278{,}3$\,ms) po obciążeniu (tab.~\ref{tab:latency_s23}) -- jak i pełny cykl end-to-end oraz czas reakcji (podrozdz.~\ref{sec:latency_e2e}).
 
-\textbf{Budżet binarny modelu}: poniżej $40$\,MB. Artefakt TFLite FP16 YOLO11m zajmuje $38{,}58$\,MB. Margines $1{,}42$\,MB chroni przed limitami Android App Bundle i zmniejsza obciążenie transferu przy instalacji w terenie.
+\textbf{Budżet binarny modelu}: poniżej $40$\,MiB. Artefakt TFLite FP16 YOLO11m zajmuje $38{,}58$\,MiB. Margines $1{,}42$\,MiB chroni przed limitami Android App Bundle i zmniejsza obciążenie transferu przy instalacji w terenie.
 
-\textbf{Budżet RAM}: poniżej $250$\,MB procesu. Składowe: wagi rezydentne ${\approx}39$\,MB + bufor wejściowy $640{\times}640{\times}3{\times}4$\,B~${\approx}4{,}69$\,MB + bufor wyjściowy $151{\times}8400{\times}4$\,B~${\approx}4{,}84$\,MB + bitmapa podglądu CameraX/Compose + narzut ART. Łącznie margines względem domyślnego limitu sterty API~26+ ogranicza ryzyko wyrzutu procesu przez Low-Memory Killer podczas kilkugodzinnej sesji terenowej.
+\textbf{Budżet RAM}: poniżej $250$\,MB procesu. Składowe: wagi rezydentne ${\approx}39$\,MiB + bufor wejściowy $640{\times}640{\times}3{\times}4$\,B~${\approx}4{,}69$\,MiB + bufor wyjściowy $151{\times}8400{\times}4$\,B~${\approx}4{,}84$\,MiB + bitmapa podglądu CameraX/Compose + narzut ART. Łącznie margines względem domyślnego limitu sterty API~26+ ogranicza ryzyko wyrzutu procesu przez Low-Memory Killer podczas kilkugodzinnej sesji terenowej.
 
 Zbiorcze zestawienie wyprowadzonych budżetów inżynierskich wraz z ich składowymi oraz sposobem weryfikacji przedstawiono w tab.~\ref{tab:budzety}.
 
@@ -505,9 +505,9 @@ Zbiorcze zestawienie wyprowadzonych budżetów inżynierskich wraz z ich składo
  \hline \hline
  Opóźnienie (czas reakcji) & $<1$\,s & kadencja analizy $250$\,ms ($4$\,FPS); pełny cykl klatki: CameraX, letterbox, \texttt{detect()}, tracker & tab.~\ref{tab:latency_s23} i~\ref{tab:latency_e2e} \\
  \hline
- Rozmiar binarny modelu & $<40$\,MB & artefakt TFLite FP16 $38$--$39$\,MB $+$ margines pakietu & pomiar rozmiaru pliku \\
+ Rozmiar binarny modelu & $<40$\,MiB & artefakt TFLite FP16 $38$--$39$\,MiB $+$ margines pakietu & pomiar rozmiaru pliku \\
  \hline
- Pamięć operacyjna RAM & $<250$\,MB & wagi $\approx39$\,MB, bufor wejściowy $4{,}69$\,MB, bufor wyjściowy $4{,}84$\,MB, podgląd i ART & analityczne oszacowanie budżetu pamięci \\
+ Pamięć operacyjna RAM & $<250$\,MB & wagi $\approx39$\,MiB, bufor wejściowy $4{,}69$\,MiB, bufor wyjściowy $4{,}84$\,MiB, podgląd i ART & analityczne oszacowanie budżetu pamięci \\
  \hline
  \end{tabular}
 \end{table}
@@ -565,7 +565,7 @@ Sprzęt użyty do treningu i testów mobilnych zestawia tab.~\ref{tab:sprzet}. S
 Dobór bibliotek wynika z podziału na stację roboczą (akwizycja, anotacja, trening, konwersja) oraz telefon (inferencja TFLite, interfejs Compose, persystencja Room). Dzięki temu graf uczenia nie trafia na urządzenie mobilne, a aplikacja nie zależy od Pythona w czasie wykonania.
 
 \section{Architektura systemu i dobór sieci neuronowej}
-Budżety z poprzedniego podrozdziału wymuszają konkretne decyzje architektoniczne: jeden przebieg sieci, artefakt poniżej 40 MB, praca offline. Poniżej opisano wynikającą z tych decyzji strukturę systemu i model, który je spełnia.
+Budżety z poprzedniego podrozdziału wymuszają konkretne decyzje architektoniczne: jeden przebieg sieci, artefakt poniżej $40$\,MiB, praca offline. Poniżej opisano wynikającą z tych decyzji strukturę systemu i model, który je spełnia.
 
 \subsection{Trójwarstwowa architektura systemu}
 Trzy moduły, trzy odpowiedzialności. CameraX dostarcza klatki i skaluje je do $640\times640$. Interpreter TFLite uruchamia model FP16 i zwraca surowy tensor. Kotlin odrzuca słabe kandydatury, rysuje ramki AR i wyzwala ostrzeżenie toksykologiczne.
@@ -589,7 +589,7 @@ Granica między przygotowaniem modelu a czasem wykonania przebiega na artefakcie
 
  % warstwa 2
  \node[w, fill=black!5] (w2) at (0,-2.9) {\textbf{Warstwa konwersji modelu} \\[2pt] {\footnotesize PyTorch $\rightarrow$ TensorFlow SavedModel $\rightarrow$ TensorFlow Lite FP16}};
- \node[modul, fill=EETangerine!22] (m21) at (0,-4.05) {Artefakt \texttt{.tflite} FP16, $38{,}58$\,MB};
+ \node[modul, fill=EETangerine!22] (m21) at (0,-4.05) {Artefakt \texttt{.tflite} FP16, $38{,}58$\,MiB};
 
  % warstwa 3
  \node[w, fill=black!5] (w3) at (0,-5.8) {\textbf{Warstwa wykonawcza (urządzenie mobilne)} \\[2pt] {\footnotesize Android, Kotlin, Jetpack Compose, CameraX, TFLite Interpreter}};
@@ -607,7 +607,7 @@ Granica między przygotowaniem modelu a czasem wykonania przebiega na artefakcie
  \caption{Podział systemu na warstwę przygotowania danych i uczenia, warstwę konwersji modelu oraz warstwę wykonawczą urządzenia mobilnego. Źródło: opracowanie własne.}
  \label{fig:warstwy}
 \end{figure}
-Przepływ danych przez system to jednokierunkowy potok o dziewięciu krokach (rys.~\ref{fig:potok_architektura}). Klasa \texttt{ImageAnalysis} CameraX dostarcza klatki ze strategią \texttt{STRATEGY\_KEEP\_ONLY\_LATEST}. Starsze klatki są odrzucane, zanim zdążą się kolejkować. \texttt{Mutex.tryLock()} ogranicza tempo do $4$\,FPS w trybie standardowym ($250$\,ms) lub do $1{,}5$\,s \textit{heartbeat} po ustabilizowaniu sceny. Interpreter TFLite uruchamia model FP16 i zwraca tensor $[1,\,151,\,8400]$: 4 współrzędne ramki i 147 prawdopodobieństw klas dla każdego z $8400$ punktów predykcyjnych na mapach cech. Fast-fail obcina listę do 50 najwyżej ocenionych kandydatów; NMS ($\mathrm{IoU}>0{,}45$) usuwa nadmiary. Należy zaznaczyć, że zaimplementowany w aplikacji mechanizm NMS (\texttt{MushroomDetector.kt}) jest z zasady niewrażliwy na klasę (ang. \textit{class-agnostic}). Oznacza to, że pętla porównuje wyłącznie IoU geometryczny bez sprawdzania indeksu klasy. Ramka gatunku B o niższym wyniku pewności zostanie bezwzględnie usunięta, jeśli jej IoU z nakładającą się ramką gatunku A przekroczy zadany próg. Jest to celowe uproszczenie ukierunkowane na wydajność mobilną.
+Przepływ danych przez system to jednokierunkowy potok o dziewięciu krokach (rys.~\ref{fig:potok_architektura}). Klasa \texttt{ImageAnalysis} CameraX dostarcza klatki ze strategią \texttt{STRATEGY\_KEEP\_ONLY\_LATEST}. Starsze klatki są odrzucane, zanim zdążą się kolejkować. \texttt{Mutex.tryLock()} ogranicza tempo do $4$\,FPS w trybie standardowym ($250$\,ms) lub do $1{,}5$\,s \textit{heartbeat} po ustabilizowaniu sceny. Interpreter TFLite uruchamia model FP16 i zwraca tensor $[1,\,151,\,8400]$: 4 współrzędne ramki i $147$ wyników klas dla każdego z $8400$ punktów predykcyjnych na mapach cech. Fast-fail obcina listę do 50 najwyżej ocenionych kandydatów; NMS ($\mathrm{IoU}>0{,}45$) usuwa nadmiary. Należy zaznaczyć, że zaimplementowany w aplikacji mechanizm NMS (\texttt{MushroomDetector.kt}) jest z zasady niewrażliwy na klasę (ang. \textit{class-agnostic}). Oznacza to, że pętla porównuje wyłącznie IoU geometryczny bez sprawdzania indeksu klasy. Ramka gatunku B o niższym wyniku pewności zostanie bezwzględnie usunięta, jeśli jej IoU z nakładającą się ramką gatunku A przekroczy zadany próg. Jest to celowe uproszczenie ukierunkowane na wydajność mobilną.
 
 Kroki tego potoku -- od akwizycji klatki po nakładkę i zapis -- ilustruje rys.~\ref{fig:potok_architektura}.
 
@@ -633,7 +633,7 @@ Kroki tego potoku -- od akwizycji klatki po nakładkę i zapis -- ilustruje rys.
  \node[inf] (n6) at (0,-5.75) {6. Tłumienie niemaksymalne (class-agnostic NMS), $\mathrm{IoU}>0{,}45$};
  
  % Rozwidlenie sciezki toksycznej i jadalnej
- \node[poltox] (n7a) at (-2.45,-7.15) {7a. Ścieżka toksyczna:\\ostrzeżenie $\ge0{,}18$\\(\textbf{natychmiast}, bez konsensusu)};
+ \node[poltox] (n7a) at (-2.45,-7.15) {7a. Ścieżka toksyczna:\\ostrzeżenie $\ge0{,}18$\\(bez konsensusu $4$/$5$)};
  \node[poled] (n7b) at (2.45,-7.15) {7b. Ścieżka jadalna:\\wymaga $\ge0{,}60$ oraz\\bufora konsensusu $4$/$5$};
  
  \node[bez] (n8) at (0,-8.55) {8. Filtr prezentacji \texttt{displayStatus} (ostrzeżenie / „Jadalny” / szary NEUTRAL)};
@@ -654,7 +654,7 @@ Kroki tego potoku -- od akwizycji klatki po nakładkę i zapis -- ilustruje rys.
  \label{fig:potok_architektura}
 \end{figure}
 
-Wstępnie przefiltrowane kandydatury podlegają bramkowaniu pewności na poziomie dekodera ($0{,}18$ dla klas toksycznych, $0{,}20$ dla pozostałych), co eliminuje szum tła przed wejściem do pętli NMS. Następnie ścieżki decyzyjne ulegają asymetrycznemu rozdzieleniu: detekcje gatunków trujących o pewności $\ge 0{,}18$ natychmiast generują ostrzeżenie i nie oczekują na bufor czasowy. Z kolei asercja jadalności wymaga podwójnego warunku: wysokiego progu pewności ($\ge 0{,}60$) oraz domknięcia bufora konsensusu klatek (\textit{multi-frame voting buffer}, $4$ z $5$ ostatnich klatek w module \texttt{DetectionTracker}). Wszystkie pozostałe predykcje otrzymują szary status neutralny. Wynik trafia równolegle do nakładki AR Jetpack Compose, rysującej ramki i etykiety, oraz – przy ręcznym zapisie – do bazy Room, gdzie encja \texttt{MushroomFind} przechowuje gatunek, kategorię toksyczności, wartość pewności, znacznik czasu i ścieżkę wycinka obrazu. Polityka progów dotyczy warstwy wyświetlania: ostrzeżenie toksyczne od $0{,}18$, asercja jadalności od $0{,}60$; nie implikuje wyższego $R$ detektora na klasach trujących.
+Wstępnie przefiltrowane kandydatury podlegają bramkowaniu pewności na poziomie dekodera ($0{,}18$ dla klas toksycznych, $0{,}20$ dla pozostałych), co eliminuje szum tła przed wejściem do pętli NMS. Następnie ścieżki decyzyjne ulegają asymetrycznemu rozdzieleniu: detekcje gatunków trujących o pewności $\ge 0{,}18$ generują ostrzeżenie bez oczekiwania na konsensus $4$ z $5$ (ramka pojawia się po dwóch zgodnych klatkach). Z kolei asercja jadalności wymaga podwójnego warunku: wysokiego progu pewności ($\ge 0{,}60$) oraz domknięcia bufora konsensusu klatek (\textit{multi-frame voting buffer}, $4$ z $5$ ostatnich klatek w module \texttt{DetectionTracker}). Wszystkie pozostałe predykcje otrzymują szary status neutralny. Wynik trafia równolegle do nakładki AR Jetpack Compose, rysującej ramki i etykiety, oraz – przy ręcznym zapisie – do bazy Room, gdzie encja \texttt{MushroomFind} przechowuje gatunek, kategorię toksyczności, wartość pewności, znacznik czasu i ścieżkę wycinka obrazu. Polityka progów dotyczy warstwy wyświetlania: ostrzeżenie toksyczne od $0{,}18$, asercja jadalności od $0{,}60$; nie implikuje wyższego $R$ detektora na klasach trujących.
 
 \subsection{Uzasadnienie wyboru modelu YOLO11 Medium}
 Wybór modelu to czterowymiarowy kompromis: dokładność, rozmiar binarny, opóźnienie inferencji i zużycie energii, wszystko przy spełnieniu budżetów z poprzedniego podrozdziału. Przeanalizowano cztery alternatywy:
@@ -664,7 +664,7 @@ Wybór modelu to czterowymiarowy kompromis: dokładność, rozmiar binarny, opó
  \item Detektor MobileNet SSD, o niższej precyzji detekcji, niewystarczającej do rozróżniania gatunków bliźniaczych \cite{liu2016ssd}.
  \item Rodzina EfficientDet, której czas inferencji jest zbyt długi względem założeń pracy w reżimie czasu rzeczywistego.
 \end{enumerate}
-Wybrano YOLO11 Medium (\texttt{YOLO11m}) \cite{ultralytics2024yolo11}. $\approx20{,}1$~mln parametrów daje pojemność wystarczającą do modelowania subtelnych cech morfologicznych $147$ klas, a konwersja do TFLite FP16 ($38{,}58$~MB) mieści artefakt w pamięci flash telefonu. Na S23 Ultra zmierzono czas \texttt{detect()} (rozdz.~\ref{chap:badania}); pełnego cyklu CameraX nie profilowano. Wariant Nano, mimo mniejszego pliku, nie radził sobie z gatunkami bliźniaczymi – potwierdza to ablacja w rozdz.~\ref{chap:badania}. Wejście modelu to $640\times640$ pikseli; wyjście po dekodowaniu ma postać etykiet YOLO: \textit{class\_id cx cy w h}. Ilościową ocenę skuteczności przedstawia rozdz.~\ref{chap:badania}.
+Wybrano YOLO11 Medium (\texttt{YOLO11m}) \cite{ultralytics2024yolo11}. $\approx20{,}1$~mln parametrów daje pojemność wystarczającą do modelowania subtelnych cech morfologicznych $147$ klas, a konwersja do TFLite FP16 ($38{,}58$~MiB) mieści artefakt w pamięci flash telefonu. Na S23 Ultra zmierzono czas \texttt{detect()} (rozdz.~\ref{chap:badania}); pełnego cyklu CameraX nie profilowano. Wariant Nano, mimo mniejszego pliku, nie radził sobie z gatunkami bliźniaczymi – potwierdza to ablacja w rozdz.~\ref{chap:badania}. Wejście modelu to $640\times640$ pikseli; wyjście po dekodowaniu ma postać etykiet YOLO: \textit{class\_id cx cy w h}. Ilościową ocenę skuteczności przedstawia rozdz.~\ref{chap:badania}.
 
 
 \chapter{Implementacja rozwiązania}\label{chap:implementacja}
@@ -1137,20 +1137,20 @@ Wyniki zastosowania procedury do poszczególnych podziałów zbioru zestawiono w
 \end{table}
 
 \section{Proces treningu i optymalizacja modelu}
-Zbiór gotowy. Pora uruchomić trening. Wagi YOLO11m wychodzą ze środowiska PyTorch i muszą trafić do pliku \texttt{.tflite} nadającego się do lokalnej inferencji na Snapdragonie.
+Po przygotowaniu zbioru danych model YOLO11m trenowano w środowisku PyTorch, a następnie konwertowano do pliku \texttt{.tflite} przeznaczonego do lokalnej inferencji na telefonie.
 
 \subsection{Środowisko uczenia i parametry treningu YOLO11m}
-Stacja robocza: AMD Ryzen~5~3600, $32$\,GB DDR4, NVIDIA RTX~4070 ($12$\,GB VRAM), CUDA. Stos programowy: Python $3.11+$, PyTorch $2.x$, CUDA~$12.x$, Ultralytics \cite{pytorch, ultralytics2024yolo11}. Skrypt \texttt{train.py} inicjalizuje model, wczytuje \texttt{data.yaml} i uruchamia trening na GPU bez ręcznej interwencji. Dwa etapy uczenia różnią się rozmiarem wsadu i liczbą procesów ładujących dane – powód: po rozszerzeniu głowicy do 147 klas $12$\,GB VRAM przestaje wystarczać dla \texttt{batch=16}.
+Stacja robocza: AMD Ryzen~5~3600, $32$\,GB DDR4, NVIDIA RTX~4070 ($12$\,GB VRAM), CUDA. Stos programowy: Python $3.11+$, PyTorch $2.x$, CUDA~$12.x$, Ultralytics \cite{pytorch, ultralytics2024yolo11}. Skrypt \texttt{train.py} inicjalizuje model, wczytuje \texttt{data.yaml} i uruchamia trening na GPU bez ręcznej interwencji. Oba etapy uczenia korzystają z tego samego skryptu; różnią się wagami startowymi, liczbą epok, rozmiarem wsadu i liczbą procesów ładujących dane (tab.~\ref{tab:parametry_treningu}).
 
-Architektura bazowa: YOLO11 Medium, $20\,143\,369$ parametrów, złożoność $68{,}3$\,GFLOPs \cite{ultralytics2024yolo11}. Wariant Nano nie radzi sobie z $147$ klasami, w tym z gatunkami bliźniaczymi (ablacja w rozdz.~\ref{chap:badania}). Wariantu Large nie uruchamiano: nie ma dla niego pomiaru RAM ani opóźnienia, a większy artefakt wykraczałby poza przyjęty budżet pliku. Medium mieści się w zmierzonym budżecie FP16. Wagi startują z COCO (\texttt{yolo11m.pt}) – uczenie transferowe \cite{lin2014coco}. Niskopoziomowe filtry krawędzi i tekstur wyuczone na ogólnym zbiorze COCO stanowią punkt startowy. Nie stosowano zamrażania warstw (\texttt{freeze=0}): dostrajane są wszystkie warstwy, przy czym najniższe filtry zmieniają się najmniej, a wyższe warstwy i głowica najsilniej adaptują się do cech mykologicznych.
+Architektura bazowa: YOLO11 Medium, $20\,143\,369$ parametrów i złożoność $68{,}3$\,GFLOPs według podsumowania modelu Ultralytics dla $147$ klas \cite{ultralytics2024yolo11}. Wariant Nano nie radzi sobie z $147$ klasami, w tym z gatunkami bliźniaczymi (ablacja w rozdz.~\ref{chap:badania}). Wariantu Large nie uruchamiano: nie ma dla niego pomiaru RAM ani opóźnienia, a większy artefakt wykraczałby poza przyjęty budżet pliku. Medium mieści się w przyjętym budżecie rozmiaru pliku FP16. Wagi startują z COCO (\texttt{yolo11m.pt}) – uczenie transferowe \cite{lin2014coco}: niskopoziomowe filtry krawędzi i tekstur wyuczone na ogólnym zbiorze COCO stanowią punkt startowy. Nie stosowano zamrażania warstw (parametr \texttt{freeze} pozostawiono domyślny, \texttt{None}), więc dostrajane są wszystkie warstwy sieci.
 
 Rozdzielczość wejściowa: $640\times640$ pikseli w obu etapach. Biblioteka Ultralytics domyślnie aktywuje mieszaną precyzję (AMP/FP16), co na rdzeniach Tensor Core układu RTX~4070 skraca czas epoki bez destabilizacji gradientów. Domyślny harmonogram uczenia dba o stopniowe wygaszanie współczynnika w końcowej fazie zbieżności.
 
 Trening podzielono na dwa etapy odpowiadające przyrostowej budowie rejestru klas.
 
-Etap podstawowy: wcześniejszy, mniejszy zestaw gatunków, \texttt{batch=16}, wczesne zatrzymanie z \texttt{patience=40} na mAP walidacyjnym. Brak poprawy w ciągu 40 epok kończy etap i zachowuje najlepsze wagi.
+Etap podstawowy (przebieg \texttt{train-6}): pierwsze $105$ klas rejestru (identyfikatory $0$--$104$), \texttt{batch=16}, \texttt{workers=4}, wczesne zatrzymanie z \texttt{patience=40} na metryce walidacyjnej. Brak poprawy w ciągu $40$ epok kończy etap i zachowuje najlepsze wagi.
 
-Etap dostrajania: pełny zestaw 147 klas, wagi z etapu podstawowego. Rozszerzona głowica klasyfikacyjna kosztuje VRAM – \texttt{batch=16} nie mieści się, więc ucięto do \texttt{batch=8} i \texttt{workers=2}. Wszystkie warstwy pozostają odmrożone (\texttt{freeze=0}); adaptacja najsilniej dotyczy wyższych warstw i głowicy detekcyjnej. Czas trwania: 15 epok (\texttt{epochs=15}), bez wczesnego zatrzymania. Stały horyzont sprzyja powtarzalnej adaptacji głowicy do rozszerzonego zestawu.
+Etap dostrajania (przebieg \texttt{fine\_147classes\_v2}): pełny zestaw $147$ klas, inicjalizacja wagami \texttt{best.pt} etapu podstawowego. Warstwy o zgodnych wymiarach przejmują wagi etapu podstawowego, natomiast końcowe warstwy klasyfikacyjne głowicy, których wymiar zależy od liczby klas, inicjalizowane są od nowa. Wsad zmniejszono do \texttt{batch=8}, a liczbę procesów ładujących do \texttt{workers=2}, aby zmieścić przebieg w zasobach stacji ($12$\,GB VRAM, $32$\,GB RAM). Wszystkie warstwy pozostają odmrożone. Czas trwania: $15$ epok (\texttt{epochs=15}), bez wczesnego zatrzymania (\texttt{patience=0}). Powtarzalność przebiegu zapewniają domyślne ustawienia \texttt{seed=0} i \texttt{deterministic=True}.
 
 Konfigurację wywołania treningu dostrajającego, wraz z rozstrzyganiem urządzenia obliczeniowego, przedstawiono na listingu \ref{lst:train}.
 
@@ -1158,49 +1158,63 @@ Konfigurację wywołania treningu dostrajającego, wraz z rozstrzyganiem urządz
 DEFAULT_MODEL = "weights/yolo11m.pt"
 
 def resolve_device(requested: str) -> str:
- # Map CLI device string to Ultralytics device id
- cuda_available = torch.cuda.is_available()
- if requested == "auto":
- if cuda_available:
- print(f"[device] GPU: {torch.cuda.get_device_name(0)} -> '0'")
- return "0"
- print("[device] No CUDA, using CPU")
- return "cpu"
- if requested == "cpu":
- return "cpu"
- return "0" if requested == "cuda" else requested
+    cuda_available = torch.cuda.is_available()
+
+    if requested == "auto":
+        if cuda_available:
+            print(f"[device] GPU: {torch.cuda.get_device_name(0)} -> '0'")
+            return "0"
+        print("[device] No CUDA, using CPU")
+        return "cpu"
+
+    if requested == "cpu":
+        print("[device] Forced CPU")
+        return "cpu"
+
+    if not cuda_available:
+        print(f"[device] Requested '{requested}' but CUDA unavailable, using CPU")
+        return "cpu"
+
+    device = "0" if requested == "cuda" else requested
+    print(f"[device] Using '{device}'")
+    return device
 
 def train(args) -> str:
- device = resolve_device(args.device)
- project = str(Path(args.project).resolve())
+    device = resolve_device(args.device)
+    project = str(Path(args.project).resolve())
+    model = YOLO(args.model)
 
- model = YOLO(args.model)
+    results = model.train(
+        data=args.data,
+        epochs=args.epochs,
+        imgsz=args.imgsz,
+        batch=args.batch,
+        device=device,
+        workers=args.workers,
+        patience=args.patience,
+        project=project,
+        name=args.name,
+        exist_ok=args.exist_ok,
+        resume=args.resume,
+        plots=True,
+        show=False,
+        verbose=True,
+    )
 
- results = model.train(
- data=args.data, # data.yaml, nc: 147
- epochs=args.epochs, # 15 for the fine-tuning stage
- imgsz=args.imgsz, # 640 x 640
- batch=args.batch, # 8 (VRAM-bound after head expansion)
- workers=args.workers, # 2 dataloader processes
- device=device,
- project=project,
- name=args.name,
- plots=True,
- show=False,
- verbose=True,
-)
-
- save_dir = getattr(results, "save_dir", os.path.join(project, args.name))
- return os.path.join(str(save_dir), "weights", "best.pt")
+    save_dir = getattr(results, "save_dir", None)
+    if save_dir is None:
+        save_dir = os.path.join(project, args.name)
+    best_path = os.path.join(str(save_dir), "weights", "best.pt")
+    return best_path
 \end{lstlisting}
 
-\texttt{resolve\_device} (linie 3--14) mapuje argument CLI na identyfikator Ultralytics. Tryb \texttt{auto} bez CUDA degraduje do CPU zamiast rzucać wyjątkiem – ten sam skrypt działa na stacji treningowej i na maszynie bez akceleratora do testów poprawności potoku.
+\texttt{resolve\_device} (linie 3--23) mapuje argument CLI na identyfikator urządzenia Ultralytics. Tryb \texttt{auto} bez CUDA (linie 6--11), a także jawne żądanie GPU na maszynie bez CUDA (linie 17--19), przechodzi na CPU zamiast zgłaszać wyjątek – ten sam skrypt działa na stacji treningowej i na maszynie bez akceleratora do testów poprawności potoku. Listing pomija komunikaty diagnostyczne funkcji \texttt{train}.
 
 Wczytanie wag realizuje \texttt{model = YOLO(args.model)}; stała \texttt{DEFAULT\_MODEL = weights/yolo11m.pt} jest jedynie wartością domyślną argumentu, wykorzystywaną w etapie podstawowym. W etapie dostrajania argument \texttt{-{}-model} wskazuje na \texttt{best.pt} z etapu podstawowego (zgodnie z tab.~\ref{tab:parametry_treningu}), a nie na wagi COCO \cite{lin2014coco}. \texttt{model.train} uruchamia uczenie transferowe. Kluczowe hiperparametry:
 
-\texttt{epochs=15} (linia 24). Stała długość etapu dostrajania bez wczesnego zatrzymania; stały horyzont sprzyja powtarzalności adaptacji głowicy. \texttt{batch=8} (linia 26) – rozszerzona głowica 147 klas wyczerpuje $12$\,GB VRAM przy \texttt{batch=16}. \texttt{workers=2} (linia 27) – przy NVMe wąskim gardłem jest GPU, nie dysk.
+\texttt{epochs=15} (linia 32) -- stała długość etapu dostrajania. \texttt{batch=8} (linia 34) i \texttt{workers=2} (linia 36) -- wartości dobrane do zasobów stacji. \texttt{patience=0} (linia 37) wyłącza wczesne zatrzymanie.
 
-Proces uczenia wykorzystuje domyślne, zoptymalizowane pod maską mechanizmy biblioteki Ultralytics. Automatycznie uruchamiana jest mieszana precyzja (AMP): przebieg w przód i wsteczny liczony jest w FP16 na układach Tensor Core, natomiast akumulacja gradientów następuje w FP32, co zapobiega utracie dokładności numerycznej. Wbudowany harmonogram dba również o wygaszanie współczynnika uczenia, redukując oscylacje w końcowej fazie treningu.
+Pozostałe hiperparametry przyjmują wartości domyślne biblioteki Ultralytics, ponieważ \texttt{train.py} ich nie przekazuje. Automatycznie uruchamiana jest mieszana precyzja (AMP): przebieg w przód i wsteczny liczony jest w FP16 na rdzeniach Tensor Core, a wagi główne i krok optymalizatora pozostają w FP32 (skalowanie gradientu). Przy wsadzie $8$ gradient akumulowany jest z $8$ kolejnych kroków do nominalnego wsadu \texttt{nbs=64}. Ustawienie \texttt{optimizer=auto} pozostawia wybór optymalizatora bibliotece: przy liczbie iteracji przekraczającej $10\,000$, jak w obu etapach, wybierany jest optymalizator z rodziny SGD ze współczynnikiem uczenia $0{,}01$ i momentem $0{,}9$. Harmonogram liniowy (\texttt{cos\_lr=False}) z trzema epokami rozgrzewki wygasza współczynnik uczenia do $\texttt{lr0}\cdot\texttt{lrf}$, a augmentacja mozaikowa jest wyłączana w ostatnich $10$ epokach (\texttt{close\_mosaic=10}).
 
 Zestawienie hiperparametrów obu etapów uczenia przedstawiono w tab.~\ref{tab:parametry_treningu}. Domyślne wartości \texttt{argparse} w \texttt{train.py} (\texttt{epochs=200}, \texttt{batch=32}, \texttt{workers=8}) nie są wartościami wykonanych przebiegów. Przebiegi dostały argumenty z tabeli: wsad $16$ i $4$ procesy na etapie podstawowym oraz wsad $8$, $2$ procesy i $15$ epok na dostrajaniu.
 
@@ -1220,59 +1234,68 @@ Zestawienie hiperparametrów obu etapów uczenia przedstawiono w tab.~\ref{tab:p
  \hline
  Procesy wczytujące (\texttt{workers}) & $4$ & $2$ \\
  \hline
- Zamrożone warstwy (\texttt{freeze}) & brak (domyślnie $0$) & brak (domyślnie $0$) \\
+ Zamrożone warstwy (\texttt{freeze}) & brak (domyślnie) & brak (domyślnie) \\
  \hline
  Liczba epok & do $200$ & $15$ (stała) \\
  \hline
- Wczesne zatrzymanie & \texttt{patience=40} & wyłączone \\
+ Wczesne zatrzymanie & \texttt{patience=40} & \texttt{patience=0} (wyłączone) \\
+ \hline
+ Optymalizator & \texttt{auto} (domyślnie) & \texttt{auto} (domyślnie) \\
  \hline
  Precyzja obliczeń & AMP FP16 & AMP FP16 \\
  \hline
- Harmonogram uczenia & domyślny (liniowy) & domyślny (liniowy) \\
+ Harmonogram uczenia & liniowy, $3$ epoki rozgrzewki & liniowy, $3$ epoki rozgrzewki \\
  \hline
  $\texttt{lr0}$ / $\texttt{lrf}$ & $0{,}01$ / $0{,}01$ (domyślne) & $0{,}01$ / $0{,}01$ (domyślne) \\
+ \hline
+ Nominalny wsad (\texttt{nbs}) & $64$ (domyślnie) & $64$ (domyślnie) \\
+ \hline
+ \texttt{close\_mosaic} / \texttt{seed} & $10$ / $0$ (domyślne) & $10$ / $0$ (domyślne) \\
  \hline
  \end{tabular}
 \end{table}
 
 \subsection{Konwersja do formatu TensorFlow Lite}
-Najlepszy punkt kontrolny wag (\texttt{best.pt}) musi trafić na telefon jako plik \texttt{.tflite}. Tu pojawia się przeszkoda platformowa: bezpośredni eksport \texttt{format='tflite'} w Ultralytics $8.4+$ korzysta z LiteRT, które kompiluje tylko na Linux~x86\_64 i macOS. Na stacji Windows wywołanie kończy się asercją – bez artefaktu. Rozwiązanie: dwuetapowy potok w skrypcie \texttt{scripts/export\_tflite.py}. Etap pierwszy: Ultralytics eksportuje graf do TensorFlow SavedModel. Obsługiwany na wszystkich platformach. Etap drugi: natywny \texttt{tf.lite.TFLiteConverter} kompiluje SavedModel do binarnego \texttt{.tflite} z żądaną precyzją. Żadnego przenoszenia wag na Linuksa; proces powtarzalny na stacji Windows. Oba etapy konwersji pokazuje listing \ref{lst:export}.
+Najlepszy punkt kontrolny wag (\texttt{best.pt}) musi trafić na telefon jako plik \texttt{.tflite}. Tu pojawia się przeszkoda platformowa: bezpośredni eksport \texttt{format='tflite'} w Ultralytics $8.4+$ korzysta z LiteRT, które kompiluje tylko na Linux~x86\_64 i macOS. Na stacji Windows wywołanie kończy się asercją – bez artefaktu. Rozwiązaniem jest dwuetapowy potok w skrypcie \texttt{scripts/export\_tflite.py}. W pierwszym etapie Ultralytics eksportuje graf do formatu TensorFlow SavedModel, obsługiwanego na wszystkich platformach. W drugim etapie natywny \texttt{tf.lite.TFLiteConverter} kompiluje SavedModel do binarnego pliku \texttt{.tflite} z żądaną precyzją. Cały proces jest powtarzalny na stacji Windows, bez przenoszenia wag na inny system. Oba etapy konwersji pokazuje listing \ref{lst:export}.
 
 \begin{lstlisting}[language=Python,caption={Dwuetapowy eksport PyTorch $\rightarrow$ SavedModel $\rightarrow$ TFLite FP16 (\texttt{scripts/export\_tflite.py})},label={lst:export}]
 def _run_export(weights: Path, quant: str, imgsz: int, data: str) -> Path:
- # Two-stage export: SavedModel then TFLiteConverter. Returns.tflite path.
- import tensorflow as tf
+    import tensorflow as tf
 
- model = YOLO(str(weights))
+    model = YOLO(str(weights))
 
- export_kwargs = {"format": "saved_model", "imgsz": imgsz}
- if quant == "int8":
- export_kwargs["int8"] = True
- export_kwargs["data"] = data
+    export_kwargs = {
+        "format": "saved_model",
+        "imgsz": imgsz,
+    }
+    if quant == "int8":
+        export_kwargs["int8"] = True
+        export_kwargs["data"] = data
 
- saved_model_path = Path(str(model.export(**export_kwargs)))
+    saved_model_path = Path(str(model.export(**export_kwargs)))
 
- converter = tf.lite.TFLiteConverter.from_saved_model(str(saved_model_path))
+    converter = tf.lite.TFLiteConverter.from_saved_model(str(saved_model_path))
 
- if quant == "int8":
- converter.optimizations = [tf.lite.Optimize.DEFAULT]
- elif quant == "fp16":
- converter.optimizations = [tf.lite.Optimize.DEFAULT]
- converter.target_spec.supported_types = [tf.float16]
- # fp32: converter defaults
+    if quant == "int8":
+        converter.optimizations = [tf.lite.Optimize.DEFAULT]
+    elif quant == "fp16":
+        converter.optimizations = [tf.lite.Optimize.DEFAULT]
+        converter.target_spec.supported_types = [tf.float16]
+    # fp32: converter defaults
 
- tflite_model = converter.convert()
+    tflite_model = converter.convert()
 
- tflite_path = saved_model_path.parent / f"{saved_model_path.name}_{quant}.tflite"
- tflite_path.write_bytes(tflite_model)
- return tflite_path
+    tflite_path = saved_model_path.parent / f"{saved_model_path.name}_{quant}.tflite"
+    tflite_path.write_bytes(tflite_model)
+
+    return tflite_path
 \end{lstlisting}
 
-Linia 12: \texttt{model.export} z \texttt{format='saved\_model'} omija LiteRT i generuje graf TensorFlow SavedModel – obsługiwany wszędzie. \texttt{imgsz} utrwala kształt tensora wejściowego $640\times640$ statycznie: Interpreter mobilny nie może realokować buforów przy każdej klatce.
+Linia 14: \texttt{model.export} z \texttt{format='saved\_model'} omija LiteRT i generuje graf TensorFlow SavedModel, obsługiwany na każdej platformie. \texttt{imgsz} utrwala kształt tensora wejściowego $640\times640$ statycznie, dzięki czemu interpreter mobilny nie realokuje buforów przy każdej klatce.
 
-Linia 14 tworzy konwerter ze ścieżki SavedModel. Rozgałęzienie w liniach 16--21 konfiguruje precyzję. FP16 (linie 19--20) wymaga dwóch właściwości jednocześnie: \texttt{Optimize.DEFAULT} uruchamia kwantyzację wag, a \texttt{target\_spec.supported\_types = [tf.float16]} wymusza połowiczną precyzję zamiast domyślnej INT8. INT8 (linie 17--18) potrzebuje dodatkowo zbioru kalibracyjnego w \texttt{data} do wyznaczenia zakresów $[r_{\min}, r_{\max}]$. Ten wariant odrzucono z powodów opisanych wcześniej.
+Linia 16 tworzy konwerter ze ścieżki SavedModel. Rozgałęzienie w liniach 18--23 konfiguruje precyzję. FP16 (linie 21--22) wymaga dwóch ustawień jednocześnie: \texttt{Optimize.DEFAULT} uruchamia kwantyzację wag, a \texttt{target\_spec.supported\_types = [tf.float16]} wymusza połowiczną precyzję zamiast domyślnej INT8. Gałąź INT8 (linie 18--19) ustawia jedynie \texttt{Optimize.DEFAULT} bez reprezentatywnego zbioru danych, co daje kwantyzację wag z dynamicznym zakresem, a nie pełną, kalibrowaną kwantyzację INT8; argument \texttt{data} (linie 10--12) trafia wyłącznie do eksportu Ultralytics. Wariant INT8 odrzucono z powodów opisanych wcześniej.
 
-\texttt{converter.convert()} (linia 23) kompiluje graf do FlatBuffer, który linia 26 zapisuje na dysk. Artefakt: \texttt{best\_saved\_model\_fp16.tflite}, $38{,}58$\,MB – mieści się w budżecie $40$\,MB (tab.~\ref{tab:budzety}).
+\texttt{converter.convert()} (linia 25) kompiluje graf do formatu FlatBuffer, który linie 27--28 zapisują na dysk. Artefakt: \texttt{best\_saved\_model\_fp16.tflite}, $38{,}58$\,MiB – mieści się w budżecie $40$\,MiB (tab.~\ref{tab:budzety}).
 
 Strukturę tensora wyjściowego skompilowanego modelu przedstawiono na rys.~\ref{fig:tensor_geometria}, a odwzorowanie kanałów na wielkości fizyczne zestawiono w tab.~\ref{tab:tensor}.
 
@@ -1289,7 +1312,7 @@ Strukturę tensora wyjściowego skompilowanego modelu przedstawiono na rys.~\ref
 
  \fill[EEUltramarine!22] (0,-2.35) rectangle (10.5,-0.05);
  \draw (0,-2.35) rectangle (10.5,-0.05);
- \node[opis] at (5.25,-1.2) {kanały $4$--$150$: $147$ prawdopodobieństw klas};
+ \node[opis] at (5.25,-1.2) {kanały $4$--$150$: $147$ wyników klas};
 
  % Os pozioma - punkty predykcyjne
  \draw[strz] (0,-2.75) -- (10.5,-2.75);
@@ -1319,26 +1342,26 @@ Strukturę tensora wyjściowego skompilowanego modelu przedstawiono na rys.~\ref
  \hline \hline
  $0$ & $1$ & rozmiar wsadu (pojedyncza klatka) \\
  \hline
- $1$ & $151$ & $4$ współrzędne ramki $(\mathit{cx},\mathit{cy},w,h)$ oraz $147$ prawdopodobieństw klas \\
+ $1$ & $151$ & $4$ współrzędne ramki $(\mathit{cx},\mathit{cy},w,h)$ oraz $147$ wyników klas (sigmoid) \\
  \hline
  $2$ & $8400$ & punkty predykcyjne na mapach cech: $80^2 + 40^2 + 20^2 = 6400+1600+400$ \\
  \hline \hline
- \multicolumn{3}{|l|}{Indeksowanie w dekoderze: $\mathit{idx} = \mathit{kanal} \cdot 8400 + \mathit{punkt}$} \\
+ \multicolumn{3}{|l|}{Indeksowanie w dekoderze: $\mathit{idx} = \text{kanał} \cdot 8400 + \text{punkt}$} \\
  \hline
- \multicolumn{3}{|l|}{Rozmiar bufora wyjściowego: $151 \cdot 8400 \cdot 4$\,B $\approx 4{,}84$\,MB (Float32)} \\
+ \multicolumn{3}{|l|}{Rozmiar bufora wyjściowego: $151 \cdot 8400 \cdot 4$\,B $\approx 4{,}84$\,MiB (Float32)} \\
  \hline
  \end{tabular}
 \end{table}
 
-Pełnej kwantyzacji INT8 nie wdrożono. Artefakt produkcyjny to \texttt{best\_saved\_model\_fp16.tflite}, $38{,}58$\,MB. INT8 schodziłby do około $20$\,MB i potencjalnie szybciej na NPU, lecz stały kwant $S$ spłaszcza gradienty jasności na blaszkach, pierścieniu i łuskach kapelusza -- cechach, które odróżniają jadalną czubajkę od trującej czubajeczki oraz borowika od goryczaka. W pracy nie mierzono $mAP$ wariantu INT8; rezygnacja wynika z własności reprezentacji (rozdz.~\ref{chap:przeglad_rozwiazan}), nie z nieprzeprowadzonej ablacji. FP16 daje niemal dwukrotną redukcję wobec FP32 przy zachowaniu struktury zmiennoprzecinkowej. Decyzja produkcyjna: tylko FP16.
+Pełnej kwantyzacji INT8 nie wdrożono. Artefakt produkcyjny to \texttt{best\_saved\_model\_fp16.tflite}, $38{,}58$\,MiB. INT8 schodziłby do około $20$\,MiB i potencjalnie szybciej na NPU, lecz stały kwant $S$ spłaszcza gradienty jasności na blaszkach, pierścieniu i łuskach kapelusza -- cechach, które odróżniają jadalną czubajkę od trującej czubajeczki oraz borowika od goryczaka. W pracy nie mierzono $mAP$ wariantu INT8; rezygnacja wynika z własności reprezentacji (rozdz.~\ref{chap:przeglad_rozwiazan}), nie z nieprzeprowadzonej ablacji. FP16 daje niemal dwukrotną redukcję wobec FP32 przy zachowaniu struktury zmiennoprzecinkowej. Decyzja produkcyjna: tylko FP16.
 
-Tensor wyjściowy modelu ma kształt $[1,\;151,\;8400]$: $8400$ punktów predykcyjnych na trzech skalowych mapach cech ($80{\times}80$, $40{\times}40$, $20{\times}20$), $151$ kanałów. Cztery współrzędne ramki i $147$ prawdopodobieństw klas. Geometria zgodna z dekoderem po stronie Androida; jedyna transformacja to mapowanie indeksów klas z rejestru \texttt{class\_registry.txt}. Po poprawnej kompilacji FP16 plik \texttt{mushrooms\_yolo11m.tflite} trafia do aktywów aplikacji mobilnej.
+Tensor wyjściowy modelu ma kształt $[1,\;151,\;8400]$: $8400$ punktów predykcyjnych na trzech skalowych mapach cech ($80{\times}80$, $40{\times}40$, $20{\times}20$), $151$ kanałów. Cztery współrzędne ramki i $147$ wyników klas. Geometria jest zgodna z dekoderem po stronie Androida. Indeksy klas mapuje na gatunki statyczna tablica \texttt{MushroomRegistry.speciesMap}, której kolejność odpowiada rejestrowi \texttt{class\_registry.txt} z etapu treningu. Skompilowany model FP16 trafia do aktywów aplikacji mobilnej jako \texttt{best\_float16.tflite}.
 
 \section{Implementacja aplikacji mobilnej Android}
 Aplikacja mobilna to natywny Kotlin na Androida. Trzy warstwy: deklaratywny interfejs w Jetpack Compose, akwizycja klatek przez CameraX i warstwa ML z interpreterem TFLite, logiką śledzenia i filtrem bezpieczeństwa. Granice między warstwami są ostre – każdą można testować niezależnie. Razem realizują jeden cel: lokalna inferencja na żywo, bez serwera, w lesie bez LTE.
 
 \subsection{Architektura interfejsu w Jetpack Compose i CameraX}
-Ekran główny to Compose: \texttt{MushroomCameraScreen} trzyma uprawnienia, podgląd i nakładkę; \texttt{DetectionOverlay} rysuje ramki osobno od kamery \cite{jetpackcompose}. CameraX dostarcza przypadki użycia z rys.~\ref{fig:camerax_web}: \texttt{Preview} zasila \texttt{PreviewView} przez \texttt{setSurfaceProvider(...)}, a \texttt{ImageAnalysis} podłącza analizator przez \texttt{setAnalyzer(...)} \cite{camerax}. W tej aplikacji liczy się właśnie \texttt{ImageAnalysis} – stamtąd idą klatki do TFLite. \texttt{ImageCapture} i \texttt{VideoCapture} zostawiono na uboczu; ciągła detekcja nie potrzebuje zapisu wideo.
+Ekran główny to Compose: \texttt{MushroomCameraScreen} trzyma uprawnienia, podgląd i nakładkę; \texttt{DetectionOverlay} rysuje ramki osobno od kamery \cite{jetpackcompose}. CameraX dostarcza przypadki użycia z rys.~\ref{fig:camerax_web}: \texttt{Preview} zasila \texttt{PreviewView} przez \texttt{setSurfaceProvider(...)}, a \texttt{ImageAnalysis} podłącza analizator przez \texttt{setAnalyzer(...)} \cite{camerax}. Klatki do TFLite dostarcza \texttt{ImageAnalysis}. \texttt{ImageCapture} służy wyłącznie ukrytemu Trybowi Badawczemu do zapisu pełnorozdzielczego zdjęcia (podrozdz.~\ref{sec:field_quant}); \texttt{VideoCapture} nie jest używany.
 
 \begin{figure}[htbp]
  \centering
@@ -1347,136 +1370,162 @@ Ekran główny to Compose: \texttt{MushroomCameraScreen} trzyma uprawnienia, pod
  \label{fig:camerax_web}
 \end{figure}
 
-\texttt{ImageAnalysis.Builder} dostał \texttt{STRATEGY\_KEEP\_ONLY\_LATEST}: w buforze zostaje tylko najnowsza klatka, reszta leci do kosza. Podgląd: \texttt{FILL\_CENTER}. Analizator pracuje na własnym wątku; przed inferencją mapa bitowa jest obracana do pionu i konwertowana do RGBA.
+\texttt{ImageAnalysis.Builder} ustawia strategię \texttt{STRATEGY\_KEEP\_ONLY\_LATEST} (w buforze zostaje tylko najnowsza klatka) oraz format wyjściowy \texttt{RGBA\_8888}. Podgląd działa w trybie \texttt{FILL\_CENTER}. Analizator pracuje na własnym wątku: każdą klatkę zamienia na mapę bitową obróconą do pionu i przekazuje do \texttt{MushroomViewModel.onFrame}. Tam \texttt{FrameCropper.letterbox} wycina obszar widoczny na ekranie i wpisuje go z zachowaniem proporcji w kwadrat $640\times640$, uzupełniając marginesy szarym kolorem (\texttt{Color.GRAY}, wartość $136$).
 
-Telefon nie wytrzyma 30 inferencji na sekundę. W \texttt{MushroomViewModel} \texttt{Mutex.tryLock()} przepuszcza co najwyżej jedną inferencję naraz. Interwał: $250$\,ms ($4$\,FPS). Na S23 Ultra ciągła analiza bez throttlingu szybko wchodziła w thermal throttling. Nakładka zaczynała się zacinać. Gdy \texttt{isSceneLocked()} zgłasza stabilną scenę, interwał rośnie do $1{,}5$\,s (\textit{heartbeat}): nie ma sensu liczyć w kółko tego samego owocnika. Listing \ref{lst:throttling} pokazuje obie bramki.
+Analiza każdej z około $30$ klatek na sekundę dostarczanych przez kamerę nie jest potrzebna i niepotrzebnie nagrzewałaby układ SoC. W \texttt{MushroomViewModel} inferencja uruchamiana jest więc co najwyżej co $250$\,ms ($4$\,FPS), a \texttt{Mutex.tryLock()} przepuszcza co najwyżej jedną inferencję naraz. Gdy wszystkie potwierdzone tory są zamrożone (\texttt{isSceneLocked()}), interwał rośnie do $1{,}5$\,s (\textit{heartbeat}), ponieważ obraz tych samych owocników nie wymaga ciągłej analizy. Listing \ref{lst:throttling} pokazuje obie bramki.
 
-\begin{lstlisting}[language=Kotlin,caption={Ograniczanie częstotliwości inferencji i tryb ekonomiczny (\texttt{MushroomViewModel.kt})},label={lst:throttling}]
+\begin{lstlisting}[language=Kotlin,caption={Ograniczanie częstotliwości inferencji i tryb ekonomiczny (\texttt{MushroomViewModel.kt}; pominięto pomiar czasu dla profilera i estymację FPS kamery)},label={lst:throttling}]
 private val inferenceMutex = Mutex()
 private var lastInferenceAt = 0L
 
-fun onFrame(upright: Bitmap) {
- val activeDetector = detector
- if (activeDetector == null) {
- upright.recycle()
- return
- }
+// Written by the inference coroutine; the tracker itself is not thread-safe.
+@Volatile
+private var lastSceneLocked = false
 
- val now = SystemClock.elapsedRealtime()
- val interval = if (tracker.isSceneLocked()) LOCK_HEARTBEAT_MS else INFERENCE_INTERVAL_MS
- if (now - lastInferenceAt < interval) {
- upright.recycle()
- return
- }
- // Skip if a previous inference is still running (keep only the latest frame).
- if (!inferenceMutex.tryLock()) {
- upright.recycle()
- return
- }
- lastInferenceAt = now
+fun onFrame(
+    upright: Bitmap,
+    arrivedNs: Long = SystemClock.elapsedRealtimeNanos(),
+    sensorTimestampNs: Long = 0L
+) {
+    val activeDetector = detector
+    if (activeDetector == null) {
+        upright.recycle()
+        return
+    }
 
- viewModelScope.launch(Dispatchers.Default) {
- try {
- val lb = FrameCropper.letterbox(upright, aspect, activeDetector.inputResolution)
- val detections = activeDetector.detect(lb.bitmap)
-.map { it.copy(boundingBox = FrameCropper.toVisibleNormalized(it.boundingBox, lb)) }
- // Asymmetric floor: toxic @ 0.18, other classes @ 0.20.
-.filter { it.confidence >= MushroomRegistry.displayThresholdFor(it.species.classId) }
- lb.bitmap.recycle()
+    val now = SystemClock.elapsedRealtime()
+    val sceneLocked = lastSceneLocked
+    val interval = if (sceneLocked && !InferenceProfiler.bypassSceneLock) {
+        LOCK_HEARTBEAT_MS
+    } else {
+        INFERENCE_INTERVAL_MS
+    }
+    if (now - lastInferenceAt < interval) {
+        upright.recycle()
+        return
+    }
+    // Skip if a previous inference is still running (keep only the latest frame).
+    if (!inferenceMutex.tryLock()) {
+        upright.recycle()
+        return
+    }
+    lastInferenceAt = now
 
- val tracked = tracker.update(detections, now)
- currentDetections = tracked
- _uiState.value = MushroomUiState.Scanning(tracked, tracker.isSceneLocked())
- } catch (t: Throwable) {
- Log.e(TAG, "Inference failed for frame", t)
- upright.recycle()
- } finally {
- inferenceMutex.unlock()
- }
- }
+    val aspect = viewAspectRatio
+    viewModelScope.launch(Dispatchers.Default) {
+        try {
+            val lb = FrameCropper.letterbox(upright, aspect, activeDetector.inputResolution)
+            val rawDetections = activeDetector.detect(lb.bitmap)
+            val detections = rawDetections
+                .map { it.copy(boundingBox = FrameCropper.toVisibleNormalized(it.boundingBox, lb)) }
+                // Asymmetric floor: toxic @ 0.18, other classes @ 0.20.
+                .filter { it.confidence >= MushroomRegistry.displayThresholdFor(it.species.classId) }
+            lb.bitmap.recycle()
+
+            val tracked = tracker.update(detections, now)
+            val locked = tracker.isSceneLocked()
+            lastSceneLocked = locked
+            currentDetections = tracked
+
+            synchronized(frameLock) {
+                latestFrame?.let { if (it !== upright) it.recycle() }
+                latestFrame = upright
+            }
+
+            _uiState.value = MushroomUiState.Scanning(tracked, locked)
+        } catch (t: Throwable) {
+            Log.e(TAG, "Inference failed for frame", t)
+            upright.recycle()
+        } finally {
+            inferenceMutex.unlock()
+        }
+    }
 }
 
 companion object {
- /** Inference cadence: 4 FPS (one frame every 250 ms). */
- private const val INFERENCE_INTERVAL_MS = 250L
+    /** Inference cadence: 4 FPS (one frame every 250 ms). */
+    private const val INFERENCE_INTERVAL_MS = 250L
 
- /** Slow heartbeat used while the scene is locked, to conserve battery. */
- private const val LOCK_HEARTBEAT_MS = 1_500L
+    /** Slow heartbeat used while the scene is locked, to conserve battery. */
+    private const val LOCK_HEARTBEAT_MS = 1_500L
 }
 \end{lstlisting}
 
-Linia 12 realizuje adaptacyjny dobór interwału. Predykat \texttt{tracker.isSceneLocked()} zwraca wartość prawdziwą, gdy wszystkie potwierdzone tory śledzenia zostały zamrożone, co odpowiada scenie statycznej – użytkownik utrzymuje kamerę nieruchomo nad rozłożonymi owocnikami. W takiej sytuacji interwał wydłuża się z $250$\,ms do $1500$\,ms, redukując liczbę wywołań interpretera sześciokrotnie bez zauważalnej zmiany zawartości nakładki. Wykorzystano zegar \texttt{SystemClock.elapsedRealtime()} (linia 11), monotoniczny i odporny na zmiany czasu systemowego, w przeciwieństwie do \texttt{System.currentTimeMillis()}.
+Linie 20--25 realizują adaptacyjny dobór interwału. Flaga \texttt{lastSceneLocked} przechowuje wynik \texttt{tracker.isSceneLocked()} z ostatniej inferencji (linie 49--50); odczyt flagi zamiast bezpośredniego wywołania trackera z wątku analizatora eliminuje współbieżny dostęp do struktury, która nie jest bezpieczna wątkowo. Scena jest zablokowana, gdy wszystkie potwierdzone tory są dopasowywane nieprzerwanie od co najmniej $5$\,s (\texttt{FREEZE\_MS}), co w praktyce odpowiada kamerze utrzymywanej nad tymi samymi owocnikami. Interwał wydłuża się wtedy z $250$\,ms do $1500$\,ms, sześciokrotnie zmniejszając liczbę wywołań interpretera. W kompilacji debug, używanej do profilowania (rozdz.~\ref{chap:badania}), flaga \texttt{InferenceProfiler.bypassSceneLock} wyłącza ten tryb, aby pomiar odbywał się przy stałej kadencji $4$\,FPS. Wykorzystano zegar \texttt{SystemClock.elapsedRealtime()} (linia 19), monotoniczny i odporny na zmiany czasu systemowego, w przeciwieństwie do \texttt{System.currentTimeMillis()}.
 
-Linie 13--16 stanowią pierwszą, tanią bramkę: klatka nadchodząca przed upływem interwału jest natychmiast zwalniana wywołaniem \texttt{recycle()}. Jawne zwalnianie map bitowych jest tu konieczne, ponieważ CameraX dostarcza klatki z częstotliwością rzędu $30$\,FPS, a przy $4$\,FPS inferencji około $87\%$ z nich zostaje odrzuconych. Pozostawienie ich odśmiecaczowi prowadziłoby do gwałtownego przyrostu zajętości sterty i widocznych zacięć interfejsu.
+Linie 26--29 stanowią pierwszą bramkę: klatka nadchodząca przed upływem interwału jest natychmiast zwalniana wywołaniem \texttt{recycle()}. Jawne zwalnianie map bitowych jest tu konieczne, ponieważ CameraX dostarcza klatki z częstotliwością rzędu $30$\,FPS, a przy $4$\,FPS inferencji około $87\%$ z nich zostaje odrzuconych. Konwersja klatki do mapy bitowej następuje jeszcze w analizatorze, przed tą bramką, więc bramka oszczędza letterboxing i inferencję, ale nie samą konwersję.
 
-Linie 18--21 realizują drugą bramkę, opartą na wzajemnym wykluczaniu. Metoda \texttt{tryLock()} obiektu \texttt{Mutex} z biblioteki \texttt{kotlinx.coroutines} jest nieblokująca: w przypadku zajętej blokady zwraca \texttt{false} zamiast wstrzymywać wątek wywołujący. Ma to zasadnicze znaczenie, ponieważ metoda \texttt{onFrame} wykonywana jest na wątku analizatora CameraX – użycie blokującego \texttt{lock()} spowodowałoby narastanie kolejki zaległych klatek i wzrost opóźnienia prezentacji. Przyjęta konstrukcja gwarantuje, że w danej chwili wykonywana jest co najwyżej jedna inferencja, a klatki nadmiarowe są porzucane, co odpowiada semantyce strategii \texttt{STRATEGY\_KEEP\_ONLY\_LATEST} zastosowanej w warstwie akwizycji.
+Linie 31--34 realizują drugą bramkę, opartą na wzajemnym wykluczaniu. Metoda \texttt{tryLock()} obiektu \texttt{Mutex} z biblioteki \texttt{kotlinx.coroutines} nie zawiesza wywołującego: przy zajętej blokadzie natychmiast zwraca \texttt{false}. Metoda \texttt{onFrame} wykonywana jest na wątku analizatora CameraX, więc oczekiwanie na zwolnienie blokady opóźniałoby kolejne klatki. W danej chwili wykonywana jest co najwyżej jedna inferencja, a klatka, która nadejdzie w jej trakcie, jest porzucana.
 
-Zwolnienie blokady umieszczono w bloku \texttt{finally} (linie 38--40), dzięki czemu wyjątek zgłoszony podczas inferencji nie prowadzi do trwałego zakleszczenia potoku. Filtr w linii 30 stosuje asymetryczny próg dekodera, omówiony szczegółowo w kolejnym podrozdziale.
+Zwolnienie blokady umieszczono w bloku \texttt{finally} (linie 62--64), dzięki czemu wyjątek zgłoszony podczas inferencji nie blokuje potoku na stałe. Po udanej inferencji klatka nie jest zwalniana, lecz zastępuje poprzednią jako \texttt{latestFrame} (linie 53--56), z której korzysta ręczny zapis znaleziska. Filtr w linii 45 powtarza progi dekodera ($0{,}18$/$0{,}20$); pozostawiono go jako zabezpieczenie na wypadek zmiany progów w samym dekoderze.
 
-Wyniki trafiają na płótno Jetpack Compose (\texttt{Canvas}) w komponencie \texttt{DetectionOverlay}. Znormalizowane współrzędne ramek (przestrzeń wejściowa modelu $640{\times}640$) mapują się na piksele podglądu w geometrii \texttt{FILL\_CENTER}: nakładka pokrywa się z obrazem kamery niezależnie od proporcji ekranu. Kolory obrysów ramek rejestr \texttt{MushroomRegistry} wiąże z klasą toksyczności \texttt{Toxicity} – zielony, szary, pomarańczowy i ciemnoczerwony rozróżniają gatunki bez zaglądania do etykiety tekstowej. Gesty dotykowe obsługuje \texttt{modifier.pointerInput} z \texttt{detectTapGestures}: po dotknięciu hit-test przestrzenny wskazuje aktywny prostokąt \texttt{Rect} i uruchamia ręczny zapis wybranej detekcji do historii znalezisk.
+Wyniki trafiają na płótno Jetpack Compose (\texttt{Canvas}) w komponencie \texttt{DetectionOverlay}. Współrzędne ramek, znormalizowane po \texttt{FrameCropper.toVisibleNormalized} względem obszaru widocznego na ekranie (linia 43), mapują się na piksele podglądu w geometrii \texttt{FILL\_CENTER}, dzięki czemu nakładka pokrywa się z obrazem kamery niezależnie od proporcji ekranu. Kolor obrysu i etykiety wyznacza \texttt{MushroomRegistry.displayStatus}: pomarańczowy dla gatunków trujących, czerwony dla śmiertelnie trujących, zielony dla jadalnych (tylko po konsensusie) oraz neutralny szary dla wszystkich pozostałych przypadków, w tym gatunków niejadalnych. Gesty dotykowe obsługuje \texttt{modifier.pointerInput} z \texttt{detectTapGestures}: po dotknięciu hit-test przestrzenny wskazuje aktywny prostokąt \texttt{Rect} i uruchamia ręczny zapis wybranej detekcji do historii znalezisk.
 
 \subsection{Dekodowanie tensorów i dwustopniowy filtr bezpieczeństwa}
-Interpreter TFLite zwraca tensor $[1,\;151,\;8400]$ w transponowanym układzie Ultralytics \cite{ultralytics2024yolo11}: $8400$ punktów predykcyjnych na mapach cech, $151$ kanałów. Cztery współrzędne ramki i $147$ prawdopodobieństw klas. Głowica YOLO11 jest \textit{anchor-free}: te $8400$ lokacji to komórki siatek $80{\times}80$, $40{\times}40$ i $20{\times}20$, a nie klasyczne \textit{anchor boxes}. Dekoder przegląda wszystkie punkty, wyznacza klasę o najwyższym wyniku i odrzuca kandydatów poniżej progu – globalnego i klasowo-zależnego – zanim powstanie jakakolwiek alokacja na stercie.
+Interpreter TFLite zwraca tensor $[1,\;151,\;8400]$ w transponowanym układzie Ultralytics \cite{ultralytics2024yolo11}: $8400$ punktów predykcyjnych na mapach cech, $151$ kanałów. Cztery współrzędne ramki i $147$ wyników klas. Głowica YOLO11 jest \textit{anchor-free}: te $8400$ lokacji to komórki siatek $80{\times}80$, $40{\times}40$ i $20{\times}20$, a nie klasyczne \textit{anchor boxes}. Dekoder przegląda wszystkie punkty, wyznacza klasę o najwyższym wyniku i odrzuca kandydatów poniżej progu – globalnego i klasowo-zależnego – zanim utworzy dla nich jakikolwiek obiekt.
 
-Ograniczenie obciążenia GC wymusza fast-fail: do NMS trafia co najwyżej 50 najwyżej ocenionych kandydatów (\texttt{MAX\_NMS\_INPUT=50}). Zachłanny NMS usuwa nakładające się ramki powyżej progu IoU \cite{redmon2016yolo}. Stały górny pułap wejść eliminuje patologiczny koszt kwadratowy przy gęstych scenach i stabilizuje czas przetwarzania klatki na Snapdragonie. Dekoder i NMS implementuje listing \ref{lst:decoder}.
+Do NMS trafia co najwyżej $50$ najwyżej ocenionych kandydatów (\texttt{MAX\_NMS\_INPUT=50}). Zachłanny NMS usuwa nakładające się ramki powyżej progu IoU \cite{redmon2016yolo}. Górny pułap wejść ogranicza kwadratowy koszt NMS przy gęstych scenach. Interpreter korzysta z delegata GPU, jeżeli \texttt{CompatibilityList} uznaje urządzenie za zgodne; w przeciwnym razie działa na CPU w czterech wątkach. Model jest mapowany do pamięci bezpośrednio z aktywów aplikacji (TensorFlow Lite $2.14$). Dekoder i NMS implementuje listing \ref{lst:decoder}.
 
-\begin{lstlisting}[language=Kotlin,caption={Dekodowanie tensora \texttt{[1, 151, 8400]} z szybką eliminacją i tłumieniem niemaksymalnym (\texttt{MushroomDetector.kt})},label={lst:decoder}]
+\begin{lstlisting}[language=Kotlin,caption={Dekodowanie tensora \texttt{[1, 151, 8400]} z szybką eliminacją i tłumieniem niemaksymalnym (\texttt{MushroomDetector.kt}; pominięto zbieranie pięciu najlepszych klas dla Trybu Badawczego)},label={lst:decoder}]
 private fun decode(data: FloatArray): List<RawDetection> {
- val detections = ArrayList<RawDetection>()
- val globalMin = MushroomRegistry.minSafetyThreshold
+    val detections = ArrayList<RawDetection>()
+    val globalMin = MushroomRegistry.minSafetyThreshold
 
- for (anchor in 0 until numAnchors) {
- var bestClass = -1
- var bestScore = 0f
+    for (anchor in 0 until numAnchors) {
+        var bestClass = -1
+        var bestScore = 0f
 
- for (c in 0 until numClasses) {
- val score = data[(BOX_COORDS + c) * numAnchors + anchor]
- if (score > bestScore) {
- bestScore = score
- bestClass = c
- }
- }
+        for (c in 0 until numClasses) {
+            val score = data[(BOX_COORDS + c) * numAnchors + anchor]
+            if (score > bestScore) {
+                bestScore = score
+                bestClass = c
+            }
+        }
 
- // Cheap global gate first, then the per-class safety threshold.
- if (bestClass < 0 || bestScore < globalMin) continue
- if (bestScore < MushroomRegistry.thresholdFor(bestClass)) continue
+        // Cheap global gate first, then the per-class safety threshold.
+        if (bestClass < 0 || bestScore < globalMin) continue
+        if (bestScore < MushroomRegistry.thresholdFor(bestClass)) continue
 
- val cx = data[0 * numAnchors + anchor]
- val cy = data[1 * numAnchors + anchor]
- val w = data[2 * numAnchors + anchor]
- val h = data[3 * numAnchors + anchor]
- val half = 0.5f
+        val cx = data[0 * numAnchors + anchor]
+        val cy = data[1 * numAnchors + anchor]
+        val w = data[2 * numAnchors + anchor]
+        val h = data[3 * numAnchors + anchor]
+        val half = 0.5f
 
- detections.add(
- RawDetection(
- x1 = cx - w * half, y1 = cy - h * half,
- x2 = cx + w * half, y2 = cy + h * half,
- score = bestScore, classIndex = bestClass
-)
-)
- }
- return detections
+        detections.add(
+            RawDetection(
+                x1 = cx - w * half,
+                y1 = cy - h * half,
+                x2 = cx + w * half,
+                y2 = cy + h * half,
+                score = bestScore,
+                classIndex = bestClass
+            )
+        )
+    }
+    return detections
 }
 
 private fun nonMaxSuppression(input: List<RawDetection>): List<RawDetection> {
- if (input.isEmpty()) return emptyList()
+    if (input.isEmpty()) return emptyList()
 
- val sorted = input.sortedByDescending { it.score }
-.take(MAX_NMS_INPUT)
-.toMutableList()
- val kept = ArrayList<RawDetection>()
+    val sorted = input.sortedByDescending { it.score }
+        .take(MAX_NMS_INPUT)
+        .toMutableList()
+    val kept = ArrayList<RawDetection>()
 
- while (sorted.isNotEmpty()) {
- val best = sorted.removeAt(0)
- kept.add(best)
- if (kept.size >= MAX_DETECTIONS) break
+    while (sorted.isNotEmpty()) {
+        val best = sorted.removeAt(0)
+        kept.add(best)
+        if (kept.size >= MAX_DETECTIONS) break
 
- val iterator = sorted.iterator()
- while (iterator.hasNext()) {
- if (iou(best, iterator.next()) > IOU_THRESHOLD) iterator.remove()
- }
- }
- return kept
+        val iterator = sorted.iterator()
+        while (iterator.hasNext()) {
+            if (iou(best, iterator.next()) > IOU_THRESHOLD) iterator.remove()
+        }
+    }
+    return kept
 }
 
 private const val IOU_THRESHOLD = 0.45f
@@ -1486,19 +1535,19 @@ private const val MAX_DETECTIONS = 20
 
 Pętla zewnętrzna (linia 5) przebiega kolejno wszystkie $8400$ punktów predykcyjnych na mapach cech (w kodzie indeks \texttt{anchor}), natomiast pętla wewnętrzna (linia 9) wyszukuje wśród $147$ kanałów klas wynik maksymalny. Adresowanie w linii 10 odzwierciedla transponowany układ tensora: element o indeksie kanału $c$ i punktu $a$ znajduje się pod pozycją $(4+c)\cdot 8400 + a$, ponieważ dane zapisane są kanałami, a nie punktami przestrzennymi. Bezpośrednia praca na spłaszczonej tablicy \texttt{FloatArray} zamiast na strukturach wielowymiarowych eliminuje pośrednictwo obiektów opakowujących w ścieżce wykonywanej $8400 \cdot 147 \approx 1{,}23$ mln razy na klatkę.
 
-Kluczowa dla wydajności jest kolejność bramek w liniach 18--19. Najpierw wykonywane jest porównanie z progiem globalnym \texttt{globalMin} (równym $0{,}18$), będące pojedynczym porównaniem zmiennoprzecinkowym; dopiero kandydat, który je przejdzie, podlega kosztowniejszemu odpytaniu rejestru o próg właściwy dla swojej klasy. Odwrócenie tej kolejności oznaczałoby wykonanie odczytu z mapy dla każdego z $8400$ punktów, podczas gdy w praktyce warunek z linii 18 odrzuca zdecydowaną większość z nich. Istotne jest również, że alokacja obiektu \texttt{RawDetection} (linia 27) następuje dopiero po przejściu obu bramek. Dzięki temu klatka pozbawiona owocników nie generuje żadnej alokacji na stercie.
+Kluczowa dla wydajności jest kolejność bramek w liniach 18--19. Najpierw wykonywane jest porównanie z progiem globalnym \texttt{globalMin} (równym $0{,}18$), będące pojedynczym porównaniem zmiennoprzecinkowym; dopiero kandydat, który je przejdzie, podlega kosztowniejszemu odpytaniu rejestru o próg właściwy dla swojej klasy. Odwrócenie tej kolejności oznaczałoby odczyt z mapy dla każdego z $8400$ punktów, podczas gdy w praktyce warunek z linii 18 odrzuca zdecydowaną większość z nich. Obiekt \texttt{RawDetection} (linia 28) powstaje dopiero po przejściu obu bramek, więc klatka bez owocników nie tworzy obiektów kandydatów. Stałym kosztem każdej klatki pozostają natomiast kopia tensora wyjściowego do tablicy \texttt{FloatArray} ($\approx4{,}84$\,MiB) oraz mapy bitowe wejścia.
 
-Metoda \texttt{nonMaxSuppression} (linie 37--56) realizuje szybką eliminację oraz właściwe tłumienie. Wywołanie \texttt{take(MAX\_NMS\_INPUT)} w linii 41 ogranicza wejście algorytmu do $50$ najwyżej ocenionych kandydatów. Ponieważ złożoność zachłannego NMS jest kwadratowa względem liczby wejść, ograniczenie to zamienia potencjalnie nieograniczony koszt na stały górny pułap rzędu $50^2/2 = 1250$ porównań, co gwarantuje przewidywalny czas przetwarzania niezależnie od zawartości sceny – także w przypadku patologicznym, gdy tekstura tła generuje setki słabych detekcji. Pętla główna (linie 45--55) w każdej iteracji przenosi kandydata o najwyższym wyniku do zbioru zaakceptowanego, a następnie usuwa z listy roboczej wszystkie ramki wykazujące z nim $\mathrm{IoU} > 0{,}45$. Zastosowanie iteratora z metodą \texttt{remove()} (linie 51--53) pozwala na usuwanie elementów w trakcie przechodzenia kolekcji bez tworzenia list pośrednich. Ogranicznik \texttt{MAX\_DETECTIONS} (linia 48) przerywa pętlę po $20$ zachowanych detekcjach, co odpowiada praktycznemu maksimum liczby owocników czytelnie prezentowanych jednocześnie na ekranie urządzenia mobilnego.
+Metoda \texttt{nonMaxSuppression} (linie 41--60) realizuje szybką eliminację oraz właściwe tłumienie. Wywołanie \texttt{take(MAX\_NMS\_INPUT)} w linii 45 ogranicza wejście algorytmu do $50$ najwyżej ocenionych kandydatów. Ponieważ złożoność zachłannego NMS jest kwadratowa względem liczby wejść, ograniczenie to zamienia potencjalnie duży koszt na górny pułap rzędu $50^2/2 = 1250$ porównań, także wtedy, gdy tekstura tła generuje setki słabych detekcji; samo sortowanie kandydatów nadal obejmuje wszystkich kandydatów, którzy przeszli bramki. Pętla główna (linie 49--58) w każdej iteracji przenosi kandydata o najwyższym wyniku do zbioru zaakceptowanego, a następnie usuwa z listy roboczej wszystkie ramki wykazujące z nim $\mathrm{IoU} > 0{,}45$. Iterator z metodą \texttt{remove()} (linie 54--57) pozwala usuwać elementy w trakcie przechodzenia kolekcji bez tworzenia list pośrednich. Ogranicznik \texttt{MAX\_DETECTIONS} (linia 52) przerywa pętlę po $20$ zachowanych detekcjach, co odpowiada praktycznemu maksimum liczby owocników czytelnie prezentowanych jednocześnie na ekranie telefonu.
 
-Zastosowane tłumienie niemaksymalne jest klasowo-niezależne (ang. \textit{class-agnostic}): porównanie $\mathrm{IoU}$ w linii 52 zestawia wyłącznie geometrię ramek, bez uwzględniania indeksu klasy gatunkowej. Oznacza to, że ramka gatunku $B$ o~niższym wyniku zostanie usunięta, jeżeli jej $\mathrm{IoU}$ z~ramką gatunku $A$ przekroczy próg $0{,}45$. W~typowym scenariuszu terenowym, gdzie owocniki różnych gatunków leżą obok siebie na stole lub w~koszu i~ich projekcje na obraz nie nachodzą na siebie znacząco, sytuacja ta nie występuje. Może się jednak zdarzyć w~przypadku gęstych kęp, w~których owocniki różnych gatunków częściowo przysłaniają się nawzajem. Wariant klasowo-zależny (ang. \textit{per-class NMS}), w~którym tłumienie dotyczy wyłącznie ramek tej samej klasy, wyeliminowałby to ograniczenie kosztem wyższej złożoności obliczeniowej.
+Zastosowane tłumienie niemaksymalne jest klasowo-niezależne (ang. \textit{class-agnostic}): porównanie $\mathrm{IoU}$ w linii 56 zestawia wyłącznie geometrię ramek, bez uwzględniania indeksu klasy gatunkowej. Oznacza to, że ramka gatunku $B$ o~niższym wyniku zostanie usunięta, jeżeli jej $\mathrm{IoU}$ z~ramką gatunku $A$ przekroczy próg $0{,}45$. W~typowym scenariuszu terenowym, gdzie owocniki różnych gatunków leżą obok siebie na stole lub w~koszu i~ich projekcje na obraz nie nachodzą na siebie znacząco, sytuacja ta nie występuje. Może się jednak zdarzyć w~przypadku gęstych kęp, w~których owocniki różnych gatunków częściowo przysłaniają się nawzajem. Wariant klasowo-zależny (ang. \textit{per-class NMS}), w~którym tłumienie dotyczy wyłącznie ramek tej samej klasy, wyeliminowałby to ograniczenie, ale pozostawiałby na tym samym owocniku nakładające się ramki konkurujących gatunków. Wariant klasowo-niezależny celowo pokazuje dla jednego owocnika tylko najwyżej ocenioną hipotezę.
 
 Detekcje przeżywające etap NMS podlegają następnie asymetrycznej polityce bezpieczeństwa mykologicznego, scentralizowanej w metodzie \texttt{MushroomRegistry.displayStatus} oraz w buforze konsensusu klatek klasy \texttt{DetectionTracker}. Filtr ten stanowi jedyne źródło prawdy dla etykiet i kolorów prezentowanych zarówno na nakładce na żywo, jak i w historii zapisów. Zanim kandydat trafi do warstwy decyzyjnej, podlega on jeszcze absolutnemu progowi odrzucenia na poziomie dekodera: wynik poniżej $0{,}18$ dla klas \texttt{POISONOUS} i \texttt{DEADLY} lub poniżej $0{,}20$ dla pozostałych klas jest odrzucany jeszcze przed alokacją struktur wynikowych, co eliminuje fałszywe alarmy tła, takie jak tekstury biurek czy klawiatury. Powyżej tego progu obowiązują trzy reguły prezentacji:
 \begin{enumerate}
- \item Wczesne ostrzeżenie toksyczne ($\ge 0{,}18$ dla klas \texttt{POISONOUS} i \texttt{DEADLY}): natychmiastowe wyświetlenie czerwonej lub ciemnoczerwonej etykiety „Trujący” / „Śmiertelnie trujący”, bez wymogu potwierdzenia w buforze konsensusu klatek.
+ \item Wczesne ostrzeżenie toksyczne ($\ge 0{,}18$ dla klas \texttt{POISONOUS} i \texttt{DEADLY}): wyświetlenie pomarańczowej etykiety „Trujący” albo czerwonej „Śmiertelnie trujący” bez wymogu konsensusu $4$ z $5$. Tor musi jednak zostać potwierdzony przez dwie kolejne zgodne klatki, zanim ramka w ogóle trafi na nakładkę.
  \item Status jadalności ($\ge 0{,}60$ dla gatunku klasy \texttt{EDIBLE}): wyświetlenie zielonej etykiety „Jadalny” wyłącznie wtedy, gdy dodatkowo spełniony jest warunek \texttt{voteConfirmed}, to znaczy dany gatunek stanowił najwyżej ocenioną predykcję w co najmniej $4$ z ostatnich $5$ klatek śledzonych w danym torze przez \texttt{DetectionTracker}.
- \item Status neutralny (pasmo pośrednie): gdy detekcja nie spełnia żadnego z powyższych warunków, to znaczy dla pewności poniżej progu $0{,}60$ (dla klas jadalnych z przedziału $0{,}20$--$0{,}60$, a dla niejadalnych powyżej $0{,}20$), a także dla detekcji gatunku jadalnego o pewności $\ge 0{,}60$, która nie została jeszcze potwierdzona przez bufor konsensusu klatek, wyświetlana jest szara etykieta „Obiekt nierozpoznany / Zbliż kamerę”. W tym paśmie nigdy nie prezentowano zielonego statusu jadalności, aby zredukować ryzyko błędnej asercji jadalności.
+ \item Status neutralny (pasmo pośrednie): gdy detekcja nie spełnia żadnego z powyższych warunków, to znaczy dla pewności poniżej progu $0{,}60$ (dla klas jadalnych z przedziału $0{,}20$--$0{,}60$, a dla niejadalnych powyżej $0{,}20$), a także dla detekcji gatunku jadalnego o pewności $\ge 0{,}60$, która nie została jeszcze potwierdzona przez bufor konsensusu klatek, wyświetlana jest szara etykieta „Obiekt nierozpoznany / Zbliż kamerę”. W tym paśmie zielony status jadalności nie jest prezentowany, aby ograniczyć ryzyko błędnej asercji jadalności.
 \end{enumerate}
-Rozdzielenie warunku pewności od warunku czasowego bufora konsensusu wynika z założenia projektowego, że jednoklatkowy skok pewności powyżej progu $0{,}60$ bywa chwilowym artefaktem szumu inferencji. Bufor ma ograniczać liczbę fałszywie potwierdzonych statusów jadalności na strumieniu kamery; nie przeprowadzono osobnego eksperymentu A/B z buforem i bez niego na sekwencjach wideo. Dwustopniowość rozwiązania polega zatem na rozdzieleniu filtracji geometryczno-statystycznej (dekodowanie tensora, szybka eliminacja, NMS) od filtracji semantycznej (asymetryczna polityka progów oraz, niezależnie, konsensus czasowy). Pierwszy etap ogranicza złożoność obliczeniową i liczbę fałszywych detekcji przestrzennych. Drugi priorytetyzuje czułość dla klas toksycznych: ostrzeżenia prezentowane są wcześniej i bez opóźnienia buforowego, natomiast asercja jadalności wymaga jednocześnie wyższej pewności. Bufor $4$ z $5$ klatek jest mechanizmem stabilizacji czasowej nakładki, a nie składnikiem hipotezy $H_2$. Rozkład progów decyzyjnych na osi pewności, wraz z zaznaczeniem pasma neutralnego oraz asymetrii pomiędzy ścieżką ostrzeżenia a ścieżką asercji jadalności, przedstawiono na rys.~\ref{fig:progi_asymetryczne}.
+Rozdzielenie warunku pewności od warunku czasowego bufora konsensusu wynika z założenia projektowego, że jednoklatkowy skok pewności powyżej progu $0{,}60$ bywa chwilowym artefaktem szumu inferencji. Bufor ma ograniczać liczbę fałszywie potwierdzonych statusów jadalności na strumieniu kamery; nie przeprowadzono osobnego eksperymentu A/B z buforem i bez niego na sekwencjach wideo. Dwustopniowość rozwiązania polega zatem na rozdzieleniu filtracji geometryczno-statystycznej (dekodowanie tensora, szybka eliminacja, NMS) od filtracji semantycznej (asymetryczna polityka progów oraz, niezależnie, konsensus czasowy). Pierwszy etap ogranicza złożoność obliczeniową i liczbę fałszywych detekcji przestrzennych. Drugi priorytetyzuje czułość dla klas toksycznych: ostrzeżenie nie wymaga konsensusu $4$ z $5$, a asercja jadalności wymaga jednocześnie wyższej pewności. Oba statusy pojawiają się dopiero po dwóch zgodnych klatkach. Bufor $4$ z $5$ klatek jest mechanizmem stabilizacji czasowej nakładki, a nie składnikiem hipotezy $H_2$. Rozkład progów decyzyjnych na osi pewności, wraz z zaznaczeniem pasma neutralnego oraz asymetrii pomiędzy ścieżką ostrzeżenia a ścieżką asercji jadalności, przedstawiono na rys.~\ref{fig:progi_asymetryczne}.
 
 \begin{figure}[htbp]
  \centering
@@ -1523,7 +1572,7 @@ Rozdzielenie warunku pewności od warunku czasowego bufora konsensusu wynika z z
  \fill[EETangerine!45] (2.16,0.35) rectangle (12,1.05);
  \draw (0,0.35) rectangle (12,1.05);
  \node[opis] at (1.08,0.7) {odrzucone};
- \node[opis] at (7.1,0.7) {\textbf{ostrzeżenie toksyczne} – natychmiast, bez konsensusu};
+ \node[opis] at (7.1,0.7) {\textbf{ostrzeżenie toksyczne} – bez konsensusu $4$/$5$};
  \node[opis, anchor=east] at (-0.2,0.7) {klasy\\trujące};
 
  % Sciezka jadalna (dol)
@@ -1556,39 +1605,39 @@ const val VOTE_WINDOW = 5
 
 // Decode / pre-tracker gate: toxic from 0.18, everything else from 0.20.
 fun thresholdFor(classId: Int): Float =
- if (speciesMap[classId]?.toxicity?.isDangerous == true) UNSAFE_THRESHOLD
- else NEUTRAL_MIN_CONFIDENCE
+    if (speciesMap[classId]?.toxicity?.isDangerous == true) UNSAFE_THRESHOLD
+    else NEUTRAL_MIN_CONFIDENCE
 
 // Badge policy:
-// - toxic/deadly @ >= 0.18 -> immediate warning colour
+// - toxic/deadly @ >= 0.18 -> warning colour, no vote needed
 // - edible @ >= 0.60 AND voteConfirmed -> green "Jadalny"
-// - otherwise -> neutral gray
+// - otherwise -> neutral gray ("Obiekt nierozpoznany / Zbliż kamerę")
 fun displayStatus(
- toxicity: Toxicity,
- confidence: Float,
- voteConfirmed: Boolean = true
+    toxicity: Toxicity,
+    confidence: Float,
+    voteConfirmed: Boolean
 ): DisplayStatus =
- when {
- toxicity.isDangerous && confidence >= UNSAFE_THRESHOLD ->
- DisplayStatus(toxicity.labelPl, toxicity.color)
+    when {
+        toxicity.isDangerous && confidence >= UNSAFE_THRESHOLD ->
+            DisplayStatus(toxicity.labelPl, toxicity.color)
 
- toxicity == Toxicity.EDIBLE &&
- confidence >= SAFE_THRESHOLD &&
- voteConfirmed ->
- DisplayStatus(toxicity.labelPl, toxicity.color)
+        toxicity == Toxicity.EDIBLE &&
+            confidence >= SAFE_THRESHOLD &&
+            voteConfirmed ->
+            DisplayStatus(toxicity.labelPl, toxicity.color)
 
- else ->
- DisplayStatus(NEUTRAL_LABEL, NEUTRAL_COLOR)
- }
+        else ->
+            DisplayStatus(NEUTRAL_LABEL, NEUTRAL_COLOR)
+    }
 \end{lstlisting}
 
 Linie 2--3 definiują dwa niesymetryczne progi decyzyjne hipotezy $H_2$. Ponad trzykrotna różnica pomiędzy progiem ostrzeżenia ($0{,}18$) a progiem asercji jadalności ($0{,}60$) odzwierciedla nierówny koszt obu typów błędu: fałszywe ostrzeżenie skutkuje pozostawieniem jadalnego owocnika w lesie, natomiast fałszywe potwierdzenie jadalności może prowadzić do spożycia gatunku toksycznego. Warunek \texttt{voteConfirmed} w dalszej części listingu należy do bufora konsensusu i nie jest składnikiem $H_2$.
 
-Funkcja \texttt{thresholdFor} (linie 14--16) stanowi bramkę stosowaną jeszcze na poziomie dekodera, przed przekazaniem detekcji do trackera. Zwraca ona $0{,}18$ dla gatunków oznaczonych predykatem \texttt{isDangerous}, obejmującym kategorie \texttt{POISONOUS} oraz \texttt{DEADLY}, natomiast $0{,}20$ dla pozostałych. Dolny próg $0{,}20$ dla klas nietoksycznych pełni funkcję filtra szumu tła. Eliminuje przypadkowe aktywacje na teksturach niebędących owocnikami, zanim wygenerują one obiekt na stercie.
+Funkcja \texttt{thresholdFor} (linie 13--15) stanowi bramkę stosowaną jeszcze na poziomie dekodera, przed przekazaniem detekcji do trackera. Zwraca ona $0{,}18$ dla gatunków oznaczonych predykatem \texttt{isDangerous}, obejmującym kategorie \texttt{POISONOUS} oraz \texttt{DEADLY}, natomiast $0{,}20$ dla pozostałych. Dolny próg $0{,}20$ dla klas nietoksycznych pełni funkcję filtra szumu tła i ogranicza przypadkowe aktywacje na teksturach niebędących owocnikami.
 
-Właściwa polityka prezentacji zawarta jest w wyrażeniu \texttt{when} (linie 27--38), którego kolejność gałęzi ma znaczenie semantyczne. Gałąź pierwsza (linie 28--29) obsługuje gatunki niebezpieczne i jest ewaluowana jako pierwsza, wobec czego ostrzeżenie ma bezwarunkowe pierwszeństwo przed jakimkolwiek innym statusem. Nie występuje w niej odwołanie do zmiennej \texttt{voteConfirmed} – ostrzeżenie prezentowane jest natychmiast, już przy pierwszej klatce przekraczającej próg, bez oczekiwania na potwierdzenie czasowe.
+Właściwa polityka prezentacji zawarta jest w wyrażeniu \texttt{when} (linie 26--37), którego kolejność gałęzi ma znaczenie semantyczne. Gałąź pierwsza (linie 27--28) obsługuje gatunki niebezpieczne i jest ewaluowana jako pierwsza, wobec czego ostrzeżenie ma pierwszeństwo przed jakimkolwiek innym statusem. Nie występuje w niej odwołanie do \texttt{voteConfirmed}: ostrzeżenie nie czeka na konsensus $4$ z $5$. Sam tor pojawia się jednak dopiero po dwóch kolejnych zgodnych klatkach (\texttt{CONFIRM\_STREAK}~$=2$, podrozdział o trackerze), czyli najwcześniej po około $250$\,ms przy kadencji $4$\,FPS.
 
-Gałąź druga (linie 31--34) formułuje warunek koniunkcyjny dla statusu jadalności: wymagana jest jednocześnie przynależność do kategorii \texttt{EDIBLE}, pewność nie mniejsza niż $0{,}60$ oraz pozytywny wynik bufora konsensusu. Niespełnienie któregokolwiek z trzech warunków przenosi detekcję do gałęzi domyślnej (linie 36--37), zwracającej neutralną, szarą etykietę. Konstrukcja ta realizuje projekt bezpieczny w razie awarii (ang. \textit{fail-safe}): każdy stan nieprzewidziany jawnie, w tym detekcja o pewności z pasma neutralnego oraz gatunek jadalny oczekujący na potwierdzenie konsensusu, skutkuje statusem neutralnym, nigdy zaś zielonym. Parametr \texttt{voteConfirmed} posiada domyślną wartość \texttt{true} dla wariantów wywołań, które chcą pominąć głosowanie czasowe, jednakże w głównym przepływie aplikacji, a także w ekranie historii, weryfikowana jest jego jawna wartość.
+Gałąź druga (linie 30--33) formułuje warunek koniunkcyjny dla statusu jadalności: wymagana jest jednocześnie przynależność do kategorii \texttt{EDIBLE}, pewność nie mniejsza niż $0{,}60$ oraz pozytywny wynik bufora konsensusu. Niespełnienie któregokolwiek z trzech warunków przenosi detekcję do gałęzi domyślnej (linie 35--36), zwracającej neutralną, szarą etykietę. Parametr \texttt{voteConfirmed} nie ma wartości domyślnej: nakładka, ekran historii i Tryb Badawczy przekazują go jawnie, więc zielony status nie może powstać przez pominięcie argumentu.
 
 Zasadę działania okna przesuwnego, wraz z przykładowym przebiegiem prowadzącym do potwierdzenia i do jego cofnięcia, zilustrowano na rys.~\ref{fig:bufor_konsensusu}.
 
@@ -1632,60 +1681,62 @@ Klasę \texttt{DetectionTracker} realizującą ten bufor prezentuje listing \ref
 
 \begin{lstlisting}[language=Kotlin,caption={Bufor konsensusu klatek – potwierdzenie gatunku w $4$ z ostatnich $5$ klatek (\texttt{DetectionTracker.kt})},label={lst:voting}]
 private class Track(val id: Int, seed: DetectionResult, nowMs: Long) {
- var species: MushroomSpecies = seed.species
- var confidence: Float = seed.confidence
- var box: NormalizedBox = seed.boundingBox
- var frozen: Boolean = false
+    var species: MushroomSpecies = seed.species
+    var confidence: Float = seed.confidence
+    var box: NormalizedBox = seed.boundingBox
+    val firstSeenMs: Long = nowMs
+    var lastSeenMs: Long = nowMs
+    var frozen: Boolean = false
 
- // Number of consecutive frames this track kept the same species class.
- var confirmCount: Int = 1
+    // Number of consecutive frames this track kept the same species class.
+    var confirmCount: Int = 1
 
- // Rolling top-class ids for SAFE vote: need VOTE_REQUIRED hits in VOTE_WINDOW.
- private val recentClassIds = ArrayDeque<Int>(MushroomRegistry.VOTE_WINDOW)
+    // Rolling top-class ids for SAFE vote: need VOTE_REQUIRED hits in VOTE_WINDOW.
+    private val recentClassIds = ArrayDeque<Int>(MushroomRegistry.VOTE_WINDOW)
 
- init {
- recentClassIds.addLast(seed.species.classId)
- }
+    init {
+        recentClassIds.addLast(seed.species.classId)
+    }
 
- fun absorb(detection: DetectionResult, nowMs: Long) {
- lastSeenMs = nowMs
- confidence = detection.confidence
+    fun absorb(detection: DetectionResult, nowMs: Long) {
+        lastSeenMs = nowMs
+        confidence = detection.confidence
 
- confirmCount = if (detection.species.classId == species.classId) {
- confirmCount + 1
- } else {
- 1
- }
- species = detection.species
+        confirmCount = if (detection.species.classId == species.classId) {
+            confirmCount + 1
+        } else {
+            1
+        }
+        species = detection.species
 
- recentClassIds.addLast(detection.species.classId)
- if (recentClassIds.size > MushroomRegistry.VOTE_WINDOW) {
- recentClassIds.removeFirst()
- }
+        recentClassIds.addLast(detection.species.classId)
+        if (recentClassIds.size > MushroomRegistry.VOTE_WINDOW) {
+            recentClassIds.removeFirst()
+        }
 
- if (nowMs - firstSeenMs >= FREEZE_MS) {
- frozen = true
- return
- }
- box = smooth(box, detection.boundingBox)
- }
+        if (nowMs - firstSeenMs >= FREEZE_MS) {
+            frozen = true
+            return
+        }
+        box = smooth(box, detection.boundingBox)
+    }
 
- // True when current species won >= VOTE_REQUIRED of the recent window.
- fun voteConfirmed(): Boolean =
- recentClassIds.count { it == species.classId } >= MushroomRegistry.VOTE_REQUIRED
+    // True when current species won >= VOTE_REQUIRED of the recent window.
+    fun voteConfirmed(): Boolean =
+        recentClassIds.count { it == species.classId } >= MushroomRegistry.VOTE_REQUIRED
 
- fun toTracked(): TrackedDetection =
- TrackedDetection(id, species, confidence, box, frozen, voteConfirmed())
+    fun toTracked(): TrackedDetection =
+        TrackedDetection(id, species, confidence, box, frozen, voteConfirmed())
 }
 \end{lstlisting}
 
-Strukturą nośną bufora jest kolejka dwustronna \texttt{ArrayDeque} (linia 11), zainicjalizowana pojemnością równą rozmiarowi okna. Wybór tej struktury wynika z wzorca dostępu: w każdej klatce wykonywane jest jedno dopisanie na końcu oraz co najwyżej jedno usunięcie z początku, a obie operacje realizowane są w czasie stałym. Zastosowanie zwykłej listy \texttt{ArrayList} wymuszałoby przesuwanie wszystkich elementów przy usuwaniu z czoła.
+Strukturą nośną bufora jest kolejka dwustronna \texttt{ArrayDeque} (linia 13), zainicjalizowana pojemnością równą rozmiarowi okna. W każdej klatce wykonywane jest jedno dopisanie na końcu oraz co najwyżej jedno usunięcie z początku, a obie operacje realizowane są w czasie stałym.
 
-Metoda \texttt{absorb} (linie 17--38) wywoływana jest po dopasowaniu toru do detekcji z bieżącej klatki metodą IoU. Linie 28--31 realizują właściwy mechanizm okna przesuwnego: nowa etykieta klasowa dopisywana jest na końcu kolejki, a po przekroczeniu rozmiaru okna najstarszy element jest usuwany. Kolejka utrzymuje zatem stale co najwyżej pięć ostatnich rozstrzygnięć klasowych danego toru.
+Metoda \texttt{absorb} (linie 19--40) wywoływana jest po dopasowaniu toru do detekcji z bieżącej klatki przy $\mathrm{IoU}>0{,}35$. Linie 30--33 realizują okno przesuwne: nowa etykieta klasowa dopisywana jest na końcu kolejki, a po przekroczeniu rozmiaru okna najstarszy element jest usuwany. Kolejka utrzymuje zatem co najwyżej pięć ostatnich rozstrzygnięć klasowych danego toru. Linie 35--38 zamrażają ramkę po $5$\,s nieprzerwanego śledzenia (\texttt{FREEZE\_MS}); listing pomija przypisanie diagnostycznych wyników top-$5$, używanych wyłącznie w Trybie Badawczym.
 
-Metoda \texttt{voteConfirmed} (linie 41--42) zlicza w oknie wystąpienia identyfikatora klasy aktualnie przypisanej do toru i porównuje wynik z progiem $4$. Warto zwrócić uwagę na różnicę względem licznika \texttt{confirmCount} (linie 21--25), zliczającego wyłącznie serie \emph{następujących po sobie} klatek o tej samej klasie i resetowanego przy każdej zmianie etykiety. Kryterium głosowania jest łagodniejsze (dopuszcza pojedynczą klatkę odstającą wewnątrz okna) co odpowiada rzeczywistemu charakterowi zakłóceń: chwilowe migotanie predykcji pomiędzy dwoma zbliżonymi gatunkami nie powinno całkowicie unieważniać stabilnego rozpoznania, natomiast systematyczna niepewność, przejawiająca się dwiema lub więcej klatkami odstającymi w oknie pięcioelementowym, blokuje wyświetlenie zielonego statusu.
+Metoda \texttt{voteConfirmed} (linie 43--44) zlicza w oknie wystąpienia identyfikatora klasy aktualnie przypisanej do toru i porównuje wynik z progiem $4$. Licznik \texttt{confirmCount} (linie 23--27) pełni inną rolę: zlicza wyłącznie kolejne klatki o tej samej klasie i jest zerowany przy zmianie etykiety. Tor trafia na nakładkę dopiero przy \texttt{confirmCount}~$\ge 2$, więc zmiana klasy na jedną klatkę chowa ramkę. Kryterium głosowania jest łagodniejsze i dopuszcza pojedynczą klatkę odstającą wewnątrz okna: chwilowe migotanie predykcji pomiędzy dwoma zbliżonymi gatunkami nie unieważnia stabilnego rozpoznania, natomiast dwie lub więcej klatek odstających w oknie pięcioelementowym blokują zielony status.
 
-Metoda \texttt{toTracked} (linie 44--45) przekazuje wynik głosowania do warstwy prezentacji jako pole \texttt{voteConfirmed} struktury \texttt{TrackedDetection}, gdzie jest ono odczytywane przez omówioną wcześniej funkcję \texttt{displayStatus}. Rozdzielenie odpowiedzialności jest tu ścisłe: tracker odpowiada wyłącznie za stabilność czasową predykcji, natomiast rejestr – za interpretację bezpieczeństwa. Pełny cykl życia pojedynczego toru, od utworzenia po wygaśnięcie, przedstawiono na rys.~\ref{fig:cykl_toru}.
+Metoda \texttt{toTracked} (linie 46--47) przekazuje wynik głosowania do warstwy prezentacji jako pole \texttt{voteConfirmed} struktury \texttt{TrackedDetection}, skąd odczytuje je \texttt{displayStatus}. Tracker odpowiada za stabilność czasową predykcji, a rejestr za interpretację bezpieczeństwa. Tor niewidziany przez $1{,}2$\,s (\texttt{STALE\_MS}) jest usuwany. W trybie heartbeat ($1{,}5$\,s) pojedyncze pominięcie na klatce kontrolnej może więc zakończyć tor; jest to ograniczenie obecnej implementacji. Cykl życia toru przedstawiono na rys.~\ref{fig:cykl_toru}; rysunek pokazuje konsensus $4$ z $5$, a nie dwuklatkowy warunek publikacji ani zamrożenie po $5$\,s.
 
 \begin{figure}[htbp]
  \centering
@@ -1715,7 +1766,7 @@ Metoda \texttt{toTracked} (linie 44--45) przekazuje wynik głosowania do warstwy
 \end{figure}
 
 \subsection{Lokalna baza danych Room i zapis historii znalezisk}
-Historia znalezisk nie może ginąć po zamknięciu aplikacji. Persystencję realizuje Room nad SQLite \cite{androidroom}. Przepływ danych jest prosty: aplikacja pobiera DAO z \texttt{MushroomDatabase}, DAO odczytuje lub zapisuje encje, warstwa interfejsu czyta i ustawia pola. Warstwa danych, DAO i interfejs nie mają dodatkowych pośredników. Schemat ilustruje rys.~\ref{fig:room_db_web}.
+Historia znalezisk przechowuje się między uruchomieniami aplikacji. Persystencję realizuje Room nad SQLite \cite{androidroom}. Ekran historii czyta strumień przez \texttt{HistoryViewModel}, a zapis idzie przez \texttt{FindsRepository} do DAO. Baza ma schemat w wersji $2$; przy zmianie schematu ustawiono \texttt{fallbackToDestructiveMigration()}, więc aktualizacja schematu kasuje dotychczasowe znaleziska. W prototypie jest to świadome uproszczenie. Schemat biblioteki ilustruje rys.~\ref{fig:room_db_web}.
 
 \begin{figure}[htbp]
  \centering
@@ -1724,7 +1775,7 @@ Historia znalezisk nie może ginąć po zamknięciu aplikacji. Persystencję rea
  \label{fig:room_db_web}
 \end{figure}
 
-Encja \texttt{MushroomFind} mapuje tabelę \texttt{mushroom\_finds}: klucz \texttt{id}, nazwa łacińska \texttt{speciesName}, etykieta toksyczności \texttt{toxicityLabel}, \texttt{confidence}, \texttt{timestamp} oraz \texttt{imagePath} do JPEG w \texttt{filesDir}. DAO to \texttt{MushroomFindDao}; repozytorium \texttt{FindsRepository} woła go z \texttt{Dispatchers.IO}, żeby dysk nie blokował Compose. Lista historii to \texttt{Flow}. Ekran odświeża się sam po każdym zapisie.
+Encja \texttt{MushroomFind} ma wyłącznie pola \texttt{val} i mapuje tabelę \texttt{mushroom\_finds}: klucz \texttt{id}, nazwa łacińska \texttt{speciesName}, etykieta toksyczności \texttt{toxicityLabel}, \texttt{confidence}, flaga \texttt{voteConfirmed} (domyślnie \texttt{false} w kodzie; kolumna ma \texttt{defaultValue="1"} dla wierszy sprzed migracji), \texttt{timestamp} oraz \texttt{imagePath} do JPEG w \texttt{filesDir}. DAO to \texttt{MushroomFindDao}; \texttt{FindsRepository} woła je z \texttt{Dispatchers.IO}, żeby dysk nie blokował Compose. Lista historii to \texttt{Flow}, więc ekran odświeża się sam po każdym zapisie.
 
 Interfejs DAO i warstwę repozytorium pokazano na listingu \ref{lst:room}.
 
@@ -1732,66 +1783,66 @@ Interfejs DAO i warstwę repozytorium pokazano na listingu \ref{lst:room}.
 @Dao
 interface MushroomFindDao {
 
- /** Insert a new find and return its generated row id. */
- @Insert
- suspend fun insert(find: MushroomFind): Long
+    /** Insert a new find and return its generated row id. */
+    @Insert
+    suspend fun insert(find: MushroomFind): Long
 
- /** Observe all finds, newest first. */
- @Query("SELECT * FROM mushroom_finds ORDER BY timestamp DESC")
- fun observeAll(): Flow<List<MushroomFind>>
+    /** Observe all finds, newest first. */
+    @Query("SELECT * FROM mushroom_finds ORDER BY timestamp DESC")
+    fun observeAll(): Flow<List<MushroomFind>>
 
- /** Delete a find by id (does not remove the backing image file). */
- @Query("DELETE FROM mushroom_finds WHERE id =:id")
- suspend fun deleteById(id: Long)
+    /** Delete a find by id (does not remove the backing image file). */
+    @Query("DELETE FROM mushroom_finds WHERE id = :id")
+    suspend fun deleteById(id: Long)
 }
 
 class FindsRepository(context: Context) {
 
- private val appContext = context.applicationContext
- private val dao = MushroomDatabase.get(appContext).findDao()
+    private val appContext = context.applicationContext
+    private val dao = MushroomDatabase.get(appContext).findDao()
 
- /** All saved finds, newest first, as a reactive stream. */
- val finds: Flow<List<MushroomFind>> = dao.observeAll()
+    /** All saved finds, newest first, as a reactive stream. */
+    val finds: Flow<List<MushroomFind>> = dao.observeAll()
 
- suspend fun save(
- speciesName: String,
- toxicityLabel: String,
- confidence: Float,
- voteConfirmed: Boolean,
- crop: Bitmap
-): MushroomFind = withContext(Dispatchers.IO) {
- val dir = File(appContext.filesDir, FINDS_DIR).apply { mkdirs() }
- val file = File(dir, "find_${UUID.randomUUID()}.jpg")
+    suspend fun save(
+        speciesName: String,
+        toxicityLabel: String,
+        confidence: Float,
+        voteConfirmed: Boolean,
+        crop: Bitmap
+    ): MushroomFind = withContext(Dispatchers.IO) {
+        val dir = File(appContext.filesDir, FINDS_DIR).apply { mkdirs() }
+        val file = File(dir, "find_${UUID.randomUUID()}.jpg")
 
- FileOutputStream(file).use { out ->
- crop.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, out)
- }
+        FileOutputStream(file).use { out ->
+            crop.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, out)
+        }
 
- val find = MushroomFind(
- speciesName = speciesName,
- toxicityLabel = toxicityLabel,
- confidence = confidence,
- voteConfirmed = voteConfirmed,
- timestamp = System.currentTimeMillis(),
- imagePath = file.absolutePath
-)
- val id = dao.insert(find)
- find.copy(id = id)
- }
+        val find = MushroomFind(
+            speciesName = speciesName,
+            toxicityLabel = toxicityLabel,
+            confidence = confidence,
+            voteConfirmed = voteConfirmed,
+            timestamp = System.currentTimeMillis(),
+            imagePath = file.absolutePath
+        )
+        val id = dao.insert(find)
+        find.copy(id = id)
+    }
 }
 \end{lstlisting}
 
-Adnotacje \texttt{@Dao}, \texttt{@Insert} oraz \texttt{@Query} (linie 1--14) przetwarzane są przez procesor adnotacji Room na etapie kompilacji, który generuje implementację interfejsu wraz z kodem wiążącym parametry zapytań. Zapytania SQL są przy tym weryfikowane składniowo i semantycznie względem schematu bazy w czasie budowy projektu, wobec czego literówka w nazwie kolumny skutkuje błędem kompilacji, a nie wyjątkiem czasu wykonania.
+Adnotacje \texttt{@Dao}, \texttt{@Insert} oraz \texttt{@Query} (linie 1--15) przetwarzane są przez procesor adnotacji Room na etapie kompilacji, który generuje implementację interfejsu. Zapytania SQL są weryfikowane względem schematu bazy w czasie budowy projektu, więc literówka w nazwie kolumny kończy się błędem kompilacji, a nie wyjątkiem w czasie działania.
 
-Istotne jest rozróżnienie sygnatur w liniach 6 i 10. Metody modyfikujące \texttt{insert} oraz \texttt{deleteById} zadeklarowano ze słowem kluczowym \texttt{suspend}, co wymusza ich wywołanie z wnętrza korutyny i uniemożliwia przypadkowe wykonanie operacji dyskowej na wątku głównym – próba takiego wywołania zostanie odrzucona przez kompilator. Metoda \texttt{observeAll} nie jest natomiast funkcją zawieszalną, lecz zwraca strumień \texttt{Flow}; Room monitoruje tabelę \texttt{mushroom\_finds} i emituje nową listę przy każdej modyfikacji jej zawartości. Warstwa interfejsu użytkownika nie musi zatem jawnie odświeżać widoku po zapisie. Ekran historii aktualizuje się jako konsekwencja propagacji strumienia.
+Metody \texttt{insert} (linia 6) oraz \texttt{deleteById} (linia 14) zadeklarowano jako \texttt{suspend}, więc wywołanie spoza korutyny odrzuca kompilator. Metoda \texttt{observeAll} (linia 10) zwraca strumień \texttt{Flow}: Room emituje nową listę przy każdej zmianie tabeli, a ekran historii odświeża się bez osobnego odczytu.
 
-Metoda \texttt{save} (linie 25--47) łączy dwie operacje o odmiennym charakterze: zapis pliku binarnego oraz wstawienie rekordu do bazy. Całość opakowano w \texttt{withContext(Dispatchers.IO)} (linia 30), przenosząc wykonanie do puli wątków przeznaczonej dla operacji blokujących. Katalog docelowy tworzony jest wewnątrz \texttt{context.filesDir} (linia 31), czyli w prywatnej piaskownicy aplikacji – wycinki nie trafiają do publicznej galerii urządzenia i są automatycznie usuwane wraz z odinstalowaniem aplikacji. Nazwę pliku generuje identyfikator \texttt{UUID} (linia 32), co eliminuje ryzyko kolizji przy zapisach wykonanych w tej samej milisekundzie.
+Metoda \texttt{save} (linie 25--49) łączy zapis pliku JPEG ze wstawieniem rekordu. Całość opakowano w \texttt{withContext(Dispatchers.IO)} (linia 31). Katalog powstaje wewnątrz \texttt{context.filesDir} (linia 32), w prywatnym katalogu aplikacji, i znika wraz z odinstalowaniem. Nazwę pliku generuje \texttt{UUID} (linia 33). Listing pomija wpis do dziennika, obecny w kodzie po wstawieniu rekordu.
 
-Konstrukcja \texttt{FileOutputStream(file).use \{ \ldots \}} (linie 34--36) wykorzystuje funkcję rozszerzającą \texttt{use}, stanowiącą odpowiednik konstrukcji \textit{try-with-resources}: strumień jest zamykany również w przypadku zgłoszenia wyjątku podczas kompresji, co zapobiega wyciekowi deskryptorów plików. Kolejność operacji jest przy tym zamierzona. Plik obrazu zapisywany jest przed wstawieniem rekordu (linia 45), dzięki czemu w bazie nie może powstać wiersz wskazujący na nieistniejący plik. Zwracany obiekt \texttt{find.copy(id = id)} (linia 46) uzupełnia encję o wygenerowany klucz główny, ponieważ instancje danych w języku Kotlin są niemodyfikowalne.
+Konstrukcja \texttt{FileOutputStream(file).use} (linie 35--37) zamyka strumień także przy wyjątku kompresji. Obraz zapisywany jest przed \texttt{dao.insert} (linia 47), więc w bazie nie powstaje wiersz wskazujący na nieistniejący plik. \texttt{find.copy(id = id)} (linia 48) zwraca nową encję z wygenerowanym kluczem, ponieważ pola \texttt{MushroomFind} są niemodyfikowalne.
 
-Ręczny zapis uruchamia \texttt{FrameCropper}: aplikacja przechwytuje pełnorozdzielczą, zorientowaną pionowo klatkę i wycina region znormalizowanej ramki otaczającej. Wycinek trafia do JPEG w prywatnym katalogu piaskownicy (\texttt{context.filesDir}) – poza publiczną galerią urządzenia. Dane użytkownika pozostają izolowane i znikają automatycznie przy odinstalowaniu.
+Ręczny zapis uruchamia \texttt{FrameCropper}: aplikacja bierze ostatnią zorientowaną pionowo klatkę z toru \texttt{ImageAnalysis} i wycina region znormalizowanej ramki. Wycinek trafia do JPEG w prywatnym katalogu piaskownicy (\texttt{context.filesDir}) – poza publiczną galerią urządzenia. Dane użytkownika pozostają izolowane i znikają automatycznie przy odinstalowaniu.
 
-Ekran historii (\texttt{HistoryScreen}) to deklaratywna lista \texttt{LazyColumn}. Biblioteka Coil (\texttt{coil-compose}, \texttt{AsyncImage}) ładuje miniatury leniwie. Pamięć nie rośnie liniowo wraz z liczbą zapisów \cite{coil}. Status wizualny każdego elementu wyznacza \texttt{MushroomRegistry.displayStatus} na podstawie zapisanej pewności. Ważnym aspektem bezpieczeństwa jest tu uwzględnienie utrwalonej w bazie danych flagi \texttt{voteConfirmed} z encji \texttt{MushroomFind}. Dzięki temu na ekranie historii zielona etykieta „Jadalny” (wymagająca w trybie wideo konsensusu 4 z 5 klatek) pojawia się wyłącznie wtedy, gdy ów rygorystyczny warunek został faktycznie spełniony w momencie dokonywania zapisu predykcji oraz utrwalonego wyniku głosowania (\texttt{voteConfirmed}). Bufor konsensusu klatek jest strukturą czasową (retrospektywnie niedostępną), lecz stan jego weryfikacji w chwili zapisu jest persystowany w bazie danych. Dzięki temu ekran historii odtwarza wiernie status z momentu znalezienia: zielone „Jadalny” widnieje wyłącznie dla rekordów, które w chwili kliknięcia posiadały pewność $\ge 0{,}60$ i domknięty konsensus $4$ z $5$ klatek. W przeciwnym razie wyświetlana jest szara etykieta neutralna. Stały czerwony baner na górze ekranu przypomina: „Ostrzeżenie: Aplikacja ma charakter pomocniczy. Nigdy nie spożywaj grzybów bez pewności eksperta”.
+Ekran historii (\texttt{HistoryScreen}) to deklaratywna lista \texttt{LazyColumn}. Biblioteka Coil (\texttt{coil-compose}, \texttt{AsyncImage}) ładuje miniatury leniwie. Pamięć nie rośnie liniowo wraz z liczbą zapisów \cite{coil}. Status wizualny wyznacza \texttt{MushroomRegistry.displayStatus} na podstawie zapisanej pewności i flagi \texttt{voteConfirmed}. Zielone „Jadalny” pojawia się tylko dla rekordów, które w chwili zapisu miały pewność $\ge 0{,}60$ i domknięty konsensus $4$ z $5$. W pozostałych przypadkach wyświetlana jest szara etykieta neutralna, także dla gatunków niejadalnych. Stały czerwony baner na górze ekranu przypomina: „Ostrzeżenie: Aplikacja ma charakter pomocniczy. Nigdy nie spożywaj grzybów bez pewności eksperta”.
 
 \chapter{Badanie i analiza skuteczności systemu}\label{chap:badania}
 
@@ -2209,7 +2260,7 @@ Wybór wariantu YOLO11m zamiast lżejszego YOLO11n wymagał empirycznego uzasadn
  \hline
  Złożoność obliczeniowa & $68{,}3$\,GFLOPs & $6{,}7$\,GFLOPs \\
  \hline
- Rozmiar TFLite FP16 & $38{,}58$\,MB & $5{,}60$\,MB \\
+ Rozmiar TFLite FP16 & $38{,}58$\,MiB & $5{,}60$\,MiB \\
  \hline
  $mAP_{50}$ & $82{,}75\%$ & $48{,}54\%$ \\
  \hline
@@ -2542,7 +2593,7 @@ Ilościowa ewaluacja terenowa na $67$ kadrach (podrozdz.~\ref{sec:field_quant}) 
 \section{Perspektywy rozwoju i dalsze prace}
 Kolejnym krokiem może być integracja algorytmów śledzenia obiektów wideo (np. ByteTrack lub SORT) z potokiem CameraX. Stabilizacja ramek w czasie zmniejszyłaby chwilowe wahania predykcji pomiędzy klatkami i poprawiła płynność nakładki interfejsu użytkownika.
 
-Drugim istotnym obszarem pozostaje optymalizacja rozmiaru modelu. Warto zbadać uczenie z uwzględnieniem kwantyzacji (ang. \textit{Quantization-Aware Training}, QAT) oraz skalibrowaną precyzję mieszaną (FP16/INT8), tak aby zredukować artefakt poniżej $20$\,MB przy zachowaniu wrażliwości na subtelne cechy makromorfologiczne (blaszki, pierścień), kluczowe dla rozróżniania gatunków bliźniaczych.
+Drugim istotnym obszarem pozostaje optymalizacja rozmiaru modelu. Warto zbadać uczenie z uwzględnieniem kwantyzacji (ang. \textit{Quantization-Aware Training}, QAT) oraz skalibrowaną precyzję mieszaną (FP16/INT8), tak aby zredukować artefakt poniżej $20$\,MiB przy zachowaniu wrażliwości na subtelne cechy makromorfologiczne (blaszki, pierścień), kluczowe dla rozróżniania gatunków bliźniaczych.
 
 Trzecią perspektywą jest fuzja osadzeń wizyjnych z metadanymi kontekstowymi: klasyfikacją biotopu na podstawie GPS, typem lasu, sezonowością oraz lokalnymi warunkami pogodowymi. Takie wzbogacenie sygnału wejściowego mogłoby poprawić rozróżnianie gatunków o zbliżonej morfologii, lecz odmiennych wymaganiach siedliskowych.
 

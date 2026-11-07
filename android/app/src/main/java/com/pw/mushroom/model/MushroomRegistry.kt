@@ -202,12 +202,13 @@ object MushroomRegistry {
 
     // Decode / pre-tracker gate: toxic from 0.18, everything else from 0.20.
     fun thresholdFor(classId: Int): Float =
-        if (speciesMap[classId]?.toxicity?.isDangerous == true) UNSAFE_THRESHOLD else NEUTRAL_MIN_CONFIDENCE
+        if (speciesMap[classId]?.toxicity?.isDangerous == true) UNSAFE_THRESHOLD
+        else NEUTRAL_MIN_CONFIDENCE
 
     fun displayThresholdFor(classId: Int): Float = thresholdFor(classId)
 
     // Badge policy:
-    // - toxic/deadly @ >= 0.18 -> immediate warning colour
+    // - toxic/deadly @ >= 0.18 -> warning colour, no vote needed
     // - edible @ >= 0.60 AND voteConfirmed -> green "Jadalny"
     // - otherwise -> neutral gray ("Obiekt nierozpoznany / Zbliż kamerę")
     fun displayStatus(

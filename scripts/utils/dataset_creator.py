@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
-# Zaawansowany system tworzenia datasetu z nagrań wideo grzybów.
-# Automatyczna ekstrakcja + augmentacja + filtracja jakości.
-#
-# Autor: Kiril Horobets
-# Politechnika Warszawska, 2026
+# Extract sharp frames from mushroom videos and augment them.
 
 import cv2
 import os
@@ -40,7 +36,7 @@ class DatasetCreator:
             'videos': []
         }
 
-    # Niższa wartość = bardziej rozmyte.
+    # Variance of the Laplacian; lower means blurrier.
     def detect_blur(self, image, threshold=100):
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         laplacian_var = cv2.Laplacian(gray, cv2.CV_64F).var()
@@ -54,10 +50,6 @@ class DatasetCreator:
     def adjust_contrast(self, image, factor):
         return np.clip(127 + factor * (image.astype(np.float32) - 127), 0, 255).astype(np.uint8)
 
-    # - Jasność (x3: ciemniejsza, normalna, jaśniejsza)
-    # - Kontrast (x2: niższy, wyższy)
-    # - Flip horizontal
-    # - Rotacje (niewielkie)
     def augment_frame(self, image, frame_id, video_name):
         augmented_frames = []
 

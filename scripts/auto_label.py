@@ -14,7 +14,6 @@ if torch.cuda.is_available():
     torch.backends.cudnn.benchmark = True
     torch.backends.cudnn.deterministic = False
 
-# Paths
 BASE_DIR = os.path.normpath("E:/Kiril_Horobets/mushroom_data")
 FINAL_DIR = os.path.join(BASE_DIR, "mushroom_final")
 DEST_IMAGES = os.path.join(FINAL_DIR, "images/train")
@@ -91,7 +90,7 @@ def clear_staging():
 
 
 def save_single_label(f, src_path, class_id, generated_labels):
-    # Write YOLO label for one image (empty file if model produced no box)
+    # Empty label file when the model found no box.
     txt_name = os.path.splitext(f)[0] + ".txt"
     src_img_path = os.path.join(src_path, f)
 
@@ -173,7 +172,6 @@ def run_pipeline():
                     pass
 
             try:
-                # Prefer whole-batch labeling
                 with torch.inference_mode():
                     base_model.label(input_folder=STAGING_IN, output_folder=STAGING_OUT)
 

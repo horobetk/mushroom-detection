@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Sample test images per toxicity bucket for the FN audit."""
 
 from __future__ import annotations
 
@@ -19,7 +20,7 @@ if str(_TESTS_DIR) not in sys.path:
     sys.path.insert(0, str(_TESTS_DIR))
 
 from _paths import DEFAULT_DATA, DEFAULT_OUTPUT  # noqa: E402
-import yaml
+import yaml  # noqa: E402
 
 
 def load_registry(csv_path: Path) -> dict[int, str]:

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Test 3 – Confidence threshold sweep (F1 justification)
+# Test 3: confidence threshold sweep with F1 curve.
 from __future__ import annotations
 
 import argparse
@@ -38,7 +38,6 @@ from _paths import (  # noqa: E402
 
 
 def f1_score(precision: float, recall: float) -> float:
-    # Harmonic mean of precision and recall.
     denom = precision + recall
     if denom <= 0:
         return 0.0

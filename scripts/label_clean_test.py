@@ -1,19 +1,5 @@
 #!/usr/bin/env python3
-"""
-Auto-label the freshly harvested test images into a clean test split.
-
-Takes the per-species folders produced by ``harvest_clean_test.py`` under
-``clean_test_raw/`` and runs the same GroundingDINO zero-shot labeller used for
-training data, writing YOLO labels into ``images/test`` / ``labels/test`` with
-class ids taken from the existing ``class_registry.txt``.
-
-Before writing, the old (leaked) test split is moved aside to
-``images/test_polluted_backup`` / ``labels/test_polluted_backup`` so nothing is
-lost. Finally a ``test: images/test`` key is added to ``data.yaml`` so that
-``model.val(split='test')`` can find the split.
-
-Author: Kiril Horobets, WUT 2026
-"""
+"""Auto-label harvested clean test images with GroundingDINO."""
 
 from __future__ import annotations
 
@@ -90,7 +76,7 @@ def update_yaml_test_key(final_dir: str) -> None:
     data["test"] = "images/test"
     with open(yaml_path, "w", encoding="utf-8") as fh:
         yaml.dump(data, fh, default_flow_style=None, allow_unicode=True)
-    print(f"[OK] data.yaml now has test: images/test")
+    print("[OK] data.yaml now has test: images/test")
 
 
 def run(raw_base: str, final_dir: str, batch_size: int) -> None:
@@ -107,8 +93,7 @@ def run(raw_base: str, final_dir: str, batch_size: int) -> None:
 
     dest_img = os.path.join(final_dir, "images", "test")
     dest_lbl = os.path.join(final_dir, "labels", "test")
-    # Staging is kept OUTSIDE mushroom_data so auto_label.py never treats it
-    # as a new species folder.
+    # Staging lives outside mushroom_data so auto_label.py ignores it.
     staging_root = os.path.dirname(os.path.normpath(raw_base))
     staging_in = os.path.join(staging_root, "staging_test_in")
     staging_out = os.path.join(staging_root, "staging_test_out")

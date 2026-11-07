@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+# Summarise the manual FN audit sheet into JSON.
 
 from __future__ import annotations
 
@@ -13,7 +13,8 @@ OUT = CSV.parent / "fn_audit_summary.json"
 
 
 def main() -> None:
-    rows = list(csv.DictReader(CSV.open(encoding="utf-8-sig")))
+    with CSV.open(encoding="utf-8-sig") as fh:
+        rows = list(csv.DictReader(fh))
     empty = 0
     notes_n = 0
     inconsist = 0

@@ -1,23 +1,5 @@
 #!/usr/bin/env python3
-"""
-Harvest a fresh, leak-free test set from iNaturalist.
-
-Context
--------
-The original split leaked at the observation level: ~95% of ``images/test``
-shared an ``obs_id`` with ``train``/``val`` (the auto-labeller re-copied files
-that the splitter had already moved). A trustworthy test set therefore has to be
-built from observations the model has never seen.
-
-This script downloads *new* research-grade observations for every registered
-species, skipping any ``obs_id`` already present in ``images/train`` or
-``images/val``. Photos land in ``<base>/clean_test_raw/<Species>/`` using the
-same ``{obs_id}_{photo_id}.jpg`` convention, ready for ``label_clean_test.py``.
-
-It does NOT touch train/val and never renames existing files.
-
-Author: Kiril Horobets, WUT 2026
-"""
+"""Download fresh iNaturalist observations unseen in train/val for testing."""
 
 from __future__ import annotations
 

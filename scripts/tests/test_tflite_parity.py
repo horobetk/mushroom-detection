@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Compare PyTorch and TFLite FP16 mAP on the same test subset."""
 
 from __future__ import annotations
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+"""H2: CFPR of asymmetric vs global thresholds, plus look-alike confusions."""
 
 from __future__ import annotations
 
@@ -343,7 +343,7 @@ def main() -> None:
                 "tau_toxic_or_global",
                 "tau_edible",
                 "n_gt_toxic",
-                "cfp_jadaly_given_toxic",
+                "cfp_jadalny_given_toxic",
                 "cfpr",
                 "n_gt_edible",
                 "warnings_given_edible",

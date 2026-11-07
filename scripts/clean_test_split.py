@@ -1,43 +1,5 @@
 #!/usr/bin/env python3
-"""
-Test-split leakage purge + re-evaluation for the mushroom YOLO dataset.
-
-Problem
--------
-The dataset was split at the *photo* level (see ``split_dataset.py``), so two
-photos of the same iNaturalist observation (identical ``obs_id``) could land in
-``train``/``val`` and ``test`` at the same time. That inflates the reported test
-metrics, because the model is effectively evaluated on observations it already
-saw during training.
-
-Filenames follow the iNaturalist harvester convention ``{obs_id}_{photo_id}.jpg``
-and the split step moves files without renaming, so the observation id is simply
-``os.path.basename(name).split('_')[0]``.
-
-What this script does (no retraining required)
-----------------------------------------------
-1. Scans ``images/train`` and ``images/val`` and collects every ``obs_id`` used
-   for training / validation.
-2. Scans ``images/test``. Any image whose ``obs_id`` is present in the train/val
-   set is a leaked sample. Its image and the matching ``.txt`` label are moved
-   into a quarantine folder (reversible, nothing is destroyed).
-3. Reports the per-class test count before and after the purge so it is obvious
-   which species lost samples.
-4. Optionally re-runs ``model.val(split='test')`` on the existing ``best.pt``
-   checkpoint and writes the refreshed metrics to JSON and CSV.
-
-Deliberately NOT done
----------------------
-Back-filling the test set from ``train`` (as one might be tempted to do for
-sparse classes) is intentionally omitted: those images were seen during
-training, so moving them into ``test`` would reintroduce leakage in the opposite
-direction. Without retraining, the only honest option is a smaller but strictly
-isolated test set. If a genuinely held-out reserve of never-trained images
-exists, point ``--reserve-dir`` at it and the script can top up sparse classes
-from there only.
-
-Author: Kiril Horobets, WUT 2026
-"""
+"""Quarantine test images whose obs_id also appears in train/val."""
 
 from __future__ import annotations
 

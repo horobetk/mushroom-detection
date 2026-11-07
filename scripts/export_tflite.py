@@ -1,11 +1,5 @@
 #!/usr/bin/env python3
-# Export YOLO11 .pt weights to TensorFlow Lite via SavedModel intermediate.
-# Direct TFLite/LiteRT export is blocked on Windows by Ultralytics, so:
-#   1) model.export(format='saved_model')
-#   2) tf.lite.TFLiteConverter.from_saved_model(...)
-# Modes: int8 (needs --data), fp16, fp32. INT8 failure falls back to fp32
-# unless --no-fallback is set.
-# Author: Kiril Horobets, WUT 2026
+# Export YOLO11 weights to TFLite through SavedModel (LiteRT fails on Windows).
 
 import argparse
 import os

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Test 5 – Ablation / architecture comparison summary table
+# Test 5: ablation summary table.
 
 from __future__ import annotations
 
@@ -20,32 +20,23 @@ if str(_TESTS_DIR) not in sys.path:
 
 from _paths import DEFAULT_OUTPUT  # noqa: E402
 
-# Static ablation figures measured during thesis experiments.
-# Update these values if a new training / export run is performed.
+# Values from the thesis runs; update after retraining or re-export.
 ABLATION_ROWS = [
     {
-        "Model Architecture": "YOLO11m (PyTorch)",
-        "Params (M)": "20.1",
-        "File Size (MB)": "38.8",
-        "mAP50 (Test)": "82.8%",
-        "mAP50-95 (Test)": "78.2%",
-        "Inference Speed (GPU)": "5.1 ms",
-    },
-    {
-        "Model Architecture": "YOLO11m (TFLite FP16)",
-        "Params (M)": "20.1",
+        "Model Architecture": "YOLO11m",
+        "Params (M)": "20.14",
         "File Size (MB)": "38.58",
-        "mAP50 (Test)": "82.8%",
-        "mAP50-95 (Test)": "78.2%",
-        "Inference Speed (GPU)": "~15-25 ms (NPU/mobile)",
+        "mAP50 (Test)": "82.75%",
+        "mAP50-95 (Test)": "78.23%",
+        "Inference Speed (GPU)": "8.62 ms",
     },
     {
         "Model Architecture": "YOLO11n (Baseline)",
         "Params (M)": "2.66",
-        "File Size (MB)": "5.6",
-        "mAP50 (Test)": "48.0%",
-        "mAP50-95 (Test)": "42.1%",
-        "Inference Speed (GPU)": "1.1 ms",
+        "File Size (MB)": "5.60",
+        "mAP50 (Test)": "48.54%",
+        "mAP50-95 (Test)": "42.82%",
+        "Inference Speed (GPU)": "1.10 ms",
     },
 ]
 
@@ -63,7 +54,6 @@ def to_markdown(rows: list[dict[str, str]]) -> str:
 
 
 def to_latex(rows: list[dict[str, str]]) -> str:
-    # Export a booktabs-style tabular for the thesis.
     lines = [
         r"\begin{tabular}{|l|c|c|c|c|c|}",
         r"\hline",

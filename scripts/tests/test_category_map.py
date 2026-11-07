@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""Per-class and per-toxicity-category mAP / P / R on the isolated test split.
-
-Runs Ultralytics ``val`` (split=test) once, stores the per-class metrics and
-averages them over the classes of each toxicity category from
-``toxicity_registry.csv`` (arithmetic mean over classes, as in mAP).
-"""
+"""Per-class and per-toxicity-category mAP, P and R on the test split."""
 
 from __future__ import annotations
 

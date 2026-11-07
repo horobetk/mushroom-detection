@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+"""Tk GUI for filling the GroundingDINO FN audit sheet."""
 
 from __future__ import annotations
 

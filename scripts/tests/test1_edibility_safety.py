@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Test 1 - Edibility safety matrix with asymmetric Android thresholds
+# Test 1: edibility safety matrix with asymmetric app thresholds.
 from __future__ import annotations
 
 import argparse
@@ -100,8 +100,7 @@ def load_toxicity_map(names: list[str], toxicity_csv: Path | None) -> dict[int, 
 
 
 def predicted_bucket(tox: str, conf: float) -> str | None:
-    # Mirror Android displayStatus without the live temporal vote.
-    # UNSAFE >= conf_toxic, SAFE >= conf_edible, mid-gap -> NEUTRAL.
+    # Mirrors Android displayStatus without the temporal vote.
     if tox == UNSAFE:
         if conf >= CONF_TOXIC:
             return UNSAFE
@@ -114,13 +113,13 @@ def predicted_bucket(tox: str, conf: float) -> str | None:
             return NEUTRAL
         return None
 
-    # Predicted class is biologically NEUTRAL (inedible / unknown).
+    # Inedible or unknown class.
     if conf >= CONF_NEUTRAL_MIN:
         return NEUTRAL
     return None
 
 
-def resolve_dataset_root(data_yaml: Path) -> Path:
+def resolve_dataset_root(data_yaml: Path) -> tuple[Path, dict]:
     with data_yaml.open("r", encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
     root = Path(cfg.get("path", data_yaml.parent))
@@ -172,7 +171,6 @@ def build_asymmetric_matrix(
     imgsz: int,
     device: str,
 ) -> tuple[np.ndarray, list[str], dict[str, int]]:
-    # Per-GT matching on the test split with asymmetric conf mapping.
     root, cfg = resolve_dataset_root(data_yaml)
     test_key = cfg.get("test", "images/test")
     images_dir = Path(test_key)
@@ -236,7 +234,7 @@ def build_asymmetric_matrix(
                     best_i = i
 
             if best_i < 0:
-                # No qualifying prediction: count as NEUTRAL (no SAFE/UNSAFE assert).
+                # Missed GT counts as NEUTRAL: the app asserts nothing.
                 coarse[idx[gt_bucket], idx[NEUTRAL]] += 1.0
                 counts["unmatched_gt"] += 1
                 continue
@@ -251,7 +249,7 @@ def build_asymmetric_matrix(
 
 
 def critical_false_positive_rate(coarse: np.ndarray, labels: list[str]) -> float:
-    # CFPR = P(pred=SAFE | gt=UNSAFE) under asymmetric thresholds.
+    # CFPR = P(pred=SAFE | gt=UNSAFE)
     i_unsafe = labels.index(UNSAFE)
     i_safe = labels.index(SAFE)
     unsafe_total = coarse[i_unsafe].sum()
@@ -261,7 +259,7 @@ def critical_false_positive_rate(coarse: np.ndarray, labels: list[str]) -> float
 
 
 def false_alarm_rate(coarse: np.ndarray, labels: list[str]) -> float:
-    # FAR = P(pred=UNSAFE | gt=SAFE); accepted safety tradeoff.
+    # FAR = P(pred=UNSAFE | gt=SAFE)
     i_safe = labels.index(SAFE)
     i_unsafe = labels.index(UNSAFE)
     safe_total = coarse[i_safe].sum()
@@ -278,7 +276,7 @@ def main() -> None:
     parser.add_argument("--model", "-m", type=Path, default=DEFAULT_MODEL)
     parser.add_argument("--data", "-d", type=Path, default=DEFAULT_DATA)
     parser.add_argument("--output", "-o", type=Path, default=DEFAULT_OUTPUT)
-    parser.add_argument("--toxicity-csv", type=Path, default=None)
+    parser.add_argument("--toxicity-csv", type=Path, default=_TESTS_DIR / "toxicity_registry.csv")
     parser.add_argument("--imgsz", type=int, default=640)
     parser.add_argument("--device", default="0")
     args = parser.parse_args()

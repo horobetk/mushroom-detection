@@ -1,21 +1,5 @@
 #!/usr/bin/env python3
-"""H2 safety matrix (CFPR / FAR) on the TFLite FP16 artefact with the app pipeline.
-
-Same definition and GT matching as ``test_h2_baseline.py`` (IoU >= 0.50, one
-prediction per GT, unmatched GT -> NEUTRAL), but the predictions come from the
-TFLite interpreter post-processed exactly as on the phone:
-
-* ``FrameCropper.letterbox``: aspect-preserving bilinear resize, grey padding
-  (``Color.GRAY`` = 136), input RGB / 255, NHWC float;
-* ``MushroomDetector.decode``: best class per anchor, kept only if its score is
-  >= 0.18 for POISONOUS/DEADLY classes and >= 0.20 for the others;
-* ``MushroomDetector.nonMaxSuppression``: top-50 by score, class-agnostic
-  greedy NMS with IoU > 0.45 suppressed, at most 20 detections.
-
-The temporal 4/5 vote of ``DetectionTracker`` cannot be reproduced on single
-images; every green assertion is counted as if the vote passed, so the reported
-CFPR is an upper bound for the live overlay.
-"""
+"""H2 safety matrix on the TFLite FP16 model using the app's post-processing."""
 
 from __future__ import annotations
 
@@ -63,6 +47,7 @@ from test_h2_baseline import (  # noqa: E402
 )
 from test_tflite_parity import find_tflite, make_interpreter  # noqa: E402
 
+# Must match FrameCropper / MushroomDetector on Android.
 PAD_VALUE = 136
 NMS_IOU = 0.45
 MAX_NMS_INPUT = 50

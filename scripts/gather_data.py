@@ -1,13 +1,5 @@
 #!/usr/bin/env python3
-"""
-iNaturalist Research-Grade photo harvester for mushroom species.
-
-Used on the university workstation to build the local image corpus under
-E:/Kiril_Horobets/mushroom_data. Target: up to ~1000 photos per species
-(20 pages x 50 observations), with resume/skip and HTTP retries.
-
-Author: Kiril Horobets, WUT 2026
-"""
+"""Download Research-Grade mushroom photos from iNaturalist."""
 
 from __future__ import annotations
 
@@ -17,7 +9,7 @@ import time
 
 import requests
 
-# Target list for the species-level corpus (105 taxa, including look-alikes).
+# 105 taxa, including look-alikes.
 SPECIES_LIST = [
     "Boletus edulis", "Amanita muscaria", "Cantharellus cibarius", "Imleria badia",
     "Russula cyanoxantha", "Suillus luteus", "Lactarius deliciosus", "Macrolepiota procera",
@@ -68,10 +60,7 @@ def count_valid_files(folder: str) -> int:
 
 
 def download_species(session: requests.Session, species: str) -> bool:
-    """
-    Download Research-Grade photos for one taxon.
-    Returns True when the folder already has TARGET_PER_CLASS valid images.
-    """
+    """Return True once the species folder reaches TARGET_PER_CLASS."""
     folder = f"{BASE_DATA_DIR}/{species.replace(' ', '_')}"
     os.makedirs(folder, exist_ok=True)
 
@@ -138,7 +127,7 @@ def download_species(session: requests.Session, species: str) -> bool:
 def main() -> None:
     os.makedirs(BASE_DATA_DIR, exist_ok=True)
 
-    # Persistent session reuses TCP connections and reduces descriptor churn.
+    # Reuse TCP connections across taxa.
     with requests.Session() as session:
         while True:
             all_completed = True

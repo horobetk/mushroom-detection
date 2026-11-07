@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
-# Train YOLO11 mushroom detector (transfer learning).
-# Defaults: epochs=200, imgsz=640, batch=32.
-# Headless-safe for remote clusters (matplotlib Agg, Ultralytics show=False).
-# Author: Kiril Horobets, WUT 2026
+# Train the YOLO11 mushroom detector.
 
 import argparse
 import os
@@ -27,7 +24,6 @@ import torch  # noqa: E402
 from ultralytics import YOLO  # noqa: E402
 
 DEFAULT_MODEL = "weights/yolo11m.pt"
-DEFAULT_DATA = "mushrooms.yaml"
 
 
 def resolve_device(requested: str) -> str:

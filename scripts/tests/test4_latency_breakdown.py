@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Test 4 – Per-frame latency breakdown (preprocess / inference / postprocess)
+# Test 4: per-frame latency breakdown.
 from __future__ import annotations
 
 import argparse
@@ -59,7 +59,7 @@ def main() -> None:
 
     model = YOLO(str(args.model))
 
-    # Synthetic RGB frame (H, W, 3) – matches Ultralytics numpy input path.
+    # Random frame; pixel content does not affect latency.
     dummy = np.random.randint(
         0, 255, (args.imgsz, args.imgsz, 3), dtype=np.uint8
     )

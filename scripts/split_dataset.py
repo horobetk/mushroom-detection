@@ -12,7 +12,7 @@ SRC_LBL_DIR = os.path.join(BASE_DIR, "labels/train")
 VAL_RATIO = 0.10
 TEST_RATIO = 0.10
 
-#Additional classes start at 105..
+# Only classes added after the base 105 are split here.
 NEW_CLASSES_START_ID = 105
 
 

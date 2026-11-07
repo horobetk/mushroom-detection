@@ -1,47 +1,5 @@
 #!/usr/bin/env python3
-"""
-Field-research aggregator for the Mushroom Detection app (Research Mode).
-
-Turns the raw `MushroomResearch/session_*/` bundles pulled from the phone into
-verifiable, thesis-ready statistics: top-1 / top-5 accuracy, per-species
-precision / recall / F1, a confusion matrix, and merged CSVs.
-
-Workflow
---------
-1. Pull data from the phone:
-       adb pull /sdcard/Documents/MushroomResearch ./research_data
-
-2. Build a labeling template (one row per capture, with the app's prediction
-   and the paths to the photos so you can eyeball each one):
-       python analyze_field_research.py ./research_data --make-template
-
-   -> writes `labeling.csv`. Open it, look at each `fullres_image`, and fill
-      the empty `true_species` column with the REAL species. Leave a row blank
-      to skip it. `true_species=none` marks "no mushroom in frame".
-
-3. Generate the report once ground truth is filled in:
-       python analyze_field_research.py ./research_data
-
-   -> writes into `<data_dir>/_analysis/`:
-        - all_detections.csv   (every detection row, all sessions merged)
-        - captures.csv         (one row per capture: pred vs truth, hit flags)
-        - confusion_matrix.csv / .png
-        - summary.json         (accuracy, top-5, counts, gpu/latency stats)
-
-Ground truth may also come from a per-session `ground_truth.txt`
-(`expected_species=...` for the whole session, or `3=Boletus edulis` per
-capture). `labeling.csv` takes priority when both exist.
-
-Safety analysis
----------------
-If `species_toxicity.csv` (classId,species,toxicity,isDangerous) sits next to
-this script or in the data folder, the report also computes the safety-critical
-metrics: a dangerous-vs-safe 2x2 matrix, the FALSE-SAFE rate (a truly poisonous
-/ deadly mushroom reported as non-dangerous) and, most importantly, how often a
-dangerous mushroom was labelled outright EDIBLE.
-
-Only dependencies: pandas, matplotlib (numpy comes with pandas).
-"""
+"""Aggregate Research Mode sessions exported from the phone."""
 
 from __future__ import annotations
 
@@ -64,9 +22,6 @@ except Exception:  # pragma: no cover - plotting is optional
     HAVE_MPL = False
 
 
-# --------------------------------------------------------------------------- #
-# Loading
-# --------------------------------------------------------------------------- #
 def _norm(name: str | None) -> str:
     """Normalise a species string for robust comparison."""
     if name is None:
@@ -85,7 +40,7 @@ def load_captures(data_dir: Path) -> pd.DataFrame:
         try:
             meta = json.loads(meta_path.read_text(encoding="utf-8"))
         except Exception as exc:
-            print(f"[warn] skipping unreadable {meta_path}: {exc}", file=sys.stderr)
+            print(f"[WARN] skipping unreadable {meta_path}: {exc}", file=sys.stderr)
             continue
 
         session = meta_path.parent.name
@@ -142,19 +97,12 @@ def load_all_detections(data_dir: Path) -> pd.DataFrame:
                 df.insert(0, "session", csv_path.parent.name)
             frames.append(df)
         except Exception as exc:
-            print(f"[warn] skipping {csv_path}: {exc}", file=sys.stderr)
+            print(f"[WARN] skipping {csv_path}: {exc}", file=sys.stderr)
     return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
 
 
-# --------------------------------------------------------------------------- #
-# Ground truth
-# --------------------------------------------------------------------------- #
 def parse_ground_truth_txt(data_dir: Path) -> dict[tuple[str, int | None], str]:
-    """Parse per-session ground_truth.txt files.
-
-    Returns {(session, captureId|None): true_species}. A None captureId is a
-    session-wide default applied to every capture in that session.
-    """
+    """Map (session, captureId) to species; captureId None is the session default."""
     gt: dict[tuple[str, int | None], str] = {}
     for gt_path in data_dir.rglob("ground_truth.txt"):
         session = gt_path.parent.name
@@ -178,7 +126,7 @@ def apply_ground_truth(captures: pd.DataFrame, data_dir: Path) -> pd.DataFrame:
     captures = captures.copy()
     captures["true_species"] = ""
 
-    # Source 1: ground_truth.txt (session default + per-capture overrides).
+    # ground_truth.txt: session default, then per-capture overrides.
     gt = parse_ground_truth_txt(data_dir)
     for i, row in captures.iterrows():
         key_cap = (row["session"], int(row["captureId"]))
@@ -188,7 +136,7 @@ def apply_ground_truth(captures: pd.DataFrame, data_dir: Path) -> pd.DataFrame:
         elif key_sess in gt:
             captures.at[i, "true_species"] = gt[key_sess]
 
-    # Source 2: labeling.csv overrides anything above.
+    # labeling.csv takes priority.
     labeling = data_dir / "labeling.csv"
     if labeling.exists():
         lab = pd.read_csv(labeling)
@@ -207,9 +155,6 @@ def apply_ground_truth(captures: pd.DataFrame, data_dir: Path) -> pd.DataFrame:
     return captures
 
 
-# --------------------------------------------------------------------------- #
-# Toxicity / safety
-# --------------------------------------------------------------------------- #
 DANGEROUS = {"POISONOUS", "DEADLY"}
 
 
@@ -240,13 +185,12 @@ def compute_safety(labeled: pd.DataFrame, tox_map: dict[str, str], out_dir: Path
         lambda s: tox_map.get(_norm(s), "NONE" if not s else "UNKNOWN")
     )
 
-    # Restrict to rows where we actually know the true toxicity (skip 'none'/unknown truth).
+    # Skip rows with unknown true toxicity (including 'none').
     known = df[df["true_tox"] != "UNKNOWN"].copy()
     if known.empty:
         return {"note": "No true-species matched the toxicity map; check species names."}
 
     known["true_dangerous"] = known["true_tox"].isin(DANGEROUS)
-    # A prediction is 'dangerous-flagged' only if the predicted species is poisonous/deadly.
     known["pred_dangerous"] = known["pred_tox"].isin(DANGEROUS)
 
     tp = int(((known["true_dangerous"]) & (known["pred_dangerous"])).sum())   # danger caught
@@ -257,7 +201,7 @@ def compute_safety(labeled: pd.DataFrame, tox_map: dict[str, str], out_dir: Path
     n_dangerous = tp + fn
     n_safe = tn + fp
 
-    # The most critical single error: truly dangerous, but predicted EDIBLE.
+    # Worst case: dangerous mushroom reported as EDIBLE.
     dangerous_as_edible = known[
         (known["true_dangerous"]) & (known["pred_tox"] == "EDIBLE")
     ]
@@ -278,7 +222,6 @@ def compute_safety(labeled: pd.DataFrame, tox_map: dict[str, str], out_dir: Path
         "dangerous_reported_edible": int(len(dangerous_as_edible)),
     }
 
-    # Persist the 2x2 and the list of critical misses for the thesis.
     cm = pd.DataFrame(
         [[tp, fn], [fp, tn]],
         index=["true: DANGEROUS", "true: SAFE"],
@@ -295,8 +238,10 @@ def compute_safety(labeled: pd.DataFrame, tox_map: dict[str, str], out_dir: Path
     if HAVE_MPL:
         fig, ax = plt.subplots(figsize=(4.5, 4))
         ax.imshow(cm.values, cmap="Reds", aspect="auto")
-        ax.set_xticks([0, 1]); ax.set_yticks([0, 1])
-        ax.set_xticklabels(cm.columns); ax.set_yticklabels(cm.index)
+        ax.set_xticks([0, 1])
+        ax.set_yticks([0, 1])
+        ax.set_xticklabels(cm.columns)
+        ax.set_yticklabels(cm.index)
         ax.set_title("Safety matrix (danger vs safe)")
         for i in range(2):
             for j in range(2):
@@ -309,10 +254,7 @@ def compute_safety(labeled: pd.DataFrame, tox_map: dict[str, str], out_dir: Path
     return safety
 
 
-# --------------------------------------------------------------------------- #
-# Reporting
-# --------------------------------------------------------------------------- #
-def compute_metrics(captures: pd.DataFrame) -> dict:
+def compute_metrics(captures: pd.DataFrame) -> dict | tuple[dict, pd.DataFrame]:
     labeled = captures[captures["true_species"].str.strip() != ""].copy()
     total = len(captures)
     n_labeled = len(labeled)
@@ -341,7 +283,7 @@ def compute_metrics(captures: pd.DataFrame) -> dict:
     result["mean_confidence"] = round(labeled["pred_conf"].dropna().mean(), 4) if labeled["pred_conf"].notna().any() else None
     result["mean_latencyMs"] = round(labeled["latencyMs"].dropna().mean(), 1) if labeled["latencyMs"].notna().any() else None
 
-    # Per-species (based on true label) top-1 recall.
+    # Top-1 recall grouped by true species.
     per_species = (
         labeled.groupby("true_species")["top1_hit"]
         .agg(["count", "sum"])
@@ -393,7 +335,7 @@ def make_template(captures: pd.DataFrame, data_dir: Path) -> None:
     template["true_species"] = ""
     out = data_dir / "labeling.csv"
     template[cols].to_csv(out, index=False, encoding="utf-8-sig")
-    print(f"[ok] wrote labeling template: {out}")
+    print(f"[OK] wrote labeling template: {out}")
     print(f"     {len(template)} captures. Open it, look at each fullres_image,")
     print("     and fill the `true_species` column with the real species.")
 
@@ -415,7 +357,6 @@ def make_report(captures: pd.DataFrame, all_dets: pd.DataFrame, data_dir: Path,
         metrics, labeled = metrics
         save_confusion(labeled, out_dir)
 
-        # Safety-critical analysis (needs the species -> toxicity map).
         tox_map = load_toxicity_map(data_dir, toxicity_map)
         if tox_map:
             metrics["safety"] = compute_safety(labeled, tox_map, out_dir)
@@ -426,7 +367,7 @@ def make_report(captures: pd.DataFrame, all_dets: pd.DataFrame, data_dir: Path,
         json.dumps(metrics, indent=2, ensure_ascii=False), encoding="utf-8"
     )
 
-    print(f"[ok] report written to: {out_dir}")
+    print(f"[OK] report written to: {out_dir}")
     print(json.dumps(
         {k: v for k, v in metrics.items() if k not in ("per_species",)},
         indent=2, ensure_ascii=False,
@@ -435,7 +376,6 @@ def make_report(captures: pd.DataFrame, all_dets: pd.DataFrame, data_dir: Path,
         print("\n[!] No ground truth yet. Run with --make-template, fill true_species, re-run.")
 
 
-# --------------------------------------------------------------------------- #
 def main() -> int:
     ap = argparse.ArgumentParser(description="Aggregate field Research Mode data.")
     ap.add_argument("data_dir", type=Path, help="Folder with session_* subdirs (adb-pulled).")

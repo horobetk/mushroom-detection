@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
-# Skrypt do ekstrakcji klatek z nagrań wideo grzybów.
-#
-# Autor: Kiril Horobets
-# Politechnika Warszawska, 2026
-# Praca inżynierska: System rozpoznawania grzybów na urządzeniach mobilnych
+# Save every N-th frame from mushroom videos as JPEG.
 
 import cv2
 import os
@@ -191,18 +187,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
-# PRZYKŁADY UŻYCIA:
-#
-# 1. Ekstrakcja z pojedynczego pliku:
-#    python extract_frames.py --input video.mp4 --output frames/ --frame-rate 30
-#
-# 2. Ekstrakcja z katalogu:
-#    python extract_frames.py --input data/raw/ --output data/frames/ --frame-rate 30
-#
-# 3. Z resize do 640x640:
-#    python extract_frames.py --input video.mp4 --output frames/ --resize 640x640
-#
-# 4. Maksymalnie 100 klatek z każdego wideo:
-#    python extract_frames.py --input data/raw/ --output data/frames/ --max-frames 100

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Test 2 – Robustness to forest imaging noise
+# Test 2: robustness to forest imaging noise.
 from __future__ import annotations
 
 import argparse
@@ -36,27 +36,12 @@ def apply_forest_noise(
     blur_kernel: int = 5,
     noise_sigma: float = 8.0,
 ) -> np.ndarray:
-    # Darken + blur + Gaussian noise (forest-like degradation).
     img = cv2.convertScaleAbs(image_bgr, alpha=brightness_factor, beta=0)
     k = blur_kernel if blur_kernel % 2 == 1 else blur_kernel + 1
     img = cv2.GaussianBlur(img, (k, k), 0)
     noise = np.random.normal(0.0, noise_sigma, img.shape).astype(np.float32)
     noisy = np.clip(img.astype(np.float32) + noise, 0, 255).astype(np.uint8)
     return noisy
-
-
-def resolve_split_images(data_yaml: Path, split: str = "test") -> Path:
-    # Resolve absolute path to images/<split> from data.yaml.
-    with data_yaml.open("r", encoding="utf-8") as f:
-        cfg = yaml.safe_load(f)
-    root = Path(cfg.get("path", data_yaml.parent))
-    if not root.is_absolute():
-        root = (data_yaml.parent / root).resolve()
-    split_key = cfg.get(split, f"images/{split}")
-    images_dir = Path(split_key)
-    if not images_dir.is_absolute():
-        images_dir = (root / images_dir).resolve()
-    return images_dir
 
 
 def build_noisy_dataset(
@@ -66,8 +51,7 @@ def build_noisy_dataset(
     blur_kernel: int,
     noise_sigma: float,
 ) -> Path:
-    # Copy the YOLO dataset layout into work_dir and replace test images with
-    # noise-corrupted versions. Labels are copied unchanged.
+    # Only test images are degraded; labels and other splits are copied as-is.
     with data_yaml.open("r", encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
 

@@ -141,4 +141,8 @@ htmlcov/
 
 # Kotlin compiler cache
 android/.kotlin/
-scripts/tests/*.log
+
+# Local working copies (not part of the project)
+scripts/fromPC/
+research_data/session_*/
+dyploma/EEdyplom.pdf

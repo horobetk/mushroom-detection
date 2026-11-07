@@ -1,38 +1,22 @@
-# Mushroom Detection — Python dependencies
-# Politechnika Warszawska, praca inżynierska (Kiril Horobets, 2026)
-#
-# Install:
-#   pip install -r requirements.txt
-# For GPU training, install a CUDA build of torch/torchvision from
-# https://pytorch.org/get-started/locally/ BEFORE this file (or override pins).
+# Install a CUDA build of torch/torchvision from pytorch.org first for GPU training.
 
-# --- Training / inference ---
 torch>=2.0.0
 torchvision>=0.15.0
 ultralytics>=8.3.0
 
-# --- TFLite export (scripts/export_tflite.py) ---
 tensorflow>=2.13.0
 
-# --- Auto-annotation (scripts/auto_label.py) ---
 autodistill>=0.1.28
 autodistill-grounding-dino>=0.1.3
 
-# --- Computer vision / I/O ---
 opencv-python>=4.8.0
 Pillow>=10.0.0
 numpy>=1.24.0
 pandas>=2.0.0
 
-# --- Plots / thesis evaluation scripts ---
 matplotlib>=3.7.0
 seaborn>=0.12.0
 
-# --- Utilities ---
 tqdm>=4.65.0
 pyyaml>=6.0
 requests>=2.31.0
-
-# --- Optional: public dataset download via Kaggle API ---
-# Requires local kaggle.json (never commit; see .gitignore)
-kaggle>=1.6.0

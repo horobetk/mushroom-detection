@@ -2,8 +2,9 @@
 
 **Praca inżynierska, Politechnika Warszawska, Wydział Elektryczny**
 
-Autonomiczny system detekcji i klasyfikacji **147 gatunków** grzybów na Androidzie:
-offline, w czasie rzeczywistym, z priorytetem bezpieczeństwa mykologicznego.
+Autonomiczny system detekcji i klasyfikacji **147 klas** grzybów (145 odrębnych gatunków)
+na Androidzie: offline, z interaktywnym odczytem z podglądu kamery (poniżej 1 s),
+z priorytetem bezpieczeństwa mykologicznego.
 
 | | |
 |---|---|
@@ -40,27 +41,27 @@ Założenia twarde:
 | Android | Kotlin, Jetpack Compose, CameraX, Room, TFLite Interpreter |
 
 **Model produkcyjny:** YOLO11m, `imgsz=640`, **147 klas**.  
-Wariant Nano (YOLO11n) służy wyłącznie jako baseline ablacyjny (~48% mAP₅₀).
+Wariant Nano (YOLO11n) służy wyłącznie jako baseline ablacyjny.
 
-### Wyniki referencyjne (zbiór testowy)
+### Wyniki referencyjne (izolowany zbiór testowy, 32 727 obrazów)
 
-| Wariant | mAP₅₀ | mAP₅₀–₉₅ | Rozmiar |
-|---------|-------|----------|---------|
-| YOLO11m (PyTorch) | 88,6% | 84,1% | ~38,8 MB |
-| YOLO11m (TFLite FP16) | 88,5% | 84,0% | **38,58 MB** |
-| YOLO11n (baseline) | 48,0% | 42,1% | ~5,6 MB |
+| Wariant | mAP₅₀ | mAP₅₀–₉₅ | P | R |
+|---------|-------|----------|---|---|
+| YOLO11m (PyTorch) | 82,75% | 78,23% | 80,90% | 75,32% |
+| YOLO11n (baseline) | 48,54% | 42,82% | 51,49% | 48,71% |
 
-Źródło: `docs/thesis_results/ablation_study.csv`.
+Artefakt TFLite FP16 (38,58 MB) porównano z PyTorch na losowej próbie 2 500 obrazów
+testowych: mAP₅₀ 79,14% wobec 84,67% (`docs/thesis_results/tflite_parity.json`).
 
 ### Progi bezpieczeństwa (Android)
 
-| Sygnał UI | Próg | Zachowanie |
-|-----------|------|------------|
-| Ostrzeżenie toksyczne | `conf ≥ 0,18` | natychmiastowy status UNSAFE |
-| Etykieta „Jadalny” | `conf ≥ 0,60` + głosowanie klatek | zielony status SAFE |
-| Strefa niepewności | pomiędzy | NEUTRAL (bez zielonej etykiety) |
+| Sygnał UI | Warunek | Zachowanie |
+|-----------|---------|------------|
+| Ostrzeżenie toksyczne | klasa trująca / śmiertelnie trująca, `conf ≥ 0,18` | natychmiastowe ostrzeżenie |
+| Etykieta „Jadalny” | klasa jadalna, `conf ≥ 0,60` i zgodność w 4 z 5 klatek | zielony status |
+| Pozostałe przypadki | m.in. klasy niejadalne, `conf ≥ 0,20` | szary status neutralny |
 
-Implementacja: `MushroomRegistry.displayStatus` + `DetectionTracker` (vote 4/5).
+Implementacja: `MushroomRegistry.displayStatus` + `DetectionTracker`.
 
 ---
 
@@ -74,13 +75,15 @@ mushroom-detection/
 │   ├── gather_data.py       # Akwizycja iNaturalist (Research Grade)
 │   ├── export_tflite.py     # Eksport PT → SavedModel → TFLite (FP16/FP32/INT8)
 │   ├── auto_label.py        # Auto-anotacja GroundingDINO
-│   ├── split_dataset.py     # Podział train/val/test
-│   ├── utils/               # extract_frames, NMS cleaner, dataset tools
-│   └── tests/               # Testy akademickie 1–5 → docs/thesis_results/
+│   ├── split_dataset.py     # Podział korpusu uczącego train/val
+│   ├── harvest_clean_test.py, label_clean_test.py, clean_test_split.py
+│   │                        # Izolowany zbiór testowy (nowe obs_id)
+│   ├── analyze_field_research.py  # Metryki z Trybu Badawczego (teren)
+│   ├── utils/               # Czyszczenie duplikatów ramek i narzędzia pomocnicze
+│   └── tests/               # Skrypty ewaluacji → docs/thesis_results/
 ├── docs/thesis_results/     # CSV / JSON / wykresy z ewaluacji
 ├── dyploma/                 # Praca dyplomowa (LaTeX, XeLaTeX)
-├── data/                    # Placeholdery lokalnych danych (treść poza gitem)
-├── weights/                 # Lokalne wagi .pt (poza gitem)
+├── research_data/           # Anotacja i wyniki ewaluacji terenowej
 ├── requirements.txt
 └── README.md
 ```
@@ -195,11 +198,15 @@ cd android
 ```
 
 - `minSdk 26`, `targetSdk 34`, Kotlin + Compose
-- CameraX `ImageAnalysis` → center crop 640 → TFLite → NMS → tracker → overlay
+- CameraX `ImageAnalysis` (4 FPS) → letterbox 640×640 → TFLite FP16 → NMS → tracker → nakładka
 - Historia znalezisk: Room + Coil
 
-Wymagane lokalnie: plik modelu `.tflite` w `app/src/main/assets/`
-oraz poprawny `local.properties` (SDK path; plik jest w `.gitignore`).
+Wymagane lokalnie: plik modelu `best_float16.tflite` w `app/src/main/assets/`
+(udostępniony w zakładce Releases razem z APK) oraz `local.properties` ze ścieżką SDK.
+
+Pomiar opóźnień na telefonie: kompilacja debug zapisuje `inference_profile.csv`
+(czas każdego etapu klatki) i `response_profile.csv` (czas do pierwszej ramki
+i do zielonej etykiety) w `Android/data/com.pw.mushroom/files/`.
 
 ---
 

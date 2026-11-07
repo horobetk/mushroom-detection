@@ -141,3 +141,4 @@ htmlcov/
 
 # Kotlin compiler cache
 android/.kotlin/
+scripts/tests/*.log

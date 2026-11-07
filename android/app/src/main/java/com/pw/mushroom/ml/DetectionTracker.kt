@@ -27,7 +27,9 @@ data class TrackedDetection(
     val frozen: Boolean,
     val voteConfirmed: Boolean,
     /** Top-N class scores from the most recent inference. Empty unless Research Mode is on. */
-    val topScores: List<ClassScore> = emptyList()
+    val topScores: List<ClassScore> = emptyList(),
+    /** Timestamp (ms) of the frame in which this track was first detected. */
+    val firstSeenMs: Long = 0L
 )
 
 /**
@@ -151,7 +153,7 @@ class DetectionTracker {
             recentClassIds.count { it == species.classId } >= MushroomRegistry.VOTE_REQUIRED
 
         fun toTracked(): TrackedDetection =
-            TrackedDetection(id, species, confidence, box, frozen, voteConfirmed(), topScores)
+            TrackedDetection(id, species, confidence, box, frozen, voteConfirmed(), topScores, firstSeenMs)
 
         private fun smooth(old: NormalizedBox, new: NormalizedBox): NormalizedBox =
             NormalizedBox(

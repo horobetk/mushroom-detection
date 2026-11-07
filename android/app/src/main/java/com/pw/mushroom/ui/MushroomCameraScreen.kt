@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Matrix
 import android.os.Build
+import android.os.SystemClock
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.widget.Toast
@@ -332,11 +333,12 @@ private fun CameraContent(viewModel: MushroomViewModel, onOpenHistory: () -> Uni
  * CameraX preview + asynchronous ImageAnalysis. Frames are delivered in
  * RGBA_8888 and converted to a rotation-corrected, full-resolution upright
  * bitmap on a background executor before being forwarded to [onFrame], which
- * takes ownership of the bitmap.
+ * takes ownership of the bitmap. [onFrame] also receives the frame arrival time
+ * ([SystemClock.elapsedRealtimeNanos]) and the CameraX sensor timestamp.
  */
 @Composable
 private fun CameraPreview(
-    onFrame: (Bitmap) -> Unit,
+    onFrame: (Bitmap, Long, Long) -> Unit,
     imageCapture: ImageCapture,
     modifier: Modifier = Modifier
 ) {
@@ -365,7 +367,12 @@ private fun CameraPreview(
 
         analysis.setAnalyzer(analysisExecutor) { imageProxy ->
             try {
-                onFrame(FrameCropper.toUprightBitmap(imageProxy))
+                val arrivedNs = SystemClock.elapsedRealtimeNanos()
+                onFrame(
+                    FrameCropper.toUprightBitmap(imageProxy),
+                    arrivedNs,
+                    imageProxy.imageInfo.timestamp
+                )
             } finally {
                 imageProxy.close()
             }

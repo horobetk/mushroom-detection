@@ -156,8 +156,15 @@ class MushroomViewModel(application: Application) : AndroidViewModel(application
      * Receive one upright, full-resolution frame from CameraX. Ownership of
      * [upright] transfers to the ViewModel: it is either recycled here or kept
      * as the latest frame for cropping.
+     *
+     * @param arrivedNs         [SystemClock.elapsedRealtimeNanos] when the analyzer received the frame.
+     * @param sensorTimestampNs CameraX sensor timestamp of the frame (profiling only).
      */
-    fun onFrame(upright: Bitmap) {
+    fun onFrame(
+        upright: Bitmap,
+        arrivedNs: Long = SystemClock.elapsedRealtimeNanos(),
+        sensorTimestampNs: Long = 0L
+    ) {
         val activeDetector = detector
         if (activeDetector == null) {
             upright.recycle()
@@ -192,6 +199,8 @@ class MushroomViewModel(application: Application) : AndroidViewModel(application
             return
         }
         lastInferenceAt = now
+        val acceptedNs = SystemClock.elapsedRealtimeNanos()
+        InferenceProfiler.noteFrame(now, arrivedNs)
 
         val aspect = viewAspectRatio
         viewModelScope.launch(Dispatchers.Default) {
@@ -199,17 +208,13 @@ class MushroomViewModel(application: Application) : AndroidViewModel(application
                 // Letterbox the visible region into the square input (aspect-preserving),
                 // run inference, then strip the padding so boxes are normalised to the
                 // visible region (they map 1:1 onto the full-screen preview).
+                val tStart = SystemClock.elapsedRealtimeNanos()
                 val lb = FrameCropper.letterbox(upright, aspect, activeDetector.inputResolution)
                 val t0 = SystemClock.elapsedRealtimeNanos()
                 val rawDetections = activeDetector.detect(lb.bitmap)
-                val detectMs = (SystemClock.elapsedRealtimeNanos() - t0) / 1_000_000.0
+                val t1 = SystemClock.elapsedRealtimeNanos()
+                val detectMs = (t1 - t0) / 1_000_000.0
                 lastDetectMs = detectMs
-                InferenceProfiler.record(
-                    context = getApplication(),
-                    detectMs = detectMs,
-                    nDetections = rawDetections.size,
-                    sceneLocked = sceneLocked
-                )
                 val detections = rawDetections
                     .map { it.copy(boundingBox = FrameCropper.toVisibleNormalized(it.boundingBox, lb)) }
                     // Asymmetric floor: toxic @ 0.18, other classes @ 0.20.
@@ -226,6 +231,23 @@ class MushroomViewModel(application: Application) : AndroidViewModel(application
                 }
 
                 _uiState.value = MushroomUiState.Scanning(tracked, tracker.isSceneLocked())
+                val publishedNs = SystemClock.elapsedRealtimeNanos()
+
+                InferenceProfiler.record(
+                    context = getApplication(),
+                    timing = InferenceProfiler.FrameTiming(
+                        sensorNs = sensorTimestampNs,
+                        arrivedNs = arrivedNs,
+                        acceptedNs = acceptedNs,
+                        startNs = tStart,
+                        detectStartNs = t0,
+                        detectEndNs = t1,
+                        publishedNs = publishedNs
+                    ),
+                    nDetections = rawDetections.size,
+                    sceneLocked = sceneLocked
+                )
+                InferenceProfiler.recordResponses(getApplication(), tracked, publishedNs)
             } catch (t: Throwable) {
                 Log.e(TAG, "Inference failed for frame", t)
                 upright.recycle()

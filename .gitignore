@@ -138,3 +138,6 @@ dyploma/EE-dyplom.pdf
 htmlcov/
 .mypy_cache/
 .ruff_cache/
+
+# Kotlin compiler cache
+android/.kotlin/

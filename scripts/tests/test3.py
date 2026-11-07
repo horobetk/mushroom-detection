@@ -58,6 +58,12 @@ def main() -> None:
     parser.add_argument("--conf-max", type=float, default=0.95)
     parser.add_argument("--conf-step", type=float, default=0.05)
     parser.add_argument(
+        "--split",
+        default="val",
+        choices=["val", "test", "train"],
+        help="Dataset split to evaluate on (default: val, to avoid test leakage).",
+    )
+    parser.add_argument(
         "--highlight",
         type=float,
         default=ANDROID_CONF_THRESHOLD,
@@ -72,6 +78,7 @@ def main() -> None:
 
     print("[INFO] TEST 3: Confidence Threshold Sweep")
     print(f"[INFO] Model:      {args.model}")
+    print(f"[INFO] Split:      {args.split}")
     print(f"[INFO] Range:      {args.conf_min:.2f} .. {args.conf_max:.2f} "
           f"(step {args.conf_step})")
     print(f"[INFO] Highlight:  {args.highlight:.3f} (Android)")
@@ -82,7 +89,7 @@ def main() -> None:
     for conf in thresholds:
         metrics = model.val(
             data=str(args.data),
-            split="test",
+            split=args.split,
             conf=float(conf),
             imgsz=args.imgsz,
             device=args.device,
@@ -133,7 +140,7 @@ def main() -> None:
     )
     plt.xlabel("Confidence threshold")
     plt.ylabel("Score")
-    plt.title("Confidence Threshold Sweep on Test Split")
+    plt.title(f"Confidence Threshold Sweep on {args.split.capitalize()} Split")
     plt.grid(True, alpha=0.3)
     plt.legend()
     plt.tight_layout()

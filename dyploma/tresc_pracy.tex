@@ -607,7 +607,7 @@ Granica między przygotowaniem modelu a czasem wykonania przebiega na artefakcie
  \caption{Podział systemu na warstwę przygotowania danych i uczenia, warstwę konwersji modelu oraz warstwę wykonawczą urządzenia mobilnego. Źródło: opracowanie własne.}
  \label{fig:warstwy}
 \end{figure}
-Przepływ danych przez system to jednokierunkowy potok o dziewięciu krokach (rys.~\ref{fig:potok_architektura}). Klasa \texttt{ImageAnalysis} CameraX dostarcza klatki ze strategią \texttt{STRATEGY\_KEEP\_ONLY\_LATEST}. Starsze klatki są odrzucane, zanim zdążą się kolejkować. \texttt{Mutex.tryLock()} ogranicza tempo do $4$\,FPS w trybie standardowym ($250$\,ms) lub do $1{,}5$\,s \textit{heartbeat} po ustabilizowaniu sceny. Interpreter TFLite uruchamia model FP16 i zwraca tensor $[1,\,151,\,8400]$: 4 współrzędne ramki i $147$ wyników klas dla każdego z $8400$ punktów predykcyjnych na mapach cech. Fast-fail obcina listę do 50 najwyżej ocenionych kandydatów; NMS ($\mathrm{IoU}>0{,}45$) usuwa nadmiary. Należy zaznaczyć, że zaimplementowany w aplikacji mechanizm NMS (\texttt{MushroomDetector.kt}) jest z zasady niewrażliwy na klasę (ang. \textit{class-agnostic}). Oznacza to, że pętla porównuje wyłącznie IoU geometryczny bez sprawdzania indeksu klasy. Ramka gatunku B o niższym wyniku pewności zostanie bezwzględnie usunięta, jeśli jej IoU z nakładającą się ramką gatunku A przekroczy zadany próg. Jest to celowe uproszczenie ukierunkowane na wydajność mobilną.
+Przepływ danych przez system to jednokierunkowy potok o dziewięciu krokach (rys.~\ref{fig:potok_architektura}). Klasa \texttt{ImageAnalysis} CameraX dostarcza klatki ze strategią \texttt{STRATEGY\_KEEP\_ONLY\_LATEST}. Starsze klatki są odrzucane, zanim zdążą się kolejkować. Bramka czasowa w \texttt{onFrame} przepuszcza klatkę co $250$\,ms ($4$\,FPS) albo co $1{,}5$\,s (\textit{heartbeat}) po ustabilizowaniu sceny, a \texttt{Mutex.tryLock()} odrzuca klatkę, gdy poprzednia inferencja jeszcze trwa. Interpreter TFLite uruchamia model FP16 i zwraca tensor $[1,\,151,\,8400]$: 4 współrzędne ramki i $147$ wyników klas dla każdego z $8400$ punktów predykcyjnych na mapach cech. Fast-fail obcina listę do 50 najwyżej ocenionych kandydatów; NMS ($\mathrm{IoU}>0{,}45$) usuwa nadmiary. Należy zaznaczyć, że zaimplementowany w aplikacji mechanizm NMS (\texttt{MushroomDetector.kt}) jest z zasady niewrażliwy na klasę (ang. \textit{class-agnostic}). Oznacza to, że pętla porównuje wyłącznie IoU geometryczny bez sprawdzania indeksu klasy. Ramka gatunku B o niższym wyniku pewności zostanie bezwzględnie usunięta, jeśli jej IoU z nakładającą się ramką gatunku A przekroczy zadany próg. Jest to celowe uproszczenie ukierunkowane na wydajność mobilną.
 
 Kroki tego potoku -- od akwizycji klatki po nakładkę i zapis -- ilustruje rys.~\ref{fig:potok_architektura}.
 
@@ -626,7 +626,7 @@ Kroki tego potoku -- od akwizycji klatki po nakładkę i zapis -- ilustruje rys.
  strz/.style={-latex, thick}
  ]
  \node[akw] (n1) at (0,0) {1. CameraX \texttt{ImageAnalysis} – \texttt{STRATEGY\_KEEP\_ONLY\_LATEST}};
- \node[akw] (n2) at (0,-1.15) {2. Ograniczanie tempa \texttt{Mutex.tryLock()}, $250$\,ms ($4$\,FPS) lub $1{,}5$\,s};
+ \node[akw] (n2) at (0,-1.15) {2. Bramka $250$\,ms ($4$\,FPS) lub $1{,}5$\,s; \texttt{tryLock} przy zajętej inferencji};
  \node[inf] (n3) at (0,-2.30) {3. Interpreter TensorFlow Lite – model YOLO11m FP16};
  \node[inf] (n4) at (0,-3.45) {4. Surowy tensor wyjściowy $[1,\,151,\,8400]$};
  \node[inf] (n5) at (0,-4.60) {5. Szybka selekcja top-$50$ + bramka wstępna ($0{,}18$ toksyczne, $0{,}20$ inne)};
@@ -664,7 +664,7 @@ Wybór modelu to czterowymiarowy kompromis: dokładność, rozmiar binarny, opó
  \item Detektor MobileNet SSD, o niższej precyzji detekcji, niewystarczającej do rozróżniania gatunków bliźniaczych \cite{liu2016ssd}.
  \item Rodzina EfficientDet, której czas inferencji jest zbyt długi względem założeń pracy w reżimie czasu rzeczywistego.
 \end{enumerate}
-Wybrano YOLO11 Medium (\texttt{YOLO11m}) \cite{ultralytics2024yolo11}. $\approx20{,}1$~mln parametrów daje pojemność wystarczającą do modelowania subtelnych cech morfologicznych $147$ klas, a konwersja do TFLite FP16 ($38{,}58$~MiB) mieści artefakt w pamięci flash telefonu. Na S23 Ultra zmierzono czas \texttt{detect()} (rozdz.~\ref{chap:badania}); pełnego cyklu CameraX nie profilowano. Wariant Nano, mimo mniejszego pliku, nie radził sobie z gatunkami bliźniaczymi – potwierdza to ablacja w rozdz.~\ref{chap:badania}. Wejście modelu to $640\times640$ pikseli; wyjście po dekodowaniu ma postać etykiet YOLO: \textit{class\_id cx cy w h}. Ilościową ocenę skuteczności przedstawia rozdz.~\ref{chap:badania}.
+Wybrano YOLO11 Medium (\texttt{YOLO11m}) \cite{ultralytics2024yolo11}. $\approx20{,}1$~mln parametrów daje pojemność wystarczającą do modelowania subtelnych cech morfologicznych $147$ klas, a konwersja do TFLite FP16 ($38{,}58$~MiB) mieści artefakt w pamięci flash telefonu. Na S23 Ultra zmierzono czas \texttt{detect()} (tab.~\ref{tab:latency_s23}) oraz pełny cykl klatki i czas reakcji (podrozdz.~\ref{sec:latency_e2e}). Ablacja pokazuje, że Nano ma wyraźnie niższe $mAP$ na tym samym teście; osobnej analizy par bliźniaczych dla Nano nie przeprowadzono. Wejście modelu to $640\times640$ pikseli; dekoder zwraca listę detekcji (gatunek, pewność, ramka). Ilościową ocenę skuteczności przedstawia rozdz.~\ref{chap:badania}.
 
 
 \chapter{Implementacja rozwiązania}\label{chap:implementacja}
@@ -729,7 +729,7 @@ Liczebność podziałów podano w tab.~\ref{tab:podzial_zbioru}. Obrazy i ramki 
 \end{table}
 
 \paragraph{Uwaga o podziale train/val.}
-Skrypt \texttt{split\_dataset.py} dzieli korpus uczący na \texttt{train} i \texttt{val} losowo na poziomie plików, bez grupowania po \texttt{obs\_id}. Różne zdjęcia tej samej obserwacji mogą zatem trafić do obu podziałów, co może nieznacznie zawyżać metryki walidacyjne doboru hiperparametrów. Izolacja po \texttt{obs\_id} obowiązuje wyłącznie dla zbioru testowego (weryfikacja: $0$ wspólnych \texttt{obs\_id} z korpusem uczącym). Nie jest to wyciek do ewaluacji końcowej, ale pozostaje ograniczeniem metodologicznym podziału \texttt{train}/\texttt{val}.
+Skrypt \texttt{split\_dataset.py} wydzielał losowo, osobno dla każdej klasy dodanej w etapie 2 (identyfikatory $\ge 105$), po $10\%$ plików do \texttt{val} i do pierwotnego \texttt{test}, bez grupowania po \texttt{obs\_id}. Podział pierwszych $105$ klas nie jest odtworzony tym skryptem, a pierwotny \texttt{test} zastąpiono później zbiorem izolowanym. Różne zdjęcia tej samej obserwacji mogą zatem trafić do obu podziałów, co może nieznacznie zawyżać metryki walidacyjne doboru hiperparametrów. Izolacja po \texttt{obs\_id} obowiązuje wyłącznie dla zbioru testowego (weryfikacja: $0$ wspólnych \texttt{obs\_id} z korpusem uczącym). Nie jest to wyciek do ewaluacji końcowej, ale pozostaje ograniczeniem metodologicznym podziału \texttt{train}/\texttt{val}.
 
 \subsection{Akwizycja danych z serwisu iNaturalist}
 Zbiór uczący pochodzi z iNaturalist \cite{inaturalist} – platformy citizen science z publicznym interfejsem REST API (\url{https://api.inaturalist.org/v1/observations}). Kluczowy filtr: \texttt{quality\_grade=research}. Obserwacja na tym poziomie przeszła weryfikację przez co najmniej dwóch niezależnych identyfikatorów ze społeczności. Skrypt \texttt{gather\_data.py} odpytuje API stronicowanymi żądaniami dla każdego taksonu z listy $105$ gatunków, podmienia w adresie miniaturę \texttt{square} na wariant \texttt{large} i zapisuje plik lokalnie pod nazwą \texttt{\{obs\_id\}\_\{photo\_id\}.jpg}. Format anotacji lokalizacyjnych powstaje dopiero w kolejnym etapie (GroundingDINO); na tym kroku zbierane są same obrazy. Rys.~\ref{fig:coco_sample_web} pokazuje wyłącznie konwencję ramki otaczającej na przykładzie zbioru COCO \cite{lin2014coco}; nie są to fotografie grzybów z niniejszego zbioru.
@@ -753,46 +753,47 @@ TARGET_PER_CLASS = 1000
 PAGES, PER_PAGE, MAX_RETRIES = 20, 50, 3
 
 def download_species(session, species):
- folder = f"{BASE_DATA_DIR}/{species.replace(' ', '_')}"
- os.makedirs(folder, exist_ok=True)
- existing = count_valid_files(folder) # pliki > 0 B
- if existing >= TARGET_PER_CLASS:
- print(f"Skip: {species} ({existing} photos)")
- return True
+    folder = f"{BASE_DATA_DIR}/{species.replace(' ', '_')}"
+    os.makedirs(folder, exist_ok=True)
+    existing = count_valid_files(folder)  # pliki > 0 B
+    if existing >= TARGET_PER_CLASS:
+        print(f"Skip: {species} ({existing} photos)")
+        return True
 
- for page in range(1, PAGES + 1):
- url = (
- "https://api.inaturalist.org/v1/observations"
- f"?taxon_name={species.replace(' ', '+')}"
- f"&has[]=photos&quality_grade=research"
- f"&per_page={PER_PAGE}&page={page}"
-)
- results = []
- for retry in range(MAX_RETRIES):
- response = session.get(url, headers={"User-Agent": "Mozilla/5.0"},
- timeout=15)
- if response.status_code == 200:
- results = response.json().get("results", [])
- break
- if response.status_code in (429, 500, 503):
- time.sleep(5)
- if not results:
- break
+    for page in range(1, PAGES + 1):
+        url = (
+            "https://api.inaturalist.org/v1/observations"
+            f"?taxon_name={species.replace(' ', '+')}"
+            f"&has[]=photos&quality_grade=research"
+            f"&per_page={PER_PAGE}&page={page}"
+        )
+        results = []
+        for retry in range(MAX_RETRIES):
+            response = session.get(
+                url, headers={"User-Agent": "Mozilla/5.0"}, timeout=15
+            )
+            if response.status_code == 200:
+                results = response.json().get("results", [])
+                break
+            if response.status_code in (429, 500, 503):
+                time.sleep(5)
+        if not results:
+            break
 
- for obs in results:
- for photo in obs.get("photos", []):
- img_url = photo["url"].replace("square", "large")
- path = os.path.join(folder, f"{obs['id']}_{photo['id']}.jpg")
- if os.path.exists(path):
- continue
- try:
- data = session.get(img_url, timeout=10).content
- with open(path, "wb") as f:
- f.write(data)
- time.sleep(0.3)
- except Exception:
- continue
- return count_valid_files(folder) >= TARGET_PER_CLASS
+        for obs in results:
+            for photo in obs.get("photos", []):
+                img_url = photo["url"].replace("square", "large")
+                path = os.path.join(folder, f"{obs['id']}_{photo['id']}.jpg")
+                if os.path.exists(path):
+                    continue
+                try:
+                    data = session.get(img_url, timeout=10).content
+                    with open(path, "wb") as f:
+                        f.write(data)
+                    time.sleep(0.3)
+                except Exception:
+                    continue
+    return count_valid_files(folder) >= TARGET_PER_CLASS
 \end{lstlisting}
 
 Funkcja \texttt{download\_species} najpierw liczy niepuste pliki w katalogu gatunku. Przy $\geq 1000$ zwraca \texttt{True} bez kontaktu z API – to warunek wznowienia po przerwie. W przeciwnym razie stronicuje obserwacje (\texttt{quality\_grade=research}, \texttt{has[]=photos}). Adres miniatury \texttt{square} zamieniany jest na \texttt{large}. Istniejący plik o tej samej nazwie nie jest pobierany ponownie.
@@ -1054,7 +1055,7 @@ Ramkę uznawano za fantomowy duplikat wyłącznie wtedy, gdy jednocześnie speł
  \end{tikzpicture}
  \caption{Rozróżnienie duplikatu fantomowego od sąsiadujących owocników przez koniunkcję kryteriów $\mathrm{IoS}$ i $\mathrm{Center\_Distance}$. Źródło: opracowanie własne.}
  \label{fig:ios_geometria}
-\end{figure} Procedurę uruchomiono na wszystkich podziałach zbioru (\texttt{train}, \texttt{val}, \texttt{test}); wynik: $22\,327$ usuniętych fantomowych ramek w $19\,670$ plikach etykiet. Implementację obu miar i warunku koniunkcyjnego pokazuje listing \ref{lst:nms_cleaner}.
+\end{figure} Procedurę uruchomiono na podziałach \texttt{train} i \texttt{val} oraz na pierwotnym, później wycofanym podziale testowym; wynik: $22\,327$ usuniętych fantomowych ramek w $19\,670$ plikach etykiet. Izolowany zbiór testowy (\texttt{label\_clean\_test.py}) tego czyszczenia nie przeszedł, co tłumaczy zdublowane ramki w audycie pominięć (tab.~\ref{tab:audyt_fn}). Implementację obu miar i warunku koniunkcyjnego pokazuje listing \ref{lst:nms_cleaner}.
 
 \begin{lstlisting}[language=Python,caption={Dwukryterialna eliminacja fantomowych duplikatów ramek (\texttt{scripts/utils/clean\_duplicate\_boxes\_v2.py})},label={lst:nms_cleaner}]
 IOU_THRESHOLD = 0.75
@@ -1965,7 +1966,7 @@ Uzyskany poziom $mAP_{50}=82{,}75\%$ przy precyzji $80{,}90\%$ i czułości $75{
 Zaobserwowano także systematyczną lukę pomiędzy $mAP_{50}$ a $mAP_{50\text{--}95}$, widoczną we wszystkich trzech zakresach ewaluacji. Niższy wynik przy surowych progach IoU ($0{,}50$--$0{,}95$) wynika z naturalnej zmienności morfologicznej kapeluszy oraz częściowego przesłonięcia owocników ściółką liściową, które utrudniają idealne dopasowanie geometryczne ramek. Różnica ta nie podważa użyteczności modelu w scenariuszu mobilnym, gdzie nadrzędne jest prawidłowe wykrycie i klasyfikacja gatunku, a nie milimetrowa precyzja obrysu.
 
 \subsection{Porównanie PyTorch i TFLite FP16}\label{sec:tflite_parity}
-Hipoteza $H_1$ mówi o modelu FP16 na telefonie, podczas gdy tablice $mAP$ powyżej pochodzą z wag \texttt{best.pt}. Na izolowanym teście wylosowano $2\,500$ obrazów (\texttt{seed}=42; $5\,568$ instancji). Dla \texttt{.pt} uruchomiono Ultralytics \texttt{val} na RTX~4070. Dla \texttt{best\_saved\_model\_fp16.tflite} nie użyto LiteRT \texttt{val}: ten dekoder nie parował tensora $[1,\;151,\;8400]$ z protokołem COCO. Zamiast tego Interpreter TFLite czyta wyjście w układzie aplikacji (\texttt{MushroomDetector.kt}: indeks ${}= \text{kanał}\times 8400+\text{punkt}$), letterbox $640$ z tłem $114$, NMS jak w \texttt{val} ($\mathrm{conf}=0{,}001$, $\mathrm{IoU}=0{,}70$, $\mathrm{max\_det}=300$), a $mAP$ liczy \texttt{ap\_per\_class} Ultralytics (\texttt{test\_tflite\_parity.py}).
+Hipoteza $H_1$ mówi o modelu FP16 na telefonie, podczas gdy tablice $mAP$ powyżej pochodzą z wag \texttt{best.pt}. Na izolowanym teście wylosowano $2\,500$ obrazów (\texttt{seed}=42; $5\,568$ instancji). Dla \texttt{.pt} uruchomiono Ultralytics \texttt{val} na RTX~4070. Dla \texttt{best\_saved\_model\_fp16.tflite} nie użyto LiteRT \texttt{val}: ten dekoder nie parował tensora $[1,\;151,\;8400]$ z protokołem COCO. Zamiast tego Interpreter TFLite czyta wyjście w układzie aplikacji (\texttt{MushroomDetector.kt}: indeks ${}= \text{kanał}\times 8400+\text{punkt}$), letterbox $640$ z tłem $114$ (w aplikacji tło ma wartość $136$), NMS zachłanny niezależny od klasy przy jednej etykiecie na kotwicę ($\mathrm{conf}=0{,}001$, $\mathrm{IoU}=0{,}70$, $\mathrm{max\_det}=300$; \texttt{val} tłumi ramki osobno w każdej klasie), a $mAP$ liczy \texttt{ap\_per\_class} Ultralytics (\texttt{test\_tflite\_parity.py}).
 
 Na tej samej próbie PyTorch dał $mAP_{50}=0{,}8467$, $mAP_{50\text{--}95}=0{,}8042$, $P=0{,}8139$, $R=0{,}7671$. TFLite FP16: $mAP_{50}=0{,}7914$, $mAP_{50\text{--}95}=0{,}7559$, $P=0{,}8169$, $R=0{,}7454$, po NMS $16\,917$ predykcji, średnio $177{,}2$\,ms/kadr na CPU (XNNPACK). Różnica $mAP_{50}$ wynosi $-0{,}0553$ (spadek względny $6{,}5\%$); $mAP_{50\text{--}95}$ spada o $0{,}0483$, czułość o $0{,}0217$, precyzja jest nieznacznie wyższa ($+0{,}0030$). Konwersja nie zeruje detekcji, ale \textbf{nie} jest ilościowym parytetem z \texttt{.pt}. Metryki pełnego testu w tab.~\ref{tab:wyniki_detekcji} pozostają pomiarem PyTorch; tab.~\ref{tab:tflite_parity} dotyczy wyłącznie tej próby. Czas $177{,}2$\,ms to Interpreter na CPU stacji, nie \texttt{detect()} na S23 Ultra.
 
@@ -1992,7 +1993,7 @@ Na tej samej próbie PyTorch dał $mAP_{50}=0{,}8467$, $mAP_{50\text{--}95}=0{,}
  \end{tabular}
 \end{table}
 
-Należy podkreślić metodyczną różnicę w postprocessingu: eksperyment parzystości w tab.~\ref{tab:tflite_parity} posłużył do oceny jakości surowego tensora według standardowego protokołu mAP Ultralytics ($\mathrm{conf}=0{,}001$, $\mathrm{IoU}=0{,}70$, $\mathrm{max\_det}=300$). W docelowej aplikacji mobilnej (\texttt{MushroomDetector.kt}) stosowany jest odmienny potok operacyjny: wstępna selekcja top-$50$ kandydatów, próg class-agnostic NMS $\mathrm{IoU}=0{,}45$ oraz bramki pewności $0{,}18$ i $0{,}20$. Wartości CFPR z~hipotezy $H_2$ obliczono wyłącznie na predykcjach PyTorch (\texttt{test\_h2\_baseline.py}). Dlatego CFPR policzono dodatkowo na artefakcie TFLite FP16 z postprocessingiem odtwarzającym potok aplikacji (podrozdz.~\ref{sec:safety_matrix}, tab.~\ref{tab:cfpr_porownanie}).
+Należy podkreślić metodyczną różnicę w postprocessingu: eksperyment parzystości w tab.~\ref{tab:tflite_parity} posłużył do oceny jakości surowego tensora według standardowego protokołu mAP Ultralytics ($\mathrm{conf}=0{,}001$, $\mathrm{IoU}=0{,}70$, $\mathrm{max\_det}=300$). W docelowej aplikacji mobilnej (\texttt{MushroomDetector.kt}) stosowany jest odmienny potok operacyjny: wstępna selekcja top-$50$ kandydatów, próg class-agnostic NMS $\mathrm{IoU}=0{,}45$ oraz bramki pewności $0{,}18$ i $0{,}20$. Pierwszy pomiar CFPR wykonano na predykcjach PyTorch (\texttt{test\_h2\_baseline.py}). Dlatego powtórzono go na artefakcie TFLite FP16 z postprocessingiem odtwarzającym potok aplikacji (podrozdz.~\ref{sec:safety_matrix}, tab.~\ref{tab:cfpr_porownanie}).
 
 \section{Analiza macierzy ryzyka i asymetryczna polityka bezpieczeństwa}\label{sec:safety_matrix}
 Szczególną kategorię błędów detekcji stanowią pomyłki pomiędzy gatunkami bliźniaczymi (ang. \textit{look-alikes}). Na zbiorze testowym oprócz $mAP$ liczono macierz ryzyka. Rejestr aplikacji (\texttt{MushroomRegistry}, $147$ klas) ma trzy etykiety biologiczne: jadalne (\texttt{EDIBLE}), niejadalne (\texttt{INEDIBLE}) oraz toksyczne (\texttt{POISONOUS} albo \texttt{DEADLY}). Warstwa wyświetlania (\texttt{displayStatus}) jest inna niż ta etykieta:
@@ -2001,7 +2002,7 @@ Szczególną kategorię błędów detekcji stanowią pomyłki pomiędzy gatunkam
  \item \textbf{ostrzeżenie toksyczne} -- klasa toksyczna i pewność $\ge 0{,}18$;
  \item \textbf{brak asercji} (szary NEUTRAL) -- pozostałe przypadki, w tym \emph{wszystkie} predykcje niejadalne, niezależnie od pewności.
 \end{itemize}
-\texttt{CFPR} liczy się wyłącznie na instancjach toksycznych: $P(\text{asercja jadalności}\mid\text{gt toksyczny})$. Niejadalne nie są jadalne. Hipotezę $H_2$ rozstrzyga porównanie tej samej definicji przy parze $0{,}18$/$0{,}60$ oraz przy jednym progu $\tau=0{,}30$, na \emph{tym samym} izolowanym teście, w jednym przebiegu \texttt{predict} (\texttt{test\_h2\_baseline.py}, $32\,727$ obrazów, $73\,272$ instancji). Ten pomiar dotyczy wag PyTorch (\texttt{best.pt}) i postprocessingu Ultralytics (NMS w obrębie klasy, $\mathrm{IoU}=0{,}70$, $\mathrm{conf}\ge0{,}05$). Aplikacja uruchamia artefakt TFLite FP16 z własnym dekoderem, dlatego pomiar powtórzono skryptem \texttt{test\_tflite\_cfpr.py}, który odtwarza potok \texttt{MushroomDetector.kt}: letterbox z szarym tłem, progi wstępne $0{,}18$ (klasy toksyczne) i $0{,}20$ (pozostałe), $50$ najwyżej ocenionych kandydatów i NMS niezależny od klasy ($\mathrm{IoU}>0{,}45$, najwyżej $20$ detekcji). Bufora $4$ z $5$ klatek nie da się odtworzyć na pojedynczych zdjęciach: każdą asercję jadalności liczono tak, jakby konsensus był spełniony, więc CFPR TFLite jest górnym oszacowaniem dla nakładki na żywo. Wiersze macierzy to etykiety rejestru: jadalne / niejadalne / toksyczne. Kolumny to \texttt{displayStatus}: asercja jadalności / brak asercji / ostrzeżenie. Starsza macierz ze zwiniętym wierszem ``nietoksyczne'' ($57\,432$ instancji, CFPR $2{,}50\%$) nie jest używana w weryfikacji $H_2$: składała jadalne z niejadalnymi i liczyła inną kolumnę ``SAFE''.
+\texttt{CFPR} liczy się wyłącznie na instancjach toksycznych: $P(\text{asercja jadalności}\mid\text{gt toksyczny})$. Niejadalne nie są jadalne. Hipotezę $H_2$ rozstrzyga porównanie tej samej definicji przy parze $0{,}18$/$0{,}60$ oraz przy jednym progu $\tau=0{,}30$, na \emph{tym samym} izolowanym teście, w jednym przebiegu \texttt{predict} (\texttt{test\_h2\_baseline.py}, $32\,727$ obrazów, $73\,272$ instancji). Ten pomiar dotyczy wag PyTorch (\texttt{best.pt}) i postprocessingu Ultralytics (NMS w obrębie klasy, $\mathrm{IoU}=0{,}70$, $\mathrm{conf}\ge0{,}05$). Aplikacja uruchamia artefakt TFLite FP16 z własnym dekoderem, dlatego pomiar powtórzono skryptem \texttt{test\_tflite\_cfpr.py}, który odtwarza potok \texttt{MushroomDetector.kt}: letterbox z szarym tłem, progi wstępne $0{,}18$ (klasy toksyczne) i $0{,}20$ (pozostałe), $50$ najwyżej ocenionych kandydatów i NMS niezależny od klasy ($\mathrm{IoU}>0{,}45$, najwyżej $20$ detekcji). Bufora $4$ z $5$ klatek nie da się odtworzyć na pojedynczych zdjęciach: każdą asercję jadalności liczono tak, jakby konsensus był spełniony, więc CFPR TFLite jest górnym oszacowaniem dla nakładki na żywo. Wiersze macierzy to etykiety rejestru: jadalne / niejadalne / toksyczne. Kolumny to \texttt{displayStatus}: asercja jadalności / brak asercji / ostrzeżenie. Starsza macierz ze zwiniętym wierszem ``nietoksyczne'' (wiersz bezpieczny $61\,906$ instancji, wiersz niebezpieczny $11\,366$; CFPR $284/11\,366=2{,}50\%$) nie jest używana w weryfikacji $H_2$: składała jadalne z niejadalnymi i liczyła inną kolumnę ``SAFE''.
 
 Na $15\,840$ instancjach toksycznych polityka asymetryczna dała $327$ asercje jadalności, a próg globalny $580$:
 \begin{equation}
@@ -2100,7 +2101,7 @@ Uzyskany CFPR $2{,}06\%$ (PyTorch) należy interpretować ostrożnie. $327$ z $1
 
 \textbf{Pochodzenie progów.} Para $(\mathrm{conf}_{\mathrm{toxic}},\,\mathrm{conf}_{\mathrm{edible}})=(0{,}18,\,0{,}60)$ została wpisana do rejestru aplikacji (\texttt{MushroomRegistry.kt}) 11 sierpnia 2026~r., czyli przed zbudowaniem izolowanego zbioru testowego (skrypty \texttt{harvest\_clean\_test.py} i \texttt{label\_clean\_test.py}, 18--19 sierpnia 2026~r.). Zastąpiła ona wcześniejsze wartości robocze, w tym jeden próg globalny $0{,}304$ opisany niżej. Wybór opierał się na asymetrycznej przesłance bezpieczeństwa: możliwie wczesne ostrzeganie o~gatunkach toksycznych (niski próg $0{,}18$) i~konserwatywna asercja jadalności (wysoki próg $0{,}60$). Przy ustalaniu progów dostępne były jedynie wyniki z~poprzedniego podziału testowego, który -- jak wykazano później -- dzielił obserwacje (\texttt{obs\_id}) z~korpusem uczącym. Nie można więc wykluczyć, że wartości $0{,}18$ i $0{,}60$ były pośrednio inspirowane krzywymi z~tamtego, przeciekającego podziału. Wyniki izolowanego testu -- przeciągnięcie progu z~tab.~\ref{tab:threshold_sweep} i~macierze z~tab.~\ref{tab:cfpr_porownanie} -- powstały po zamrożeniu progów i~nie posłużyły do ich zmiany.
 
-Przeciągnięcie progu (ang. \textit{confidence threshold sweep}) w~zakresie $0{,}05$--$0{,}95$ (skrypt \texttt{test3\_threshold\_sweep.py}) charakteryzuje zatem kompromis już przyjętych progów, a~nie jest procedurą ich doboru. Para $0{,}18$/$0{,}60$ jest przy tym \emph{nieoptymalna} względem $F_1$ (maksimum $F_1^{\max}=0{,}7801$ wypada przy $\mathrm{conf}=0{,}05$). W~zakresie $\mathrm{conf}\le 0{,}20$ raportowane przez Ultralytics $P$, $R$ i~$F_1$ pozostają praktycznie stałe (tab.~\ref{tab:threshold_sweep}), podczas gdy $mAP_{50}$ maleje monotonicznie; z~samej tabeli nie wynika więc, że próg $0{,}05$ generuje więcej fałszywych alarmów niż $0{,}20$.
+Przeciągnięcie progu (ang. \textit{confidence threshold sweep}) w~zakresie $0{,}05$--$0{,}95$ (skrypt \texttt{test3\_threshold\_sweep.py}) charakteryzuje zatem kompromis już przyjętych progów, a~nie jest procedurą ich doboru. Para $0{,}18$/$0{,}60$ jest przy tym \emph{nieoptymalna} względem $F_1$ ($F_1=0{,}7801$ utrzymuje się na całym przedziale $\mathrm{conf}=0{,}05$--$0{,}20$). W~zakresie $\mathrm{conf}\le 0{,}20$ raportowane przez Ultralytics $P$, $R$ i~$F_1$ pozostają praktycznie stałe (tab.~\ref{tab:threshold_sweep}), podczas gdy $mAP_{50}$ maleje monotonicznie; z~samej tabeli nie wynika więc, że próg $0{,}05$ generuje więcej fałszywych alarmów niż $0{,}20$.
 
 We wcześniejszej iteracji polityki progów, poprzedzającej wprowadzenie podziału asymetrycznego, aplikacja korzystała z pojedynczego, globalnego progu operacyjnego $\mathrm{conf}=0{,}304$. Najbliższy zarejestrowany węzeł przeciągnięcia na izolowanym teście ($\mathrm{conf}=0{,}30$) daje: precyzja $P=80{,}41\%$, czułość $R=75{,}18\%$, miara $F_1=77{,}71\%$ oraz $mAP_{50}=71{,}01\%$. Pojedynczy próg globalny tego rzędu równoważy $P$ i $R$ w ujęciu zagregowanym, nie różnicuje jednak ryzyka konsumpcyjnego pomiędzy gatunkami jadalnymi a trującymi. Dlatego zastąpiono go parą $(\mathrm{conf}_{\mathrm{toxic}},\,\mathrm{conf}_{\mathrm{edible}})=(0{,}18,\,0{,}60)$. Jako docelowy punkt asercji jadalności przyjęto $\mathrm{conf}_{\mathrm{edible}}=0{,}60$, natomiast próg ostrzeżeń toksycznych ustalono na $\mathrm{conf}_{\mathrm{toxic}}=0{,}18$. Wybrane węzły przeciągnięcia zestawiono w tab.~\ref{tab:threshold_sweep}. Przebieg $F_1$ przedstawia rys.~\ref{fig:threshold_sweep_f1}.
 
@@ -2112,7 +2113,7 @@ We wcześniejszej iteracji polityki progów, poprzedzającej wprowadzenie podzia
  \hline
  $\mathbf{conf}$ & $\boldsymbol{P}$ & $\boldsymbol{R}$ & $\boldsymbol{F_1}$ & $\boldsymbol{mAP_{50}}$ & \textbf{Uwagi} \\
  \hline \hline
- $0{,}05$ & $0{,}8090$ & $0{,}7532$ & $\mathbf{0{,}7801}$ & $0{,}7926$ & maksimum $F_1$ \\
+ $0{,}05$ & $0{,}8090$ & $0{,}7532$ & $\mathbf{0{,}7801}$ & $0{,}7926$ & początek plateau $F_1$ \\
  \hline
  $0{,}15$ & $0{,}8090$ & $0{,}7532$ & $0{,}7801$ & $0{,}7538$ & węzeł poniżej progu toksycznego $0{,}18$ \\
  \hline
@@ -2147,7 +2148,7 @@ Skuteczność w przypadkach bliźniaczych nie sprowadza się wyłącznie do zdol
 \subsection{Pary gatunków bliźniaczych}\label{sec:lookalikes}
 We wstępie wymieniono pary o wysokim koszcie pomyłki. Na izolowanym teście \texttt{test\_h2\_baseline.py} zliczał oba kierunki przy $\mathrm{IoU}\ge 0{,}50$ (tab.~\ref{tab:lookalike_pary}). Licznik nie jest CFPR: tu chodzi o konkretną parę taksonów, nie o asercję jadalności na wszystkich klasach toksycznych.
 
-Najczęstsza pomyłka spośród tych par to \textit{Kuehneromyces mutabilis} $\to$ \textit{Galerina marginata} ($42/1\,018$, $4{,}13\%$) oraz odwrotnie ($13/808$, $1{,}61\%$). Muchomor sromotnikowy nie został pomylony z pieczarką polną ($0/780$ i $0/840$); z muchomorem cytrynowym: $7/780$ ($0{,}90\%$) i $4/305$ ($1{,}31\%$). Kurki nie sklasyfikowano jako lisówki ($0/1\,054$); dwa kadry kurki dostały etykietę \textit{Omphalotus olearius} ($2/1\,054$, $0{,}19\%$), w drugą stronę $0/482$.
+Najczęstsza pomyłka spośród tych par to \textit{Kuehneromyces mutabilis} $\to$ \textit{Galerina marginata} ($42/1\,018$, $4{,}13\%$) oraz odwrotnie ($13/808$, $1{,}61\%$). Muchomor sromotnikowy nie został pomylony z pieczarką polną ($0/390$ i $0/420$); z muchomorem cytrynowym: $7/390$ ($1{,}79\%$) i $4/305$ ($1{,}31\%$). Kurki nie sklasyfikowano jako lisówki ($0/527$); dwie instancje kurki dostały etykietę \textit{Omphalotus olearius} ($2/527$, $0{,}38\%$), w drugą stronę $0/482$. Gatunki występujące w dwóch parach (\textit{A.\ phalloides}, \textit{A.\ campestris}, \textit{C.\ cibarius}) liczono raz na instancję.
 
 \begin{table}[htbp]
  \centering
@@ -2157,25 +2158,25 @@ Najczęstsza pomyłka spośród tych par to \textit{Kuehneromyces mutabilis} $\t
  \hline
  \textbf{gt} & \textbf{pred} & $\boldsymbol{n_{\mathrm{gt}}}$ & \textbf{pomyłki} & \textbf{udział} \\
  \hline \hline
- \textit{A.\ phalloides} & \textit{A.\ campestris} & $780$ & $0$ & $0{,}00\%$ \\
+ \textit{A.\ phalloides} & \textit{A.\ campestris} & $390$ & $0$ & $0{,}00\%$ \\
  \hline
- \textit{A.\ campestris} & \textit{A.\ phalloides} & $840$ & $0$ & $0{,}00\%$ \\
+ \textit{A.\ campestris} & \textit{A.\ phalloides} & $420$ & $0$ & $0{,}00\%$ \\
  \hline
- \textit{A.\ phalloides} & \textit{A.\ citrina} & $780$ & $7$ & $0{,}90\%$ \\
+ \textit{A.\ phalloides} & \textit{A.\ citrina} & $390$ & $7$ & $1{,}79\%$ \\
  \hline
  \textit{A.\ citrina} & \textit{A.\ phalloides} & $305$ & $4$ & $1{,}31\%$ \\
  \hline
  \textit{A.\ virosa} & \textit{A.\ campestris} & $127$ & $1$ & $0{,}79\%$ \\
  \hline
- \textit{A.\ campestris} & \textit{A.\ virosa} & $840$ & $0$ & $0{,}00\%$ \\
+ \textit{A.\ campestris} & \textit{A.\ virosa} & $420$ & $0$ & $0{,}00\%$ \\
  \hline
  \textit{O.\ olearius} & \textit{C.\ cibarius} & $482$ & $0$ & $0{,}00\%$ \\
  \hline
- \textit{C.\ cibarius} & \textit{O.\ olearius} & $1\,054$ & $2$ & $0{,}19\%$ \\
+ \textit{C.\ cibarius} & \textit{O.\ olearius} & $527$ & $2$ & $0{,}38\%$ \\
  \hline
  \textit{H.\ aurantiaca} & \textit{C.\ cibarius} & $464$ & $0$ & $0{,}00\%$ \\
  \hline
- \textit{C.\ cibarius} & \textit{H.\ aurantiaca} & $1\,054$ & $0$ & $0{,}00\%$ \\
+ \textit{C.\ cibarius} & \textit{H.\ aurantiaca} & $527$ & $0$ & $0{,}00\%$ \\
  \hline
  \textit{G.\ marginata} & \textit{K.\ mutabilis} & $808$ & $13$ & $1{,}61\%$ \\
  \hline
@@ -2185,7 +2186,7 @@ Najczęstsza pomyłka spośród tych par to \textit{Kuehneromyces mutabilis} $\t
 \end{table}
 
 \section{Test odporności na zakłócenia leśne}
-W warunkach terenowych jakość obrazu z kamery smartfonu jest systematycznie degradowana przez czynniki optyczne i środowiskowe: obniżone oświetlenie podszytu, rozmycie wynikające z ruchu ręki oraz szum elektroniczny matrycy przy podwyższonej czułości ISO. W celu ilościowej oceny odporności detektora na takie zaburzenia przeprowadzono test obciążeniowy (ang. \textit{stress test}) zaimplementowany w skrypcie \texttt{test2\_robustness\_noise.py}. Na izolowanym zbiorze testowym zasymulowano jednoczesne działanie trzech czynników: ściemnienia obrazu ze współczynnikiem jasności $0{,}6$ (redukcja o $40\%$), rozmycia ruchowego z jądrem konwolucyjnym o rozmiarze $5$ pikseli oraz addytywnego szumu Gaussa o odchyleniu standardowym $\sigma=8{,}0$, odpowiadającego typowemu szumowi matrycy przy podwyższonym ISO. Parametry symulacji oraz uzyskane wyniki zestawiono w tab.~\ref{tab:odpornosc}.
+W warunkach terenowych jakość obrazu z kamery smartfonu jest systematycznie degradowana przez czynniki optyczne i środowiskowe: obniżone oświetlenie podszytu, rozmycie wynikające z ruchu ręki oraz szum elektroniczny matrycy przy podwyższonej czułości ISO. W celu ilościowej oceny odporności detektora na takie zaburzenia przeprowadzono test obciążeniowy (ang. \textit{stress test}) zaimplementowany w skrypcie \texttt{test2\_robustness\_noise.py}. Na izolowanym zbiorze testowym zasymulowano jednoczesne działanie trzech czynników: ściemnienia obrazu ze współczynnikiem jasności $0{,}6$ (redukcja o $40\%$), rozmycia gaussowskiego z jądrem $5\times5$, przybliżającego nieostrość kadru oraz addytywnego szumu Gaussa o odchyleniu standardowym $\sigma=8{,}0$, odpowiadającego typowemu szumowi matrycy przy podwyższonym ISO. Parametry symulacji oraz uzyskane wyniki zestawiono w tab.~\ref{tab:odpornosc}.
 
 \begin{table}[htbp]
  \centering
@@ -2197,7 +2198,7 @@ W warunkach terenowych jakość obrazu z kamery smartfonu jest systematycznie de
  \hline \hline
  Ściemnienie obrazu & $0{,}6$ & zacienienie podszytu leśnego \\
  \hline
- Rozmycie ruchowe & jądro $5$\,px & drżenie ręki podczas akwizycji \\
+ Rozmycie gaussowskie & jądro $5\times5$ & przybliżenie nieostrości kadru \\
  \hline
  Addytywny szum Gaussa & $\sigma=8{,}0$ & szum matrycy przy wysokim ISO \\
  \hline \hline
@@ -2311,7 +2312,7 @@ Wybór wariantu YOLO11m zamiast lżejszego YOLO11n wymagał empirycznego uzasadn
  \label{fig:ablacja_wykres}
 \end{figure}
 
-Wariant Nano, mimo ponad siedmiokrotnie mniejszej liczby parametrów i prawie siedmiokrotnie mniejszego artefaktu FP16, osiągnął $48{,}54\%$ $mAP_{50}$ na tym samym izolowanym teście (rys.~\ref{fig:ablacja_wykres}). YOLO11m ma $82{,}75\%$. Precyzja i czułość Nano ($P=51{,}49\%$, $R=48{,}71\%$) pozostają wyraźnie poniżej Medium ($P=80{,}90\%$, $R=75{,}32\%$). Nano nie modeluje $147$ klas, w tym gatunków bliźniaczych, z akceptowalną rozdzielczością semantyczną (blaszki, pierścień, łuski, barwa trzonu). Opóźnienie GPU wariantu Medium ($8{,}62$\,ms na RTX~4070) nie jest pomiarem telefonu; budżet aplikacji to $250$\,ms na S23 Ultra (tab.~\ref{tab:latency_s23}). Zysk prędkości Nano na GPU nie rekompensuje utraty jakości. Dlatego YOLO11m przyjęto jako wariant produkcyjny.
+Wariant Nano, mimo ponad siedmiokrotnie mniejszej liczby parametrów i prawie siedmiokrotnie mniejszego artefaktu FP16, osiągnął $48{,}54\%$ $mAP_{50}$ na tym samym izolowanym teście (rys.~\ref{fig:ablacja_wykres}). YOLO11m ma $82{,}75\%$. Precyzja i czułość Nano ($P=51{,}49\%$, $R=48{,}71\%$) pozostają wyraźnie poniżej Medium ($P=80{,}90\%$, $R=75{,}32\%$). Nano nie modeluje $147$ klas, w tym gatunków bliźniaczych, z akceptowalną rozdzielczością semantyczną (blaszki, pierścień, łuski, barwa trzonu). Opóźnienie GPU wariantu Medium ($8{,}62$\,ms na RTX~4070) nie jest pomiarem telefonu; docelowa kadencja analizy to $250$\,ms, a kryterium $H_1$ to czas reakcji poniżej $1$\,s (tab.~\ref{tab:latency_e2e}). Zysk prędkości Nano na GPU nie rekompensuje utraty jakości. Dlatego YOLO11m przyjęto jako wariant produkcyjny.
 
 \section{Profilowanie opóźnień potoku inferencji}
 W celu rozdzielenia kosztów obliczeniowych poszczególnych etapów potoku przeprowadzono profilowanie na akceleratorze NVIDIA GeForce RTX~4070 przy wejściu $640{\times}640$ pikseli. Pomiar obejmował $100$ przebiegów i rozróżniał trzy fazy: wstępne przetwarzanie obrazu, inferencję sieci oraz postprocessing z tłumieniem niemaksymalnym (NMS). Średni czas preprocessingu wyniósł $1{,}64$\,ms (mediana $p_{50}=1{,}68$\,ms, percentyl $p_{95}=1{,}76$\,ms), średni czas inferencji $8{,}62$\,ms ($p_{50}=8{,}62$\,ms, $p_{95}=8{,}75$\,ms), a średni czas NMS $0{,}50$\,ms ($p_{50}=0{,}50$\,ms, $p_{95}=0{,}52$\,ms). Pełny rozkład statystyczny czasów poszczególnych faz zestawiono w tab.~\ref{tab:latency}.
@@ -2443,7 +2444,7 @@ Pomiar \texttt{detect()} nie obejmuje konwersji klatki CameraX do bitmapy, lette
 \section{Jakościowa analiza detekcji w warunkach rzeczywistych (dane zewnętrzne)}\label{sec:ood_field}
 Metryki z poprzednich podrozdziałów pochodzą z izolowanego zbioru testowego iNaturalist. To ewaluacja wewnątrz rozkładu (ang. \textit{in-distribution}): to samo źródło, podobna optyka i ten sam protokół anotacji co w uczeniu. Aplikacja ma jednak działać w lesie, na strumieniu CameraX, przy oświetleniu podszytu i na matrycy konkretnego smartfonu. Taki reżim jest z definicji poza rozkładem uczącym (ang. \textit{out-of-distribution}, OOD). Dlatego uzupełniono ocenę ilościową jakościową inspekcją w terenie.
 
-Testy przeprowadzono bezpośrednio na urządzeniu Samsung Galaxy S23 Ultra, opisanym w załączniku ze specyfikacją sprzętową. Autor skanował owocniki w naturalnym biotopie leśnym kamerą telefonu (lipiec--sierpień 2026), bez podawania modelowi zdjęć ze zbioru iNaturalist. Poprawność gatunku ustalano wizualnie na podstawie cech makromorfologicznych oraz konsultacji z atlasami mykologicznymi (First Nature, Rogers Plants); identyfikacja in situ nie była weryfikowana laboratoryjnie (np. analizą zarodników pod mikroskopem lub sekwencjonowaniem DNA), co stanowi ograniczenie tej oceny terenowej. Zebrano kilkadziesiąt zrzutów ekranu nakładki CameraX + Jetpack Compose; w załączniku~\ref{app:ood_screens} pozostawiono tylko interfejs, przykład detekcji wieloobiektowej, aktywację progu $0{,}18$ oraz dwa błędy modelu. Predykcje renderowała ta sama warstwa \texttt{MushroomRegistry.displayStatus}, która obowiązuje w produkcji. Ponieważ kadry terenowe nie mają ramek referencyjnych, nie liczono $mAP$. Oceniano zgodność gatunku, poprawność kategorii toksykologicznej oraz czytelność interfejsu.
+Testy przeprowadzono bezpośrednio na urządzeniu Samsung Galaxy S23 Ultra, opisanym w załączniku ze specyfikacją sprzętową. Autor skanował owocniki w naturalnym biotopie leśnym kamerą telefonu (lipiec--sierpień 2026), bez podawania modelowi zdjęć ze zbioru iNaturalist. Poprawność gatunku ustalano wizualnie na podstawie cech makromorfologicznych oraz konsultacji z atlasami mykologicznymi (First Nature, Rogers Plants); identyfikacja in situ nie była weryfikowana laboratoryjnie (np. analizą zarodników pod mikroskopem lub sekwencjonowaniem DNA), co stanowi ograniczenie tej oceny terenowej. Zebrano kilkadziesiąt zrzutów ekranu nakładki CameraX + Jetpack Compose; w załączniku~\ref{app:ood_screens} pozostawiono tylko interfejs, przykład detekcji wieloobiektowej, aktywację progu $0{,}18$ oraz dwa błędy modelu. Zrzuty w załączniku pochodzą z 26.07--01.08.2026, czyli ze wcześniejszej kompilacji niż progi $0{,}18$/$0{,}60$ wpisane do kodu 11.08.2026: \textit{Amanita pantherina} miała wtedy status „Trujący”, a nie obecny „Śmiertelnie trujący”. Nie rozstrzygają one progu $0{,}18$ wobec $0{,}30$. Ponieważ kadry terenowe nie mają ramek referencyjnych, nie liczono $mAP$. Oceniano zgodność gatunku, poprawność kategorii toksykologicznej oraz czytelność interfejsu.
 
 Zaobserwowane scenariusze, uporządkowane od najprostszych do najtrudniejszych, zestawiono w tab.~\ref{tab:ood_scenariusze}.
 
@@ -2524,7 +2525,7 @@ Wszystkie miary w tym podrozdziale liczone są na poziomie kadru. Kluczową obse
 
 Jednostką analizy jest pojedynczy kadr (jedno naciśnięcie przycisku przechwytywania), a~nie pojedynczy owocnik. Każdemu kadrowi przypisano jeden docelowy gatunek -- owocnik w~centrum zainteresowania zbieracza; detekcję uznawano za udaną, gdy model zwrócił co najmniej jedną ramkę, a~trafienie top-1 -- gdy ramka o~najwyższej pewności wskazywała właściwy gatunek. Podawane wartości są więc odsetkami \emph{na kadr}, a~nie ścisłym recall na poziomie pojedynczego obiektu; w~kadrach z~wieloma owocnikami (oznaczonych w~danych jako $\times n$) oceniano owocnik dominujący. Ponadto co najmniej trzy pary kadrów to serie tego samego egzemplarza wykonane w~odstępie sekund ($24$/$25$, $45$/$46$, $66$/$67$; prawdopodobnie też $42$/$43$), zatem $67$ kadrów odpowiada ok.\ $63$ odrębnym owocnikom. Liczby należy traktować jako charakterystykę jakościową próby okazjonalnej, a~nie precyzyjny estymator populacyjny. Średnia pewność predykcji w~próbie wyniosła $0{,}736$, a~średni czas \texttt{detect()} -- $154{,}7$\,ms (zakres $136$--$196$\,ms), spójnie z~profilowaniem opóźnień na zimnym SoC (tab.~\ref{tab:latency_s23}).
 
-W~tych samych $67$ pakietach Trybu Badawczego zapisano telemetrię telefonu, a~nie stacji roboczej. We wszystkich kadrach \texttt{gpuDelegate} był włączony, więc ta sesja leśna szła przez delegata GPU, a~nie przez rezerwową ścieżkę CPU. Temperatura baterii wynosiła $27{,}7$--$30{,}8^{\circ}\mathrm{C}$: to reżim zbliżony do serii zimnej, a~nie do wymuszonego nagrzewania przez $8$--$9$\,min. Żaden z~$67$ pomiarów \texttt{detect()} nie przekroczył $250$\,ms. Równolegle zapisany wskaźnik podglądu kamery wynosił średnio $33$\,FPS (od $30$ do $50$). Nie jest to przepustowość modelu: przy \texttt{detect()} rzędu $155$\,ms inferencja jest wolniejsza niż podgląd, a~nadmiarowe klatki odrzuca \texttt{STRATEGY\_KEEP\_ONLY\_LATEST}. Czasu letterboxingu nadal nie wyodrębniono, ale w~tej sesji wąskim składnikiem czasu był \texttt{detect()}, nie dostarczanie klatek.
+W~tych samych $67$ pakietach Trybu Badawczego zapisano telemetrię telefonu, a~nie stacji roboczej. We wszystkich kadrach \texttt{gpuDelegate} był włączony, więc ta sesja leśna szła przez delegata GPU, a~nie przez rezerwową ścieżkę CPU. Temperatura baterii wynosiła $27{,}7$--$30{,}8^{\circ}\mathrm{C}$: to reżim zbliżony do serii zimnej, a~nie do wymuszonego nagrzewania przez $8$--$9$\,min. Żaden z~$67$ pomiarów \texttt{detect()} nie przekroczył $250$\,ms. Równolegle zapisany wskaźnik podglądu kamery wynosił średnio $33$\,FPS (od $30$ do $50$). Nie jest to przepustowość modelu: przy \texttt{detect()} rzędu $155$\,ms inferencja jest wolniejsza niż podgląd, a~nadmiarowe klatki odrzuca \texttt{STRATEGY\_KEEP\_ONLY\_LATEST}. W pakietach Trybu Badawczego nie rejestrowano czasu letterboxingu; pełny cykl klatki zmierzono w podrozdz.~\ref{sec:latency_e2e}. W tej sesji wąskim gardłem był \texttt{detect()}, nie dostarczanie klatek.
 
 \begin{table}[htbp]
  \centering

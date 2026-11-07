@@ -199,13 +199,18 @@ def main() -> None:
             ptox = tox.get(pcls, "INEDIBLE")
             add_cell(mat_a, gt_row, pred_asymmetric(ptox, pconf))
             add_cell(mat_g, gt_row, pred_global(ptox, pconf, args.global_tau))
+            seen_gt = set()
             for ia, ib, na, nb in pair_ids:
                 if gt_cls == ia:
-                    pair_gt[na] += 1
+                    if na not in seen_gt:
+                        pair_gt[na] += 1
+                        seen_gt.add(na)
                     if pcls == ib:
                         pair_counts[f"{na} -> {nb}"] += 1
                 elif gt_cls == ib:
-                    pair_gt[nb] += 1
+                    if nb not in seen_gt:
+                        pair_gt[nb] += 1
+                        seen_gt.add(nb)
                     if pcls == ia:
                         pair_counts[f"{nb} -> {na}"] += 1
 

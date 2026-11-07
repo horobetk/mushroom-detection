@@ -56,23 +56,23 @@
     {
       "gt": "Amanita phalloides",
       "pred": "Agaricus campestris",
-      "n_gt": 780,
+      "n_gt": 390,
       "n_confuse": 0,
       "rate": 0.0
     },
     {
       "gt": "Agaricus campestris",
       "pred": "Amanita phalloides",
-      "n_gt": 840,
+      "n_gt": 420,
       "n_confuse": 0,
       "rate": 0.0
     },
     {
       "gt": "Amanita phalloides",
       "pred": "Amanita citrina",
-      "n_gt": 780,
+      "n_gt": 390,
       "n_confuse": 7,
-      "rate": 0.008974358974358974
+      "rate": 0.017948717948717947
     },
     {
       "gt": "Amanita citrina",
@@ -91,7 +91,7 @@
     {
       "gt": "Agaricus campestris",
       "pred": "Amanita virosa",
-      "n_gt": 840,
+      "n_gt": 420,
       "n_confuse": 0,
       "rate": 0.0
     },
@@ -105,9 +105,9 @@
     {
       "gt": "Cantharellus cibarius",
       "pred": "Omphalotus olearius",
-      "n_gt": 1054,
+      "n_gt": 527,
       "n_confuse": 2,
-      "rate": 0.0018975332068311196
+      "rate": 0.003795066413662239
     },
     {
       "gt": "Hygrophoropsis aurantiaca",
@@ -119,7 +119,7 @@
     {
       "gt": "Cantharellus cibarius",
       "pred": "Hygrophoropsis aurantiaca",
-      "n_gt": 1054,
+      "n_gt": 527,
       "n_confuse": 0,
       "rate": 0.0
     },

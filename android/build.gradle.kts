@@ -1,8 +1,7 @@
-// Top-level build file. Plugin versions are declared here and applied per module.
 plugins {
     id("com.android.application") version "8.5.2" apply false
     id("org.jetbrains.kotlin.android") version "2.0.20" apply false
     id("org.jetbrains.kotlin.plugin.compose") version "2.0.20" apply false
-    // KSP powers Room's annotation processing; version is pinned to the Kotlin release.
+    // KSP version must match the Kotlin version.
     id("com.google.devtools.ksp") version "2.0.20-1.0.24" apply false
 }

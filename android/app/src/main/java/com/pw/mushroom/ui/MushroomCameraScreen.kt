@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Matrix
-import android.os.Build
 import android.os.SystemClock
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -31,7 +30,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -86,15 +84,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.concurrent.Executors
 
-/**
- * Top-level screen: CameraX preview, continuous AR detection overlay, and a
- * capture button. All ML state lives in [MushroomViewModel]. Save results are
- * surfaced as Polish snackbars.
- *
- * Research Mode (hidden): activated by 5 rapid taps on the status hint. Adds
- * a "Capture" FAB and a red "REC" indicator. Each capture saves a full data
- * bundle (full-frame, PixelCopy screenshot, JSON metadata) to Documents/.
- */
+/** Camera preview with the live detection overlay and save actions. */
 @Composable
 fun MushroomCameraScreen(
     onOpenHistory: () -> Unit,
@@ -132,11 +122,9 @@ private fun CameraContent(viewModel: MushroomViewModel, onOpenHistory: () -> Uni
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    // Flash overlay state for capture feedback.
     var showFlash by remember { mutableStateOf(false) }
 
-    // Full-resolution still capture use-case (Research Mode only). Bound alongside
-    // the preview/analysis so we can grab a clean high-res photo on demand.
+    // Full-resolution stills for Research Mode captures.
     val imageCapture = remember {
         ImageCapture.Builder()
             .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
@@ -151,7 +139,6 @@ private fun CameraContent(viewModel: MushroomViewModel, onOpenHistory: () -> Uni
         }
     }
 
-    // Get the Activity window for PixelCopy.
     val activity = context as? android.app.Activity
     val window = activity?.window
 
@@ -163,7 +150,6 @@ private fun CameraContent(viewModel: MushroomViewModel, onOpenHistory: () -> Uni
                     horizontalAlignment = Alignment.End,
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Research capture button (only visible in Research Mode).
                     if (researchEnabled) {
                         BadgedBox(
                             badge = {
@@ -179,27 +165,22 @@ private fun CameraContent(viewModel: MushroomViewModel, onOpenHistory: () -> Uni
                         ) {
                             FloatingActionButton(
                                 onClick = {
-                                    // Haptic feedback (best-effort; never crash the capture).
                                     try {
                                         val vibrator = context.getSystemService(Vibrator::class.java)
-                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                            vibrator?.vibrate(
-                                                VibrationEffect.createOneShot(
-                                                    50, VibrationEffect.DEFAULT_AMPLITUDE
-                                                )
+                                        vibrator?.vibrate(
+                                            VibrationEffect.createOneShot(
+                                                50, VibrationEffect.DEFAULT_AMPLITUDE
                                             )
-                                        }
+                                        )
                                     } catch (_: Exception) {
                                         // Ignore: haptics are non-essential.
                                     }
-                                    // Visual flash.
                                     showFlash = true
                                     scope.launch {
                                         delay(120)
                                         showFlash = false
                                     }
-                                    // Grab a full-resolution still, then save the bundle.
-                                    // On any capture error we still save the analysis-frame bundle.
+                                    // If the still fails, the bundle is saved from the analysis frame only.
                                     imageCapture.takePicture(
                                         captureExecutor,
                                         object : ImageCapture.OnImageCapturedCallback() {
@@ -221,13 +202,12 @@ private fun CameraContent(viewModel: MushroomViewModel, onOpenHistory: () -> Uni
                             ) {
                                 Icon(
                                     Icons.Filled.CameraAlt,
-                                    contentDescription = "Research Capture"
+                                    contentDescription = "Zapis pakietu badawczego"
                                 )
                             }
                         }
                     }
 
-                    // Standard save button.
                     ExtendedFloatingActionButton(
                         onClick = { viewModel.saveCurrentBest() },
                         icon = { Icon(Icons.Filled.Add, contentDescription = null) },
@@ -283,7 +263,6 @@ private fun CameraContent(viewModel: MushroomViewModel, onOpenHistory: () -> Uni
                 }
             }
 
-            // Research Mode indicator ("REC" dot).
             if (researchEnabled) {
                 ResearchIndicator(
                     captureCount = captureCount,
@@ -294,7 +273,6 @@ private fun CameraContent(viewModel: MushroomViewModel, onOpenHistory: () -> Uni
                 )
             }
 
-            // Capture flash overlay.
             AnimatedVisibility(
                 visible = showFlash,
                 enter = fadeIn(),
@@ -329,13 +307,7 @@ private fun CameraContent(viewModel: MushroomViewModel, onOpenHistory: () -> Uni
     }
 }
 
-/**
- * CameraX preview + asynchronous ImageAnalysis. Frames are delivered in
- * RGBA_8888 and converted to a rotation-corrected, full-resolution upright
- * bitmap on a background executor before being forwarded to [onFrame], which
- * takes ownership of the bitmap. [onFrame] also receives the frame arrival time
- * ([SystemClock.elapsedRealtimeNanos]) and the CameraX sensor timestamp.
- */
+/** CameraX preview plus analysis; [onFrame] takes ownership of each bitmap. */
 @Composable
 private fun CameraPreview(
     onFrame: (Bitmap, Long, Long) -> Unit,
@@ -388,7 +360,7 @@ private fun CameraPreview(
                 imageCapture
             )
         } catch (t: Throwable) {
-            // Binding can fail if the lifecycle is not ready; it rebinds on recomposition.
+            // Binding can fail if the lifecycle is not ready yet.
         }
 
         onDispose {
@@ -400,10 +372,7 @@ private fun CameraPreview(
     AndroidView(factory = { previewView }, modifier = modifier)
 }
 
-/**
- * Status hint with a hidden activation gesture: 5 rapid taps within 3 seconds
- * toggles Research Mode. Shows a Toast confirmation.
- */
+/** Status hint; 5 taps within 3 s toggle the hidden Research Mode. */
 @Composable
 private fun StatusHint(
     locked: Boolean,
@@ -437,7 +406,7 @@ private fun StatusHint(
                 onResearchToggle()
                 Toast.makeText(
                     context,
-                    "Research Mode toggled",
+                    "Przełączono tryb badawczy",
                     Toast.LENGTH_SHORT
                 ).show()
             }
@@ -455,7 +424,7 @@ private fun StatusHint(
     }
 }
 
-/** Red pulsing "REC" indicator shown in Research Mode. */
+/** "REC" badge shown while Research Mode is on. */
 @Composable
 private fun ResearchIndicator(captureCount: Int, modifier: Modifier = Modifier) {
     Surface(
@@ -527,10 +496,7 @@ private fun PermissionRequest(onRequest: () -> Unit) {
     }
 }
 
-/**
- * Decode a JPEG [ImageProxy] from [ImageCapture] into an upright [Bitmap],
- * applying the sensor rotation so the saved photo is oriented correctly.
- */
+/** Decode an [ImageCapture] JPEG and apply the sensor rotation. */
 private fun ImageProxy.toUprightBitmap(): Bitmap {
     val bmp = toBitmap()
     val degrees = imageInfo.rotationDegrees

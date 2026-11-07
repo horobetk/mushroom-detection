@@ -14,56 +14,29 @@ import java.nio.channels.FileChannel
 import kotlin.math.max
 import kotlin.math.min
 
-/**
- * A single class score used for top-N diagnostics in Research Mode.
- */
+/** Class score kept for Research Mode top-N diagnostics. */
 data class ClassScore(val classId: Int, val score: Float)
 
-/**
- * A single species prediction produced by [MushroomDetector].
- *
- * @property species     Catalogue entry describing the detected species.
- * @property confidence  Detection score in the range 0.0 .. 1.0.
- * @property boundingBox Normalised box in model input space.
- * @property topScores   Top-N class scores for this anchor. Empty unless
- *                       Research Mode is active.
- */
+/** Single species prediction produced by [MushroomDetector]. */
 data class DetectionResult(
     val species: MushroomSpecies,
     val confidence: Float,
     val boundingBox: NormalizedBox,
-    /** Top-N class scores for this anchor. Empty unless Research Mode is active. */
+    /** Empty unless Research Mode is active. */
     val topScores: List<ClassScore> = emptyList()
 )
 
-/**
- * Low-level TensorFlow Lite wrapper for a Float32 YOLO11m detection model.
- *
- * Pipeline for a single frame:
- *  1. Normalise a square RGB bitmap into a Float32 input buffer (values [0,1]).
- *  2. Run the interpreter, which writes a Float32 output tensor of shape
- *     [1, 4 + numClasses, numAnchors] (YOLO11 transposed layout).
- *  3. Decode anchors, threshold each by its per-class safety threshold, cap the
- *     survivors, and run Non-Maximum Suppression.
- *
- * The input resolution (e.g. 640 or 1920) and the anchor/class counts are read
- * from the loaded model at runtime, so a re-exported model of a different size
- * runs without code changes and cannot cause index-out-of-bounds crashes.
- *
- * The class is free of Android UI and CameraX dependencies so it can be reused
- * and tested in isolation.
- */
+/** TensorFlow Lite wrapper and decoder for the YOLO11m model. */
 class MushroomDetector(context: Context) {
 
     private val interpreter: Interpreter
 
-    // Held as a field so it can be released in close(); null when running on CPU.
+    // Null when running on CPU.
     private var gpuDelegate: GpuDelegate? = null
 
-    /** True when inference runs on the GPU delegate (false = CPU fallback). */
     val isGpuEnabled: Boolean get() = gpuDelegate != null
 
-    // Geometry read from the model at load time (supports variable sizes/classes).
+    // Read from the model at load time, so a re-exported model needs no code changes.
     val inputResolution: Int
     private val numChannels: Int // 4 box coords + numClasses
     private val numAnchors: Int
@@ -81,8 +54,7 @@ class MushroomDetector(context: Context) {
         interpreter = try {
             Interpreter(loadModelFile(context, MODEL_ASSET), options)
         } catch (t: Throwable) {
-            // Some devices fail at interpreter creation when a delegate is attached
-            // but an op in the graph is unsupported; retry on plain CPU.
+            // Some GPUs reject an op only at interpreter creation; retry on CPU.
             if (gpuDelegate != null) {
                 Log.w(TAG, "Interpreter init failed with GPU delegate, retrying on CPU.", t)
                 gpuDelegate?.close()
@@ -127,11 +99,7 @@ class MushroomDetector(context: Context) {
         )
     }
 
-    /**
-     * Attach hardware acceleration. Uses the TFLite GPU compatibility list to
-     * decide whether the device can run the delegate; if not, falls back to
-     * multi-threaded CPU execution.
-     */
+    /** Use the GPU delegate when the device is on the compatibility list, else CPU threads. */
     private fun attachAcceleration(options: Interpreter.Options) {
         val compatList = CompatibilityList()
         if (compatList.isDelegateSupportedOnThisDevice) {
@@ -149,17 +117,10 @@ class MushroomDetector(context: Context) {
         } else {
             Log.i(TAG, "GPU delegate unsupported on this device.")
         }
-        // CPU fallback.
         options.numThreads = CPU_THREADS
     }
 
-    /**
-     * Run inference on a square bitmap.
-     *
-     * @param squareBitmap Center-cropped square frame; resized to the model input
-     *                     resolution if it does not already match.
-     * @return All detections after NMS that clear their per-class threshold.
-     */
+    /** Run inference on a square (letterboxed) bitmap and return post-NMS detections. */
     fun detect(squareBitmap: Bitmap): List<DetectionResult> {
         val resized = if (squareBitmap.width != inputResolution ||
             squareBitmap.height != inputResolution
@@ -191,14 +152,7 @@ class MushroomDetector(context: Context) {
         }
     }
 
-    // -------------------------------------------------------------------------
-    // Input preparation
-    // -------------------------------------------------------------------------
-
-    /**
-     * Write normalised RGB float values [0.0, 1.0] into the input buffer.
-     * Each channel occupies 4 bytes (Float32).
-     */
+    /** Write RGB values scaled to [0, 1] into the Float32 input buffer. */
     private fun fillInputBuffer(bitmap: Bitmap) {
         inputBuffer.rewind()
         bitmap.getPixels(pixels, 0, inputResolution, 0, 0, inputResolution, inputResolution)
@@ -210,14 +164,7 @@ class MushroomDetector(context: Context) {
         }
     }
 
-    // -------------------------------------------------------------------------
-    // Output reading
-    // -------------------------------------------------------------------------
-
-    /**
-     * Copy the output ByteBuffer into a FloatArray for indexed access.
-     * Layout: index = channel * numAnchors + anchor.
-     */
+    /** Layout of the result: index = channel * numAnchors + anchor. */
     private fun readOutputFloats(): FloatArray {
         outputBuffer.rewind()
         val result = FloatArray(numChannels * numAnchors)
@@ -225,16 +172,7 @@ class MushroomDetector(context: Context) {
         return result
     }
 
-    /**
-     * Decode the Float32 [1, numChannels, numAnchors] tensor into box candidates.
-     *
-     * Channels 0..3 are (cx, cy, w, h); channels 4..(3+numClasses) are per-class
-     * scores. Fast-fail order per anchor:
-     *   1. Find the best class + score.
-     *   2. Reject early if below the global minimum threshold (cheapest gate).
-     *   3. Reject if below that class's specific safety threshold.
-     * Only survivors allocate a [RawDetection], keeping GC pressure low.
-     */
+    /** Channels 0..3 are (cx, cy, w, h), the rest are class scores. */
     private fun decode(data: FloatArray): List<RawDetection> {
         val detections = ArrayList<RawDetection>()
         val globalMin = MushroomRegistry.minSafetyThreshold
@@ -256,7 +194,6 @@ class MushroomDetector(context: Context) {
             if (bestClass < 0 || bestScore < globalMin) continue
             if (bestScore < MushroomRegistry.thresholdFor(bestClass)) continue
 
-            // Collect top-N scores for Research Mode diagnostics.
             val topScores: List<ClassScore> = if (wantTopN) {
                 (0 until numClasses)
                     .map { c -> ClassScore(c, data[(BOX_COORDS + c) * numAnchors + anchor]) }
@@ -287,10 +224,7 @@ class MushroomDetector(context: Context) {
         return detections
     }
 
-    /**
-     * Convert raw box coordinates to normalised [0, 1] space. Ultralytics exports
-     * may emit pixel coords (0..inputResolution) or already-normalised values.
-     */
+    /** Ultralytics exports may emit either pixel or already-normalised coordinates. */
     private fun normalizeBox(x1: Float, y1: Float, x2: Float, y2: Float): NormalizedBox {
         fun norm(v: Float): Float = if (v > 1.5f) v / inputResolution else v.coerceIn(0f, 1f)
         return NormalizedBox(
@@ -301,15 +235,7 @@ class MushroomDetector(context: Context) {
         )
     }
 
-    // -------------------------------------------------------------------------
-    // Non-Maximum Suppression
-    // -------------------------------------------------------------------------
-
-    /**
-     * Greedy NMS. To bound work, only the [MAX_NMS_INPUT] highest-scoring
-     * candidates are considered; the highest-scoring box is kept and overlapping
-     * boxes above [IOU_THRESHOLD] are suppressed, up to [MAX_DETECTIONS].
-     */
+    /** Greedy class-agnostic NMS over the top [MAX_NMS_INPUT] candidates. */
     private fun nonMaxSuppression(input: List<RawDetection>): List<RawDetection> {
         if (input.isEmpty()) return emptyList()
 
@@ -331,7 +257,6 @@ class MushroomDetector(context: Context) {
         return kept
     }
 
-    /** Intersection-over-Union of two axis-aligned boxes. */
     private fun iou(a: RawDetection, b: RawDetection): Float {
         val interLeft = max(a.x1, b.x1)
         val interTop = max(a.y1, b.y1)
@@ -349,14 +274,12 @@ class MushroomDetector(context: Context) {
         return if (union <= 0f) 0f else intersection / union
     }
 
-    /** Release native resources held by the interpreter and the GPU delegate. */
     fun close() {
         interpreter.close()
         gpuDelegate?.close()
         gpuDelegate = null
     }
 
-    /** Internal decoded box before it is mapped to a catalogue species. */
     private data class RawDetection(
         val x1: Float,
         val y1: Float,
@@ -367,7 +290,7 @@ class MushroomDetector(context: Context) {
         val topScores: List<ClassScore> = emptyList()
     )
 
-    /** Memory-map the .tflite model directly from the app assets. */
+    /** Memory-maps the model; it must stay uncompressed in the APK. */
     private fun loadModelFile(context: Context, assetName: String): ByteBuffer {
         context.assets.openFd(assetName).use { fd ->
             fd.createInputStream().use { input ->
@@ -383,7 +306,6 @@ class MushroomDetector(context: Context) {
     companion object {
         private const val TAG = "MushroomDetector"
 
-        /** FP16 model bundled under app/src/main/assets. */
         const val MODEL_ASSET = "best_float16.tflite"
 
         private const val CHANNELS = 3
@@ -391,23 +313,16 @@ class MushroomDetector(context: Context) {
         private const val FLOAT_BYTES = 4
         private const val CPU_THREADS = 4
 
-        /** IoU above which overlapping boxes are suppressed. */
         private const val IOU_THRESHOLD = 0.45f
 
-        /** Cap on candidates fed into NMS to keep per-frame work bounded. */
+        /** Bounds the quadratic NMS cost per frame. */
         private const val MAX_NMS_INPUT = 50
 
-        /** Upper bound on detections kept per frame. */
         private const val MAX_DETECTIONS = 20
 
-        /** Number of top class scores to collect per detection in Research Mode. */
         private const val TOP_N = 5
 
-        /**
-         * When true, [decode] collects top-N class scores for every surviving
-         * anchor. Set by [MushroomViewModel] when Research Mode is active.
-         * Kept as a simple volatile flag to avoid threading issues and DI.
-         */
+        /** Set by [MushroomViewModel] while Research Mode is on. */
         @Volatile
         @JvmStatic
         var collectTopN: Boolean = false

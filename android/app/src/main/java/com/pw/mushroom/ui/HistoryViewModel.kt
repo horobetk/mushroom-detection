@@ -10,15 +10,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-/**
- * Backs the history screen: streams saved finds from Room and handles deletion
- * (row + backing image file).
- */
+/** State holder for the history screen. */
 class HistoryViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = FindsRepository(application)
 
-    /** All saved finds, newest first. */
     val finds: StateFlow<List<MushroomFind>> = repository.getAllFinds()
         .stateIn(
             scope = viewModelScope,
@@ -26,7 +22,6 @@ class HistoryViewModel(application: Application) : AndroidViewModel(application)
             initialValue = emptyList()
         )
 
-    /** Delete a find and its stored image. */
     fun deleteFind(find: MushroomFind) {
         viewModelScope.launch {
             repository.delete(find)

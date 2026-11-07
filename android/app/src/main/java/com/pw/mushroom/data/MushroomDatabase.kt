@@ -15,7 +15,6 @@ abstract class MushroomDatabase : RoomDatabase() {
         @Volatile
         private var instance: MushroomDatabase? = null
 
-        /** Lazily create (or return) the singleton database instance. */
         fun get(context: Context): MushroomDatabase =
             instance ?: synchronized(this) {
                 instance ?: Room.databaseBuilder(

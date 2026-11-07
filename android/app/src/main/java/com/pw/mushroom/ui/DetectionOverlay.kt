@@ -23,14 +23,7 @@ import com.pw.mushroom.ml.NormalizedBox
 import com.pw.mushroom.ml.TrackedDetection
 import com.pw.mushroom.model.MushroomRegistry
 
-/**
- * AR overlay drawn over the camera preview.
- *
- * Every tracked detection is rendered as a rounded box tinted by its toxicity
- * colour, with a bilingual label (Latin species name + Polish status). Frozen
- * (locked) detections use a thicker stroke. Tapping inside a box saves that
- * find via [onTapDetection].
- */
+/** Draws tracked detections over the preview; tapping a box saves it. */
 @Composable
 fun DetectionOverlay(
     detections: List<TrackedDetection>,
@@ -43,8 +36,7 @@ fun DetectionOverlay(
         val screenW = constraints.maxWidth.toFloat()
         val screenH = constraints.maxHeight.toFloat()
 
-        // Boxes are normalised to the visible (FILL_CENTER) region, so they map
-        // directly onto the full screen with no letterbox offset.
+        // Boxes are already normalised to the visible FILL_CENTER region.
         val hitTargets: List<Pair<TrackedDetection, Rect>> =
             remember(detections, screenW, screenH) {
                 detections.map { it to mapBoxToScreen(it.box, screenW, screenH) }
@@ -106,7 +98,6 @@ fun DetectionOverlay(
     }
 }
 
-/** Map a visible-normalised box into full-screen pixel coordinates. */
 fun mapBoxToScreen(
     box: NormalizedBox,
     screenW: Float,

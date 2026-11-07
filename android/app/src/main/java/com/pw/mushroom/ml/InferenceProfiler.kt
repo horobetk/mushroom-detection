@@ -12,59 +12,17 @@ import java.io.File
 import java.util.Locale
 import kotlin.math.sqrt
 
-/**
- * Debug-only wall-clock logger for the live detection pipeline on a physical
- * device. Inactive in release builds.
- *
- * Two files are written to `Android/data/com.pw.mushroom/files/`:
- *
- * `inference_profile.csv` — one row per analysed frame:
- *  - `detect_ms`: [MushroomDetector.detect] alone (interpreter + decode + NMS),
- *  - `sensor_to_app_ms`: CameraX sensor timestamp -> analyzer callback
- *    (empty when the sensor clock is not comparable with elapsedRealtime),
- *  - `convert_ms`: analyzer callback -> frame accepted (RGBA -> upright bitmap),
- *  - `queue_ms`: accepted -> worker coroutine started,
- *  - `letterbox_ms`, `post_ms` (box mapping, threshold filter, tracker, UI state),
- *  - `e2e_ms`: analyzer callback -> new UI state published.
- *
- * `response_profile.csv` — one row per track event, measured from the arrival
- * of the frame in which the object was first detected:
- *  - `display`: the track is first shown (after the 2-frame confirm streak),
- *  - `green`: the edible badge is first allowed (>= 0.60 and 4/5 vote).
- *
- * Protocol for the S23 Ultra measurement:
- *  1. Point the camera at a printed (or on-screen) mushroom photo. A live
- *     fruiting body is not required: YOLO11m always runs the same 640×640
- *     graph, so latency does not depend on whether the subject is real.
- *  2. Keep the phone slightly moving so the scene never locks, OR leave
- *     [bypassSceneLock] on (default in debug) to force 4 FPS continuously.
- *  3. Session A — cold: phone at room temperature, collect ~150 frames
- *     (~40 s at 4 FPS). For response times, repeatedly turn the camera away
- *     from the photo for > 2 s and back (~30 times).
- *  4. Session B — hot: keep inferring for 5–10 min, then repeat step 3
- *     without restarting the app.
- *
- * Each sample is printed to Logcat (`InferMs`). Pull the files with:
- * ```
- * adb pull /sdcard/Android/data/com.pw.mushroom/files/inference_profile.csv
- * adb pull /sdcard/Android/data/com.pw.mushroom/files/response_profile.csv
- * ```
- */
+/** Debug-only latency logger for the live detection pipeline. */
 object InferenceProfiler {
 
     const val TAG = "InferMs"
 
-    /** Flip to false after the two sessions are recorded. */
     val enabled: Boolean get() = BuildConfig.DEBUG
 
-    /**
-     * When true, [MushroomViewModel] never drops to the 1.5 s heartbeat.
-     * Required for the thermal-load session: a static photo would otherwise
-     * lock the scene within a few seconds and the SoC would cool down.
-     */
+    /** Keeps 4 FPS while profiling so a static scene never drops to the heartbeat. */
     val bypassSceneLock: Boolean get() = enabled
 
-    /** Nanosecond timestamps of one analysed frame, all from elapsedRealtimeNanos except [sensorNs]. */
+    /** Per-frame timestamps in ns; all but [sensorNs] use elapsedRealtimeNanos. */
     data class FrameTiming(
         val sensorNs: Long,
         val arrivedNs: Long,

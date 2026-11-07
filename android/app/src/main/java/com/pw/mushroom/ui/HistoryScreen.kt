@@ -52,10 +52,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-/**
- * History screen: a scrollable list of saved finds with thumbnail, species,
- * timestamp, confidence, a toxicity colour badge, and per-item deletion.
- */
+/** List of saved finds with thumbnails, badges and deletion. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistoryScreen(
@@ -106,7 +103,6 @@ fun HistoryScreen(
     }
 }
 
-/** Prominent, always-visible safety disclaimer at the top of the history. */
 @Composable
 private fun SafetyWarningBanner() {
     Surface(
@@ -186,9 +182,7 @@ private fun FindCard(
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
                 )
                 Spacer(Modifier.height(6.dp))
-                // Use the persisted vote state: if the tracker's 4/5 consensus
-                // was not reached at save time, displayStatus will not show the
-                // green "Jadalny" badge even when confidence >= SAFE_THRESHOLD.
+                // Same policy as the live overlay, using the vote state saved with the find.
                 val toxicity = Toxicity.fromLabelPl(find.toxicityLabel)
                 val status = if (toxicity != null) {
                     MushroomRegistry.displayStatus(
@@ -213,7 +207,6 @@ private fun FindCard(
     }
 }
 
-/** Colour badge with a safety-resolved label and fill colour. */
 @Composable
 private fun ToxicityBadge(label: String, color: Color) {
     Surface(

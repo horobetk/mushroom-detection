@@ -2,16 +2,7 @@ package com.pw.mushroom.model
 
 import androidx.compose.ui.graphics.Color
 
-/**
- * Edibility class for a detected species. Each entry carries the Polish UI label
- * and the overlay/banner colour. Confidence thresholds are asymmetric and no
- * longer per-class: see [MushroomRegistry.UNSAFE_THRESHOLD] and
- * [MushroomRegistry.SAFE_THRESHOLD].
- *
- * Mapping aligns with thesis appendix "Wykaz 147 gatunków":
- * Jadalny / Niejadalny / Trujący / Śmiertelnie trujący.
- * [CAUTION] is retained for legacy persisted finds only.
- */
+/** Edibility class with its Polish label and overlay colour. */
 enum class Toxicity(val labelPl: String, val color: Color) {
     EDIBLE("Jadalny", Color(0xFF4CAF50)),             // Green
     CAUTION("Warunkowo jadalny", Color(0xFFFFEB3B)),  // Yellow (legacy)
@@ -30,30 +21,17 @@ enum class Toxicity(val labelPl: String, val color: Color) {
     }
 }
 
-/**
- * One catalogue entry mapped to a model class index.
- *
- * @property classId  Class index emitted by the TFLite model (0..146).
- * @property name     Scientific species name.
- * @property toxicity Edibility class driving colour, label, and threshold.
- */
+/** Catalogue entry mapped to a model class index. */
 data class MushroomSpecies(
     val classId: Int,
     val name: String,
     val toxicity: Toxicity
 )
 
-/**
- * Static catalogue of the 147 species the YOLO11m model was trained on.
- *
- * Indexed by class id so labelling never depends on a bundled asset file and
- * cannot drift out of sync at runtime. Order matches class_registry / thesis
- * appendix (Lp. 1..147 -> classId 0..146).
- */
+/** Species catalogue and safety thresholds for the 147 model classes. */
 object MushroomRegistry {
 
     val speciesMap: Map<Int, MushroomSpecies> = mapOf(
-        // 0..104 — original train-6 set, toxicity synced to thesis appendix
         0 to MushroomSpecies(0, "Agaricus campestris", Toxicity.EDIBLE),
         1 to MushroomSpecies(1, "Amanita muscaria", Toxicity.POISONOUS),
         2 to MushroomSpecies(2, "Amanita pantherina", Toxicity.DEADLY),
@@ -160,7 +138,6 @@ object MushroomRegistry {
         103 to MushroomSpecies(103, "Cortinarius rubellus", Toxicity.DEADLY),
         104 to MushroomSpecies(104, "Lactarius helvus", Toxicity.POISONOUS),
 
-        // 105..146 — fine_147classes extension set
         105 to MushroomSpecies(105, "Amanita excelsa", Toxicity.EDIBLE),
         106 to MushroomSpecies(106, "Amanita gemmata", Toxicity.POISONOUS),
         107 to MushroomSpecies(107, "Amanita porphyria", Toxicity.INEDIBLE),
@@ -205,7 +182,6 @@ object MushroomRegistry {
         146 to MushroomSpecies(146, "Xylaria polymorpha", Toxicity.INEDIBLE)
     )
 
-    /** Number of catalogued species (used to sanity-check the model output). */
     val speciesCount: Int = speciesMap.size
 
     // Asymmetric thresholds: toxic warns early, edible needs a high bar + vote buffer.
@@ -237,7 +213,7 @@ object MushroomRegistry {
     fun displayStatus(
         toxicity: Toxicity,
         confidence: Float,
-        voteConfirmed: Boolean = true
+        voteConfirmed: Boolean
     ): DisplayStatus =
         when {
             toxicity.isDangerous && confidence >= UNSAFE_THRESHOLD ->
@@ -256,8 +232,5 @@ object MushroomRegistry {
     val NEUTRAL_COLOR = Color(0xFF757575)
 }
 
-/**
- * Resolved badge for a detection: the Polish label and colour to render after
- * the safety policy has been applied.
- */
+/** Badge label and colour after the safety policy is applied. */
 data class DisplayStatus(val label: String, val color: Color)

@@ -15,10 +15,7 @@ import com.pw.mushroom.ui.HistoryScreen
 import com.pw.mushroom.ui.MushroomCameraScreen
 import com.pw.mushroom.ui.theme.MushroomTheme
 
-/**
- * Single-activity host. The UI is Compose-driven; this activity wires up the
- * theme and the navigation graph (live camera <-> saved-finds history).
- */
+/** Single-activity host for the Compose UI. */
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,7 +31,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-/** Navigation graph between the camera screen and the history screen. */
 @Composable
 private fun MushroomApp() {
     val navController = rememberNavController()

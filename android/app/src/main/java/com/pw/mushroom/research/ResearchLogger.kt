@@ -21,20 +21,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-/**
- * File-based research data logger.
- *
- * Each capture produces:
- *  - `capture_NNN_fullframe.jpg`  — the raw camera frame at full resolution
- *  - `capture_NNN_annotated.jpg`  — the same frame with bounding boxes + labels drawn on it
- *  - `capture_NNN_screen.png`     — PixelCopy window screenshot (if available)
- *  - `capture_NNN_meta.json`      — detailed detection JSON with top-N scores
- *  - an append row in `session_log.csv`
- *
- * Files are written to
- * `Documents/MushroomResearch/session_YYYYMMDD_HHmmss/`.
- * This directory is accessible via USB MTP without root.
- */
+/** Writes Research Mode capture bundles to Documents/MushroomResearch. */
 object ResearchLogger {
 
     private const val TAG = "ResearchLogger"
@@ -45,13 +32,10 @@ object ResearchLogger {
     private const val ANNOTATED_JPEG_QUALITY = 88
     private const val TOP_N_CSV = 3 // how many top-N predictions go into CSV columns
 
-    // Resolved session path and id. The directory itself is created lazily on the
-    // first successful capture, so toggling Research Mode never leaves empty folders.
     private var sessionDir: File? = null
     private var sessionId: String? = null
     private var csvHeaderWritten = false
 
-    // Reusable Paint objects for annotated frame rendering.
     private val boxPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         strokeWidth = 6f
@@ -65,13 +49,7 @@ object ResearchLogger {
         typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
     }
 
-    /**
-     * Start a new capture session. The on-disk directory is *not* created yet —
-     * it is materialised lazily on the first capture so cancelled sessions leave
-     * no empty folders behind.
-     *
-     * @return the session ID (folder name), or null if the path could not be resolved.
-     */
+    /** The directory is created on first capture, so empty sessions leave no folder. */
     fun startSession(): String? {
         val ts = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
         val id = "session_$ts"
@@ -86,7 +64,6 @@ object ResearchLogger {
         return id
     }
 
-    /** End the current session. */
     fun endSession() {
         Log.i(TAG, "Research session ended: $sessionId")
         sessionDir = null
@@ -94,20 +71,15 @@ object ResearchLogger {
         csvHeaderWritten = false
     }
 
-    /** True once a session has been started (directory may not exist until first capture). */
     val isSessionActive: Boolean get() = sessionId != null
 
-    /**
-     * Ensure the session directory exists on disk, creating it (and a ground-truth
-     * stub) on first use. Returns null if creation failed.
-     */
+    /** Create the session directory and ground-truth stub on first use. */
     private fun ensureSessionDir(): File? {
         val dir = sessionDir ?: return null
         if (!dir.exists() && !dir.mkdirs()) {
             Log.e(TAG, "Failed to create session directory: ${dir.absolutePath}")
             return null
         }
-        // Ground-truth stub: fill in the real species here for later verification.
         val gt = File(dir, "ground_truth.txt")
         if (!gt.exists()) {
             gt.writeText(
@@ -120,22 +92,7 @@ object ResearchLogger {
         return dir
     }
 
-    /**
-     * Capture a complete research data bundle.
-     *
-     * @param captureId     Sequential capture number within this session.
-     * @param fullFrame     The analysis frame (matches the detection boxes; not recycled here).
-     * @param fullResFrame  Optional full-resolution sensor photo via ImageCapture, saved
-     *                      clean (no boxes) for visual species verification. Not recycled here.
-     * @param screenBitmap  PixelCopy window screenshot, or null if capture failed.
-     * @param detections    Current tracked detections with top-N scores.
-     * @param inferenceMs   Last inference latency in milliseconds.
-     * @param fps           Current effective FPS.
-     * @param gpuDelegate   Whether GPU delegate is active.
-     * @param context       Application context for battery telemetry.
-     *
-     * @return the session directory path, or null on failure.
-     */
+    /** Write one capture bundle; bitmaps are not recycled here. Null on failure. */
     fun capture(
         captureId: Int,
         fullFrame: Bitmap,
@@ -148,10 +105,7 @@ object ResearchLogger {
         context: Context
     ): String? {
         val dir = ensureSessionDir() ?: return null
-        // Encode the primary prediction into the filename so the folder is
-        // scannable at a glance without opening JSON, e.g.
-        //   capture_001__Amanita-porphyria__71pct__annotated.jpg
-        //   capture_002__none__annotated.jpg      (nothing detected)
+        // e.g. capture_001__Amanita-porphyria__71pct_annotated.jpg
         val prefix = "capture_%03d__%s".format(captureId, filenameLabel(detections))
         val now = System.currentTimeMillis()
         val isoTimestamp = SimpleDateFormat(
@@ -159,13 +113,12 @@ object ResearchLogger {
         ).format(Date(now))
 
         try {
-            // 1. Full-frame JPEG
             val fullFrameFile = File(dir, "${prefix}_fullframe.jpg")
             FileOutputStream(fullFrameFile).use { out ->
                 fullFrame.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, out)
             }
 
-            // 1b. Full-resolution sensor photo (clean, for visual species verification).
+            // Clean full-resolution still for manual species verification.
             if (fullResFrame != null) {
                 val fullResFile = File(dir, "${prefix}_fullres.jpg")
                 FileOutputStream(fullResFile).use { out ->
@@ -173,7 +126,6 @@ object ResearchLogger {
                 }
             }
 
-            // 2. Annotated frame (full-frame with bounding boxes + labels drawn on top)
             val annotated = createAnnotatedFrame(fullFrame, detections)
             val annotatedFile = File(dir, "${prefix}_annotated.jpg")
             FileOutputStream(annotatedFile).use { out ->
@@ -181,7 +133,6 @@ object ResearchLogger {
             }
             annotated.recycle()
 
-            // 3. PixelCopy screen capture (if available)
             if (screenBitmap != null) {
                 val screenFile = File(dir, "${prefix}_screen.png")
                 FileOutputStream(screenFile).use { out ->
@@ -189,7 +140,6 @@ object ResearchLogger {
                 }
             }
 
-            // 4. Detailed metadata JSON
             val battery = readBattery(context)
             val json = buildMetaJson(
                 captureId, isoTimestamp, now, detections,
@@ -197,7 +147,6 @@ object ResearchLogger {
             )
             File(dir, "${prefix}_meta.json").writeText(json.toString(2))
 
-            // 5. Append CSV row (one row per detection, or one row if no detections)
             appendCsv(
                 dir, captureId, isoTimestamp, detections,
                 inferenceMs, fps, battery, gpuDelegate
@@ -212,11 +161,7 @@ object ResearchLogger {
         }
     }
 
-    /**
-     * Build the human-scannable filename fragment from the primary (highest
-     * confidence) detection: "Species-name__NNpct" or "none__x0". A trailing
-     * "__x{n}" is appended when more than one object was detected.
-     */
+    /** "Species-name__NNpct" for the top detection, "__xN" if several, or "none". */
     private fun filenameLabel(detections: List<TrackedDetection>): String {
         val primary = detections.maxByOrNull { it.confidence }
             ?: return "none"
@@ -228,15 +173,7 @@ object ResearchLogger {
         return "${species}__${pct}pct$extra"
     }
 
-    // ------------------------------------------------------------------
-    // Annotated frame rendering
-    // ------------------------------------------------------------------
-
-    /**
-     * Draw bounding boxes, species names, confidence, and status labels
-     * directly on a copy of the full-frame bitmap. This produces a
-     * self-contained annotated image that does not depend on PixelCopy.
-     */
+    /** Draw boxes and labels on a copy of the frame, independent of PixelCopy. */
     private fun createAnnotatedFrame(
         source: Bitmap,
         detections: List<TrackedDetection>
@@ -261,7 +198,6 @@ object ResearchLogger {
             )
             canvas.drawRoundRect(rect, 12f, 12f, boxPaint)
 
-            // Label: "Species — Status (XX%)"
             val conf = "%.0f%%".format(det.confidence * 100)
             val label = "${det.species.name} — ${status.label} ($conf)"
             val textWidth = labelTextPaint.measureText(label)
@@ -279,7 +215,6 @@ object ResearchLogger {
         return bmp
     }
 
-    /** Convert a Compose Color (ARGB Long) to an Android int ARGB. */
     private fun colorToArgb(composeColor: androidx.compose.ui.graphics.Color): Int {
         return android.graphics.Color.argb(
             (composeColor.alpha * 255).toInt(),
@@ -288,10 +223,6 @@ object ResearchLogger {
             (composeColor.blue * 255).toInt()
         )
     }
-
-    // ------------------------------------------------------------------
-    // JSON builder
-    // ------------------------------------------------------------------
 
     private fun buildMetaJson(
         captureId: Int,
@@ -306,14 +237,14 @@ object ResearchLogger {
         put("captureId", captureId)
         put("timestamp", isoTimestamp)
         put("epochMs", epochMs)
-        put("inferenceLatencyMs", "%.1f".format(inferenceMs).toDouble())
-        put("fps", "%.1f".format(fps).toDouble())
+        put("inferenceLatencyMs", num("%.1f", inferenceMs).toDouble())
+        put("fps", num("%.1f", fps).toDouble())
         put("batteryPercent", battery.percent)
         // org.json rejects NaN/Infinity, so fall back to JSON null when unavailable.
         if (battery.celsius.isNaN()) {
             put("batteryCelsius", JSONObject.NULL)
         } else {
-            put("batteryCelsius", "%.1f".format(battery.celsius.toDouble()).toDouble())
+            put("batteryCelsius", num("%.1f", battery.celsius.toDouble()).toDouble())
         }
         put("gpuDelegate", gpuDelegate)
         put("groundTruth", JSONObject.NULL)
@@ -325,14 +256,14 @@ object ResearchLogger {
                 put("species", det.species.name)
                 put("classId", det.species.classId)
                 put("toxicity", det.species.toxicity.name)
-                put("confidence", "%.4f".format(det.confidence).toDouble())
+                put("confidence", num("%.4f", det.confidence).toDouble())
                 put("voteConfirmed", det.voteConfirmed)
                 put("frozen", det.frozen)
                 put("boundingBox", JSONObject().apply {
-                    put("left", "%.4f".format(det.box.left).toDouble())
-                    put("top", "%.4f".format(det.box.top).toDouble())
-                    put("right", "%.4f".format(det.box.right).toDouble())
-                    put("bottom", "%.4f".format(det.box.bottom).toDouble())
+                    put("left", num("%.4f", det.box.left).toDouble())
+                    put("top", num("%.4f", det.box.top).toDouble())
+                    put("right", num("%.4f", det.box.right).toDouble())
+                    put("bottom", num("%.4f", det.box.bottom).toDouble())
                 })
 
                 val topNArray = JSONArray()
@@ -341,7 +272,7 @@ object ResearchLogger {
                     topNArray.put(JSONObject().apply {
                         put("classId", cs.classId)
                         put("species", sp?.name ?: "unknown_${cs.classId}")
-                        put("score", "%.4f".format(cs.score).toDouble())
+                        put("score", num("%.4f", cs.score).toDouble())
                     })
                 }
                 put("topN", topNArray)
@@ -350,10 +281,6 @@ object ResearchLogger {
         }
         put("detections", detsArray)
     }
-
-    // ------------------------------------------------------------------
-    // CSV logger
-    // ------------------------------------------------------------------
 
     private fun appendCsv(
         dir: File,
@@ -366,14 +293,13 @@ object ResearchLogger {
         gpuDelegate: Boolean
     ) {
         val file = File(dir, CSV_NAME)
-        // Ranks 2..TOP_N_CSV are emitted as extra columns (rank 1 is the primary
-        // species column). Each rank contributes species,classId,score.
+        // Rank 1 is the species column; ranks 2..TOP_N_CSV add species,classId,score each.
         val extraRanks = 2..TOP_N_CSV
         val telemetry = listOf(
-            "%.1f".format(inferenceMs),
-            "%.1f".format(fps),
+            num("%.1f", inferenceMs),
+            num("%.1f", fps),
             battery.percent.toString(),
-            "%.1f".format(battery.celsius.toDouble()),
+            num("%.1f", battery.celsius.toDouble()),
             gpuDelegate.toString()
         )
 
@@ -391,7 +317,6 @@ object ResearchLogger {
         }
 
         if (detections.isEmpty()) {
-            // Log a row even when nothing was detected: empty detection columns.
             val emptyDetectionCols = List(11) { "" }              // trackId..box_bottom
             val emptyTopN = List(extraRanks.count() * 3) { "" }   // species,classId,score * ranks
             val row = listOf(sessionId ?: "", captureId.toString(), isoTimestamp) +
@@ -407,7 +332,7 @@ object ResearchLogger {
                 val entry = topN.getOrNull(rank - 1)
                 if (entry != null) {
                     val sp = MushroomRegistry.fromId(entry.classId)
-                    listOf(sp?.name ?: "?", entry.classId.toString(), "%.4f".format(entry.score))
+                    listOf(sp?.name ?: "?", entry.classId.toString(), num("%.4f", entry.score))
                 } else {
                     listOf("", "", "")
                 }
@@ -415,17 +340,16 @@ object ResearchLogger {
             val row = listOf(
                 sessionId ?: "", captureId.toString(), isoTimestamp, det.id.toString(),
                 det.species.name, det.species.classId.toString(), det.species.toxicity.name,
-                "%.4f".format(det.confidence), det.voteConfirmed.toString(), det.frozen.toString(),
-                "%.4f".format(det.box.left), "%.4f".format(det.box.top),
-                "%.4f".format(det.box.right), "%.4f".format(det.box.bottom)
+                num("%.4f", det.confidence), det.voteConfirmed.toString(), det.frozen.toString(),
+                num("%.4f", det.box.left), num("%.4f", det.box.top),
+                num("%.4f", det.box.right), num("%.4f", det.box.bottom)
             ) + topNCols + telemetry
             file.appendText(row.joinToString(",") + "\n")
         }
     }
 
-    // ------------------------------------------------------------------
-    // Battery telemetry
-    // ------------------------------------------------------------------
+    // Locale.US keeps a dot as the decimal separator in JSON and CSV.
+    private fun num(pattern: String, value: Number): String = String.format(Locale.US, pattern, value)
 
     private data class BatteryInfo(val percent: Int, val celsius: Float)
 

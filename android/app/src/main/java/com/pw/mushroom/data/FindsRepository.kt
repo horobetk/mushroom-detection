@@ -10,10 +10,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.util.UUID
 
-/**
- * Persists mushroom finds: writes the cropped JPEG into app-private internal
- * storage (never the public gallery) and stores the row in Room.
- */
+/** Stores finds in Room with their crops in app-private storage. */
 class FindsRepository(context: Context) {
 
     private val appContext = context.applicationContext
@@ -22,15 +19,8 @@ class FindsRepository(context: Context) {
     /** All saved finds, newest first, as a reactive stream. */
     val finds: Flow<List<MushroomFind>> = dao.observeAll()
 
-    /** All saved finds, newest first (alias for readability at call sites). */
     fun getAllFinds(): Flow<List<MushroomFind>> = finds
 
-    /**
-     * Save one find. The [crop] bitmap is compressed to JPEG under
-     * filesDir/finds and the metadata row is inserted.
-     *
-     * @return the persisted [MushroomFind] with its generated id.
-     */
     suspend fun save(
         speciesName: String,
         toxicityLabel: String,

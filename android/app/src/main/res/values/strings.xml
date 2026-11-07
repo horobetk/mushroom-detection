@@ -18,13 +18,6 @@
     <string name="save_failed">Nie udało się zapisać znaleziska</string>
     <string name="save_no_target">Brak wykrytego grzyba do zapisania</string>
 
-    <!-- Toxicity statuses (shown in overlay labels) -->
-    <string name="status_edible">Jadalny</string>
-    <string name="status_caution">Warunkowo jadalny</string>
-    <string name="status_inedible">Niejadalny</string>
-    <string name="status_poisonous">Trujący</string>
-    <string name="status_deadly">Śmiertelnie trujący</string>
-
     <!-- History -->
     <string name="history_title">Historia znalezisk</string>
     <string name="history_empty">Brak zapisanych znalezisk</string>

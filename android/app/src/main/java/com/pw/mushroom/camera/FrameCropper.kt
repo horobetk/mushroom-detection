@@ -11,30 +11,10 @@ import com.pw.mushroom.ml.NormalizedBox
 import kotlin.math.min
 import kotlin.math.roundToInt
 
-/**
- * Utilities for turning a CameraX [ImageProxy] into a rotation-corrected
- * [Bitmap], preparing the square model input, and crop-mapping detections back
- * into the frame.
- *
- * Coordinate convention: the preview uses FILL_CENTER, so the visible region is
- * the largest centred crop of the frame matching the view's aspect ratio. The
- * model is fed exactly that visible region, letterboxed (aspect-preserving) into
- * the square input. Detection boxes are therefore normalised to the *visible*
- * region and map 1:1 onto the full screen.
- */
+/** Frame rotation, letterboxing and crop mapping for the FILL_CENTER preview. */
 object FrameCropper {
 
-    /**
-     * Result of letterboxing the visible region into the square model input.
-     *
-     * @property bitmap   Square [size]x[size] input bitmap (aspect-preserved, padded).
-     * @property cropRect Visible region of the source frame (view-aspect centre crop).
-     * @property padX     Horizontal padding inside the square (pixels).
-     * @property padY     Vertical padding inside the square (pixels).
-     * @property contentW Width of the scaled content inside the square (pixels).
-     * @property contentH Height of the scaled content inside the square (pixels).
-     * @property size     Square side length (model input resolution).
-     */
+    /** Letterboxed model input; padding and content sizes are in pixels. */
     data class Letterboxed(
         val bitmap: Bitmap,
         val cropRect: Rect,
@@ -45,10 +25,7 @@ object FrameCropper {
         val size: Int
     )
 
-    /**
-     * Convert an ImageProxy (RGBA_8888) into a rotation-corrected, full-resolution
-     * upright [Bitmap]. The caller owns the returned bitmap and must recycle it.
-     */
+    /** The caller owns the returned bitmap and must recycle it. */
     fun toUprightBitmap(imageProxy: ImageProxy): Bitmap {
         val rotationDegrees = imageProxy.imageInfo.rotationDegrees
         val raw = imageProxy.toBitmap()
@@ -63,12 +40,7 @@ object FrameCropper {
         }
     }
 
-    /**
-     * Letterbox the visible region of [upright] (a view-aspect centre crop) into a
-     * [targetSize] square, preserving aspect ratio with neutral padding.
-     *
-     * @param viewAspect Preview aspect ratio (width / height). Falls back to 1.0.
-     */
+    /** Fit the visible region of [upright] into a [targetSize] square, keeping aspect. */
     fun letterbox(upright: Bitmap, viewAspect: Float, targetSize: Int): Letterboxed {
         val crop = viewCropRect(upright.width, upright.height, viewAspect)
         val cropW = crop.width()
@@ -94,10 +66,7 @@ object FrameCropper {
         return Letterboxed(output, crop, padX, padY, contentW, contentH, targetSize)
     }
 
-    /**
-     * Convert a box normalised to the letterboxed square into a box normalised to
-     * the *visible* region (padding removed), ready to map onto the full screen.
-     */
+    /** Strip the letterbox padding so the box is normalised to the visible region. */
     fun toVisibleNormalized(box: NormalizedBox, lb: Letterboxed): NormalizedBox {
         fun ux(nx: Float): Float = ((nx * lb.size - lb.padX) / lb.contentW).coerceIn(0f, 1f)
         fun uy(ny: Float): Float = ((ny * lb.size - lb.padY) / lb.contentH).coerceIn(0f, 1f)
@@ -109,13 +78,7 @@ object FrameCropper {
         )
     }
 
-    /**
-     * Crop the region described by a visible-normalised [box] out of the
-     * full-resolution [upright] frame, at native resolution.
-     *
-     * @param viewAspect Preview aspect ratio (width / height), to reconstruct the
-     *                   same visible crop used during inference.
-     */
+    /** Crop [box] from the full-resolution frame using the same visible region as inference. */
     fun cropNormalizedBox(upright: Bitmap, box: NormalizedBox, viewAspect: Float): Bitmap? {
         val crop = viewCropRect(upright.width, upright.height, viewAspect)
         val cropW = crop.width()
@@ -133,9 +96,7 @@ object FrameCropper {
         return Bitmap.createBitmap(upright, left, top, width, height)
     }
 
-    /**
-     * Largest centred crop of a [w]x[h] frame matching [viewAspect] (width/height).
-     */
+    /** Largest centred crop of the frame matching [viewAspect]. */
     private fun viewCropRect(w: Int, h: Int, viewAspect: Float): Rect {
         val aspect = if (viewAspect > 0f) viewAspect else 1f
         val frameAspect = w.toFloat() / h.toFloat()
@@ -153,6 +114,5 @@ object FrameCropper {
         }
     }
 
-    /** Neutral grey padding used when letterboxing (matches common YOLO padding). */
     private const val PAD_COLOR = Color.GRAY
 }

@@ -44,7 +44,7 @@
 % In case of thesis in English swap the order - English version goes first.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \streszczeniepracy{
-Przedmiotem pracy jest autonomiczny system detekcji i klasyfikacji $147$ gatunków grzybów, działający w czasie rzeczywistym i offline na platformie Android. Celem było wsparcie zbieracza przy identyfikacji owocników, z priorytetem czułości dla klas toksycznych i redukcją ryzyka błędnego uznania gatunku trującego za jadalny.
+Przedmiotem pracy jest autonomiczny system detekcji i klasyfikacji $147$ klas grzybów (odpowiadających $145$ odrębnym gatunkom biologicznym), działający offline na platformie Android w czasie rzeczywistym, rozumianym jako interaktywny odczyt z podglądu kamery w czasie krótszym niż $1$\,s. Celem było wsparcie zbieracza przy identyfikacji owocników, z priorytetem czułości dla klas toksycznych i redukcją ryzyka błędnego uznania gatunku trującego za jadalny.
 
 Zaprojektowano i wdrożono pełny potok danych. Ręczną anotację zastąpiono półautomatycznym etykietowaniem przez GroundingDINO, generującym ramki w formacie YOLO. Model bazowy YOLO11 Medium (\texttt{YOLO11m}, Ultralytics) wytrenowano metodą uczenia transferowego, a następnie skompilowano dwuetapowo do TensorFlow Lite (TFLite) w precyzji FP16. Dzięki temu inferencja działa lokalnie na telefonie, przy akceptowalnym spadku precyzji (o $5{,}5$ pkt proc.\ $mAP_{50}$) względem wag PyTorch, zachowując kluczowe cechy makromorfologiczne owocników.
 
@@ -54,7 +54,7 @@ Priorytetem jest ograniczenie błędnego uznania gatunku toksycznego za jadalny.
 \slowakluczowe{wykrywanie obiektów, YOLO11m, TensorFlow Lite, FP16, Android, głębokie uczenie} 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \thesisabstract{
-The subject of this thesis is an autonomous system for detecting and classifying 147 mushroom species in real time, offline, on Android. The goal was to help foragers identify fruiting bodies, prioritizing recall on toxic classes and reducing the risk of mistaking a poisonous species for an edible one.
+The subject of this thesis is an autonomous system for detecting and classifying 147 mushroom classes (145 distinct biological species) offline on Android in real time, understood as an interactive camera-preview readout in well under 1~s. The goal was to help foragers identify fruiting bodies, prioritizing recall on toxic classes and reducing the risk of mistaking a poisonous species for an edible one.
 
 A full data pipeline was designed and built. Manual box labelling was replaced by a GroundingDINO-based auto-labeller that emits YOLO-format bounding boxes. YOLO11 Medium (\texttt{YOLO11m}, Ultralytics) was trained with transfer learning and then converted in two stages to TensorFlow Lite (TFLite) FP16, so inference runs on the phone while fine macromorphological cues are preserved.
 
@@ -66,6 +66,9 @@ The priority is to limit treating a toxic species as edible. In the app this is 
 
 % Biblioteki TikZ wykorzystywane w diagramach rozdziałów 2--5
 \usetikzlibrary{shapes.geometric}
+
+% Wartości do uzupełnienia po pomiarach
+\newcommand{\douzup}[1]{\textcolor{red}{\textbf{[#1]}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Tu zaczyna się dokument

@@ -1,0 +1,47 @@
+{
+  "model": "E:\\Kiril_Horobets\\mushroom_data\\runs\\fine_147classes_v2\\weights\\best.pt",
+  "data": "E:\\Kiril_Horobets\\mushroom_data\\mushroom_final\\data.yaml",
+  "split": "test",
+  "toxicity_csv": "E:\\Kiril_Horobets\\mushroom-detection\\mushroom-detection\\scripts\\tests\\toxicity_registry.csv",
+  "all": {
+    "n_classes_with_gt": 147,
+    "mAP50": 0.827477224415883,
+    "mAP50_95": 0.7822864729952456,
+    "precision": 0.8089605909650356,
+    "recall": 0.7532449077359402
+  },
+  "groups": {
+    "EDIBLE": {
+      "n_classes_registry": 69,
+      "n_classes_with_gt": 69,
+      "mAP50": 0.8133829595404881,
+      "mAP50_95": 0.7722503589644981,
+      "precision": 0.799077011126724,
+      "recall": 0.7487234145289519
+    },
+    "INEDIBLE": {
+      "n_classes_registry": 44,
+      "n_classes_with_gt": 44,
+      "mAP50": 0.8505662191906918,
+      "mAP50_95": 0.8004491534490197,
+      "precision": 0.8235108803090896,
+      "recall": 0.7671529848702549
+    },
+    "TOXIC": {
+      "n_classes_registry": 34,
+      "n_classes_with_gt": 34,
+      "mAP50": 0.8262004157779613,
+      "mAP50_95": 0.7791492355880547,
+      "precision": 0.8101886579563621,
+      "recall": 0.7444221911880684
+    },
+    "DEADLY": {
+      "n_classes_registry": 7,
+      "n_classes_with_gt": 7,
+      "mAP50": 0.8567867133308082,
+      "mAP50_95": 0.810660544906686,
+      "precision": 0.8195960252222816,
+      "recall": 0.7971032520734909
+    }
+  }
+}

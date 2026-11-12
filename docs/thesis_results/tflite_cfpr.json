@@ -1,0 +1,144 @@
+{
+  "backend": "tflite-interpreter, app pipeline (letterbox 136, per-class 0.18/0.20, top-50, agnostic NMS 0.45, max 20)",
+  "tflite": "E:\\Kiril_Horobets\\mushroom_data\\runs\\fine_147classes_v2\\weights\\best_saved_model_fp16.tflite",
+  "data": "E:\\Kiril_Horobets\\mushroom_data\\mushroom_final\\data.yaml",
+  "n_test_images": 32727,
+  "subset_seed": null,
+  "n_gt_instances": 73272,
+  "n_predictions": 66652,
+  "invoke_ms_mean_cpu": 167.97101742762968,
+  "conf_toxic": 0.18,
+  "conf_edible": 0.6,
+  "conf_neutral_min": 0.2,
+  "global_tau": 0.3,
+  "vote_4_of_5": "not simulated (green counted as vote passed; CFPR is an upper bound)",
+  "n_gt_toxic": 15840,
+  "n_gt_edible": 33301,
+  "cfp_asymmetric": 334,
+  "cfp_global": 577,
+  "cfpr_asymmetric": 0.021085858585858586,
+  "cfpr_global": 0.036426767676767675,
+  "warn_edible_asymmetric": 461,
+  "warn_edible_global": 388,
+  "far_edible_asymmetric": 0.013843428125281523,
+  "far_edible_global": 0.011651301762709829,
+  "matrix_asymmetric": [
+    [
+      21380.0,
+      11460.0,
+      461.0
+    ],
+    [
+      149.0,
+      23779.0,
+      203.0
+    ],
+    [
+      334.0,
+      3522.0,
+      11984.0
+    ]
+  ],
+  "matrix_global": [
+    [
+      25166.0,
+      7747.0,
+      388.0
+    ],
+    [
+      315.0,
+      23644.0,
+      172.0
+    ],
+    [
+      577.0,
+      3722.0,
+      11541.0
+    ]
+  ],
+  "gt_labels": [
+    "EDIBLE",
+    "INEDIBLE",
+    "TOXIC"
+  ],
+  "pred_labels": [
+    "JADALNY",
+    "NEUTRAL",
+    "OSTRZEZENIE"
+  ],
+  "lookalikes": [
+    {
+      "gt": "Amanita phalloides",
+      "pred": "Agaricus campestris",
+      "n_gt": 355,
+      "n_confuse": 0
+    },
+    {
+      "gt": "Agaricus campestris",
+      "pred": "Amanita phalloides",
+      "n_gt": 392,
+      "n_confuse": 0
+    },
+    {
+      "gt": "Amanita phalloides",
+      "pred": "Amanita citrina",
+      "n_gt": 355,
+      "n_confuse": 6
+    },
+    {
+      "gt": "Amanita citrina",
+      "pred": "Amanita phalloides",
+      "n_gt": 286,
+      "n_confuse": 4
+    },
+    {
+      "gt": "Amanita virosa",
+      "pred": "Agaricus campestris",
+      "n_gt": 114,
+      "n_confuse": 1
+    },
+    {
+      "gt": "Agaricus campestris",
+      "pred": "Amanita virosa",
+      "n_gt": 392,
+      "n_confuse": 0
+    },
+    {
+      "gt": "Omphalotus olearius",
+      "pred": "Cantharellus cibarius",
+      "n_gt": 430,
+      "n_confuse": 0
+    },
+    {
+      "gt": "Cantharellus cibarius",
+      "pred": "Omphalotus olearius",
+      "n_gt": 463,
+      "n_confuse": 1
+    },
+    {
+      "gt": "Hygrophoropsis aurantiaca",
+      "pred": "Cantharellus cibarius",
+      "n_gt": 421,
+      "n_confuse": 0
+    },
+    {
+      "gt": "Cantharellus cibarius",
+      "pred": "Hygrophoropsis aurantiaca",
+      "n_gt": 463,
+      "n_confuse": 0
+    },
+    {
+      "gt": "Galerina marginata",
+      "pred": "Kuehneromyces mutabilis",
+      "n_gt": 650,
+      "n_confuse": 10
+    },
+    {
+      "gt": "Kuehneromyces mutabilis",
+      "pred": "Galerina marginata",
+      "n_gt": 802,
+      "n_confuse": 15
+    }
+  ],
+  "h2_holds": true
+}
